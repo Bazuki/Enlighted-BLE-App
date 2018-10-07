@@ -16,6 +16,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     // MARK: Properties
 
     @IBOutlet weak var modeLabel: UILabel!
+    @IBOutlet weak var modeNumberLabel: UILabel!
     @IBOutlet weak var bitmapUIImage: UIImageView!
     
     @IBOutlet weak var color1Selector: ColorPreview!
@@ -36,6 +37,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBOutlet weak var color1RGB: UILabel!
     @IBOutlet weak var color2RGB: UILabel!
     
+    @IBOutlet weak var saturationLabel: UILabel!
     
   
     
@@ -45,6 +47,15 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     override func viewDidLoad()
     {
         super.viewDidLoad()
+        
+        if (Device.connectedDevice?.mode?.usesBitmap)!
+        {
+            self.title = "Choose Bitmap";
+        }
+        else
+        {
+            self.title = "Choose Colors";
+        }
         
         bitmapPicker.dataSource = self;
         bitmapPicker.delegate = self;
@@ -61,8 +72,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
         
             // Set the name
-        modeLabel.text = Device.connectedDevice?.mode?.name;
+        modeLabel.text = /* String((Device.connectedDevice?.mode?.index)!) + "   " + */ (Device.connectedDevice?.mode?.name)!;
         
+            // Set the mode number
+        modeNumberLabel.text = String((Device.connectedDevice?.mode?.index)!);
             // making different things show up depending on mode type
         if (Device.connectedDevice?.mode?.usesBitmap)!
         {
@@ -78,6 +91,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             colorRevertButton.isHidden = true;
             bitmapUndoButton.isHidden = false;
             bitmapRevertButton.isHidden = false;
+            
+            saturationLabel.isHidden = true
             
             color1Label.isHidden = true;
             color2Label.isHidden = true;
@@ -107,10 +122,13 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             color1RGB.text = getRGBStringFromUIColor(color1Selector.myColor);
             color2RGB.text = getRGBStringFromUIColor(color2Selector.myColor);
             
+            saturationLabel.isHidden = false;
+            
             color1Label.isHidden = false;
             color2Label.isHidden = false;
             color1RGB.isHidden = false;
             color2RGB.isHidden = false;
+            
             
             color1Selector.isHidden = false;
             color2Selector.isHidden = false;
@@ -169,21 +187,21 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBAction func selectAndEditColor1(_ sender: UITapGestureRecognizer)
     {
         color1Selector.setHighlighted(true);
-        color1Label.textColor = UIColor.white;
-        color1RGB.textColor = UIColor.white;
+        color1Label.textColor = UIColor(named: "SelectedText");
+        color1RGB.textColor = UIColor(named: "SelectedText");
         color2Selector.setHighlighted(false);
-        color2Label.textColor = UIColor.black;
-        color2RGB.textColor = UIColor.black;
+        color2Label.textColor = UIColor(named: "NonSelectedText");
+        color2RGB.textColor = UIColor(named: "NonSelectedText");
     }
     
     @IBAction func selectAndEditColor2(_ sender: UITapGestureRecognizer)
     {
         color2Selector.setHighlighted(true);
-        color2Label.textColor = UIColor.white;
-        color2RGB.textColor = UIColor.white;
+        color2Label.textColor = UIColor(named: "SelectedText");
+        color2RGB.textColor = UIColor(named: "SelectedText");
         color1Selector.setHighlighted(false);
-        color1Label.textColor = UIColor.black;
-        color1RGB.textColor = UIColor.black;
+        color1Label.textColor = UIColor(named: "NonSelectedText");
+        color1RGB.textColor = UIColor(named: "NonSelectedText");
     }
     
     

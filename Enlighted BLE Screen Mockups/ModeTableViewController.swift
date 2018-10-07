@@ -33,6 +33,13 @@ class ModeTableViewController: UITableViewController
         self.clearsSelectionOnViewWillAppear = false
     }
 
+    override func viewWillAppear(_ animated: Bool)
+    {
+        super.viewDidAppear(animated);
+        let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
+        self.tableView.selectRow(at: indexPath, animated: animated, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -47,7 +54,6 @@ class ModeTableViewController: UITableViewController
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
-        // #warning Incomplete implementation, return the number of rows
         return modes.count;
     }
 
@@ -150,7 +156,8 @@ class ModeTableViewController: UITableViewController
         // colors for certain modes
         let colorArray1 = [UIColor.green, UIColor.yellow];
         let colorArray2 = [UIColor.cyan, UIColor.blue];
-        let bitmap3 = UIImage(named: "Bitmap1");
+        let bitmap1 = UIImage(named: "Bitmap1");
+        let bitmap2 = UIImage(named: "Bitmap2");
         
         guard let mode1 = Mode(name:"SLOW TWINKLE", index: 1, usesBitmap: false, bitmap: nil, colors: colorArray1) else
         {
@@ -162,12 +169,17 @@ class ModeTableViewController: UITableViewController
             fatalError("unable to instantiate mode2");
         }
         
-        guard let mode3 = Mode(name:"FAST TWINKLE", index: 3, usesBitmap: true, bitmap: bitmap3, colors: [nil]) else
+        guard let mode3 = Mode(name:"FAST TWINKLE", index: 3, usesBitmap: true, bitmap: bitmap1, colors: [nil]) else
         {
             fatalError("unable to instantiate mode3");
         }
         
-        modes += [mode1, mode2, mode3];
+        guard let mode4 = Mode(name:"EXTREMELY LONG TEST NAME (2 Lines)", index: 4, usesBitmap: true, bitmap: bitmap2, colors: [nil]) else
+        {
+            fatalError("unable to instantiate mode4");
+        }
+        
+        modes += [mode1, mode2, mode3, mode4];
         
     }
 

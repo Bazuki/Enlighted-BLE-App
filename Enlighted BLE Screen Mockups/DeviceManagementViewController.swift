@@ -12,6 +12,7 @@ class DeviceManagementViewController: UIViewController
 {
 
     @IBOutlet weak var deviceNameLabel: UILabel!
+    @IBOutlet weak var batteryStatusImage: UIImageView!
     
     @IBOutlet weak var brightnessSlider: UISlider!
     
@@ -19,8 +20,14 @@ class DeviceManagementViewController: UIViewController
     {
         super.viewDidLoad()
         
+            // setting the device name
         deviceNameLabel.text = Device.connectedDevice?.name;
+        
+            // getting and updating the slider with the device's brightness
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
+        
+            // formatting the battery image to allow it to be tinted
+        batteryStatusImage.image = batteryStatusImage.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate)
     }
 
     override func didReceiveMemoryWarning() {

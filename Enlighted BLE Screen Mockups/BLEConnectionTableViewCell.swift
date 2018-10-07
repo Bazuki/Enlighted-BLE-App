@@ -24,6 +24,9 @@ class BLEConnectionTableViewCell: UITableViewCell
     {
         super.awakeFromNib()
         // Initialization code
+        
+            // Formatting the image to allow for recoloration
+        connectionImage.image = connectionImage.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
     }
 
     override func setSelected(_ selected: Bool, animated: Bool)

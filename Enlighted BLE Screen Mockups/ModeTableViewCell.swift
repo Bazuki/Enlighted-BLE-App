@@ -37,17 +37,17 @@ class ModeTableViewCell: UITableViewCell
             // setting colors based on selection state
         if (selected)
         {
-            backgroundColor = UIColor.white;
-            modeLabel.textColor = UIColor.black;
-            modeIndex.textColor = UIColor.black;
+            backgroundColor = UIColor(named: "SelectedModeBackground");
+            modeLabel.textColor = UIColor(named: "SelectedText");
+            modeIndex.textColor = UIColor(named: "SelectedText");
             //layer.borderWidth = 1.0;
             //layer.borderColor = UIColor.lightGray.cgColor;
         }
         else
         {
             backgroundColor = UIColor.clear;
-            modeLabel.textColor = UIColor.darkGray;
-            modeIndex.textColor = UIColor.darkGray;
+            modeLabel.textColor = UIColor(named: "NonSelectedText");
+            modeIndex.textColor = UIColor(named: "NonSelectedText");
             //layer.borderColor = UIColor.clear.cgColor;
         }
             // only show the edit button for the selected mode
@@ -66,7 +66,11 @@ class ModeTableViewCell: UITableViewCell
     
     func updateImages()
     {
-        // if we need to display a bitmap
+            // set button image render mode so that tinting takes effect
+        let originalImage = editModeButton.currentImage;
+        let tintedImage = originalImage?.withRenderingMode(UIImageRenderingMode.alwaysTemplate)
+        editModeButton.setImage(tintedImage, for: .normal)
+            // if we need to display a bitmap
         if ((mode?.usesBitmap)!)
         {
             modeBitmap.isHidden = false;
@@ -75,6 +79,7 @@ class ModeTableViewCell: UITableViewCell
             color1View.isHidden = true;
             color2View.isHidden = true;
         }
+            // if we need to display two colors
         else
         {
             modeBitmap.isHidden = true;
