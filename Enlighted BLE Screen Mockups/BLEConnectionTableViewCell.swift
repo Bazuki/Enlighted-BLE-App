@@ -39,6 +39,8 @@ class BLEConnectionTableViewCell: UITableViewCell
     @IBAction func setConnectedDevice(_ sender: UIButton)
     {
         Device.setConnectedDevice(newDevice:self.device);
+            // connect to this cell's device's peripheral, if it has one (should have one unless it's running on the simlulator without Bluetooth);
+        //BLEConnectionTableViewController.connectToDevice(self.device.peripheral!);
     }
     
 }

@@ -44,6 +44,33 @@ class DeviceManagementViewController: UIViewController
     {
         Device.connectedDevice?.brightness = Int(sender.value);
     }
+    
+    // MARK: Actions
+    
+    @IBAction func RevertToOriginalSettings(_ sender: UIButton)
+    {
+        // creating the dialog message
+        let dialogMessage = UIAlertController(title:"Confirm", message: "Are you sure you want to revert settings?  Your changes will be lost.", preferredStyle: .alert);
+        
+        // defining the confirm / revert button
+        let revert = UIAlertAction(title: "Revert", style: .default, handler: {(action) -> Void in
+            print("Reverted to default settings");
+        })
+        
+        // defining the cancel button
+        let cancel = UIAlertAction(title: "Cancel", style: .cancel) { (action) -> Void in
+            print("Cancelled");
+        }
+        
+        // add the buttons to the message
+        dialogMessage.addAction(revert);
+        dialogMessage.addAction(cancel);
+        
+        self.present(dialogMessage, animated: true, completion: nil);
+        
+    }
+    
+    
     /*
     // MARK: - Navigation
 

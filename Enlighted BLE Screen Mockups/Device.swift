@@ -7,6 +7,7 @@
 //
 
 import UIKit;
+import CoreBluetooth;
 
 class Device
 {
@@ -14,10 +15,13 @@ class Device
     
     var name: String;
     var RSSI: Int;
+    var batteryPercentage: Int = 100;
     var currentModeIndex: Int;
     var mode = Mode();
     
     var brightness: Int;
+    
+    var peripheral: CBPeripheral!;
     
     
     // MARK: Singleton
@@ -41,6 +45,17 @@ class Device
         brightness = 50;
     }
     
+    init(name:String, RSSI: Int, peripheral: CBPeripheral)
+    {
+        self.name = name;
+        self.RSSI = RSSI;
+        self.peripheral = peripheral;
+        
+        // will also need to be read and set
+        currentModeIndex = 1;
+        brightness = 50;
+    }
+    
     // for setting an empty reference for the current device
     init?()
     {
@@ -52,6 +67,11 @@ class Device
     func setBrightness(value:Int)
     {
         brightness = value;
+    }
+    
+    func setBatteryPercentage(percentage: Int)
+    {
+        batteryPercentage = percentage;
     }
     
     public static func setConnectedDevice(newDevice: Device)

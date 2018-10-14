@@ -7,22 +7,299 @@
 //
 
 import UIKit
+import CoreBluetooth
 
-class BLEConnectionTableViewController: UITableViewController
+var txCharacteristic : CBCharacteristic?;
+var rxCharacteristic : CBCharacteristic?;
+var batteryCharacteristic : CBCharacteristic?;
+
+var blePeripheral: CBPeripheral?;
+    // temporary place to display read Characteristic strings, before parsing
+var characteristicASCIIValue = NSString();
+
+
+class BLEConnectionTableViewController: UITableViewController, CBCentralManagerDelegate, CBPeripheralDelegate
 {
-
-    // MARK: Properties
+        // MARK: Properties
     
-    // The devices that show up on the connection screen.
+        // The devices that show up on the connection screen.
     var visibleDevices = [Device]();
     
-    // The device we're connected to, and are editing.
-    //let connectedDevicvarDevice;
+        // The bluetooth CentralManager object controlling the connection to peripherals
+    var centralManager : CBCentralManager!;
+        // A timer object to help in searching
+    var timer = Timer();
+    
+        // list of peripherals, and their associated RSSI values
+    var peripherals: [CBPeripheral] = [];
+    var RSSIs = [NSNumber]();
+    var data = NSMutableData();
+    
+    
+    @IBOutlet weak var deviceTableView: UITableView!
+    
+    
+        // MARK: Bluetooth
+    
+    func centralManagerDidUpdateState(_ central: CBCentralManager)
+    {
+        if central.state == CBManagerState.poweredOn
+        {
+            print("Bluetooth Enabled")
+            startScan();
+        }
+        else
+        {
+            print("Bluetooth disabled, make sure your device is turned on");
+            let alertVC = UIAlertController(title: "Bluetooth is not enabled", message: "Make sure that your bluetooth is turned on", preferredStyle: UIAlertControllerStyle.alert);
+            let action = UIAlertAction(title: "ok", style: UIAlertActionStyle.default, handler: { (action: UIAlertAction) -> Void in
+                self.dismiss(animated: true, completion: nil);
+            })
+            alertVC.addAction(action);
+            self.present(alertVC, animated: true, completion: nil);
+        }
+    }
+    
+    
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber)
+    {
+        self.peripherals.append(peripheral);
+        self.RSSIs.append(RSSI);
+        
+            // adding a new device to the list, to be displayed
+        self.visibleDevices.append(Device(name: peripheral.name!, RSSI: RSSI.intValue, peripheral: peripheral))
+        
+        peripheral.delegate = self;
+            // discovering Bluefruit GATT services
+        peripheral.discoverServices([BLEService_UUID]);
+            // discovering BLE services related to battery
+        peripheral.discoverServices([BLEBatteryService_UUID]);
+            // reloading table view data
+        deviceTableView.reloadData();
+        if blePeripheral == nil
+        {
+            print("We found a new peripheral device with services");
+            print("Peripheral name: \(peripheral.name ?? "no name")");
+            print("*****************************");
+            print("Advertisement data: \(advertisementData)");
+            blePeripheral = peripheral;
+        }
+    }
+    
+        // starting to scan for peripherals that have Bluefruit's unique GATT indicator
+    func startScan()
+    {
+        print("Now scanning...");
+        self.timer.invalidate();
+        centralManager?.scanForPeripherals(withServices: [BLEService_UUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey:false])
+        Timer.scheduledTimer(timeInterval: 17, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false);
+    }
+    
+        // cancelling the scan for peripherals
+    @objc func cancelScan()
+    {
+        self.centralManager?.stopScan()
+        print("Scan Stopped")
+        print("Number of Peripherals Found: \(peripherals.count)")
+    }
+    
+        // console updates for notification state for a given service, taken from Bluefruit's "simple chat app".
+    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?)
+    {
+        print("*******************************************************")
+        
+        if (error != nil)
+        {
+            print("Error changing notification state:\(String(describing: error?.localizedDescription))")
+            
+        } else
+        {
+            print("Characteristic's value subscribed")
+        }
+        
+        if (characteristic.isNotifying)
+        {
+            print ("Subscribed. Notification has begun for: \(characteristic.uuid)")
+        }
+    }
+    
+        // called automatically after characteristics we've subscribed to are updated
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?)
+    {
+            // parsing/dealing with the info read from the firmware
+        if characteristic == rxCharacteristic
+        {
+                    // temporary code from the chat app, will be changed later to parse read info
+            if let ASCIIstring = NSString(data: characteristic.value!, encoding: String.Encoding.utf8.rawValue)
+            {
+                characteristicASCIIValue = ASCIIstring
+                print("Value Recieved: \((characteristicASCIIValue as String))")
+                NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
+            }
+        }
+        
+            // updating battery information on device
+        if characteristic == batteryCharacteristic
+        {
+                // credit to https://useyourloaf.com/blog/swift-integer-quick-guide/for help with encoding int8
+            let value = characteristic.value;
+            let valueUInt8 = [UInt8](value!);
+            let batteryLevel: Int32 = Int32(bitPattern: UInt32(valueUInt8[0]));
+            Device.connectedDevice?.setBatteryPercentage(percentage: Int(batteryLevel));
+        }
+    }
+    
+        // writing to txCharacteristic
+    func writeValue(data: String)
+    {
+        let valueString = (data as NSString).data(using: String.Encoding.utf8.rawValue);
+            // if the blePeripheral variable is set
+        if let blePeripheral = blePeripheral
+        {
+            // and the txCharacteristic variable is set
+            if let txCharacteristic = txCharacteristic
+            {
+                blePeripheral.writeValue(valueString!, for: txCharacteristic, type: CBCharacteristicWriteType.withResponse);
+            }
+        }
+    }
+    
+        // listening for a response after we write to txCharacteristic
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        guard error == nil else {
+            print("Error discovering services: error")
+            return
+        }
+        print("Message sent")
+    }
+    
+        // connecting to the current blePeripheral
+    func connectToDevice()
+    {
+        centralManager.connect(blePeripheral!, options: nil);
+    }
+    
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral)
+    {
+            // print info about the connected peripheral
+        print ("*******************************************************");
+        print("Connection complete");
+        print("Peripheral info: \(peripheral) ");
+        
+            // stop scanning
+        centralManager?.stopScan();
+        print("Scan stopped");
+        
+            // erase data we might have
+        data.length = 0;
+        
+            // Discovery callback
+        peripheral.delegate = self;
+            // Only look for services that match the transmit UUID (and the battery service UUID)
+        peripheral.discoverServices([BLEService_UUID]);
+        peripheral.discoverServices([BLEBatteryService_UUID]);
+    }
+    
+        // handling the discovery of services of a peripheral
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?)
+    {
+        print("*******************************************************");
+        
+        if ((error) != nil)
+        {
+            print("Error discovering services: \(error!.localizedDescription)");
+            return;
+        }
+        
+        guard let services = peripheral.services else
+        {
+            return;
+        }
+        
+            // We need to get all characteristics
+        for service in services
+        {
+            peripheral.discoverCharacteristics(nil, for: service)
+        }
+        
+        print("Discovered services: \(services)");
+    }
+    
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?)
+    {
+        print("*******************************************************");
+        
+        if ((error) != nil)
+        {
+            print("Error discovering services: \(error!.localizedDescription)");
+            return;
+        }
+        
+        guard let characteristics = service.characteristics else
+        {
+            return;
+        }
+        
+        print("Found \(characteristics.count) characteristics!");
+        
+        for characteristic in characteristics
+        {
+            
+                // looks for the transmission characteristic
+            if characteristic.uuid.isEqual(BLE_Characteristic_uuid_Rx)
+            {
+                rxCharacteristic = characteristic;
+                
+                    // once found, subscribe to this particular characteristic
+                peripheral.setNotifyValue(true, for: rxCharacteristic!)
+                
+                peripheral.readValue(for: characteristic);
+                print("Rx Characteristic: \(characteristic.uuid)");
+            }
+            
+                // looks for the read characteristic
+            if characteristic.uuid.isEqual(BLE_Characteristic_uuid_Tx)
+            {
+                txCharacteristic = characteristic;
+                print("Tx Characteristic: \(characteristic.uuid)");
+            }
+            
+                // looks for the battery level characteristic
+            if characteristic.uuid.isEqual(BLE_Characteristic_uuid_batteryValue)
+            {
+                batteryCharacteristic = characteristic;
+                
+                    // once found, subscribe to this characteristic to update the battery level
+                peripheral.setNotifyValue(true, for: batteryCharacteristic!);
+                
+                peripheral.readValue(for: characteristic);
+                print("Battery characteristic: \(characteristic.uuid)");
+            }
+            
+            peripheral.discoverDescriptors(for: characteristic);
+        }
+    }
+    
+    func disconnectFromDevice()
+    {
+        if blePeripheral != nil
+        {
+            centralManager?.cancelPeripheralConnection(blePeripheral!);
+        }
+    }
+    
+    
+    
+
+        // MARK: - UIViewController Methods
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        loadSampleDevices();
+        
+        //loadSampleDevices();
+        
+        centralManager = CBCentralManager(delegate:self, queue: nil);
         
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
@@ -62,7 +339,7 @@ class BLEConnectionTableViewController: UITableViewController
         }
 
         // Fetches the appropriate device for that row
-        var device = visibleDevices[indexPath.row];
+        let device = visibleDevices[indexPath.row];
         
         cell.deviceNameLabel.text = device.name;
         cell.RSSIValue.text = String(device.RSSI);
@@ -122,6 +399,7 @@ class BLEConnectionTableViewController: UITableViewController
     
     // MARK: Private Methods
     
+        // making fake devices to showcase the UI
     private func loadSampleDevices()
     {
         
@@ -134,8 +412,4 @@ class BLEConnectionTableViewController: UITableViewController
         visibleDevices += [device1, device2, device3, device4];
         
     }
-    
-    
-    
-
 }

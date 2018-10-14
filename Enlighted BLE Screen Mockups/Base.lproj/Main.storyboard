@@ -19,7 +19,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" red="0.26051741839999998" green="0.2605243921" blue="0.260520637" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                        <color key="sectionIndexBackgroundColor" red="0.26051741839999998" green="0.2605243921" blue="0.260520637" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="sectionIndexBackgroundColor" name="Background"/>
                         <prototypes>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="BLEConnectionTableViewCell" rowHeight="90" id="qYO-Jp-PkV" customClass="BLEConnectionTableViewCell" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target">
                                 <rect key="frame" x="0.0" y="28" width="375" height="90"/>
@@ -63,21 +63,28 @@
                                             <color key="textColor" red="0.57414853570000002" green="0.57416242360000003" blue="0.57415497299999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                             <nil key="highlightedColor"/>
                                         </label>
-                                        <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ihH-VE-oBM">
+                                        <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ihH-VE-oBM">
                                             <rect key="frame" x="300" y="28" width="65" height="33"/>
                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                             <accessibility key="accessibilityConfiguration" label="Connect"/>
-                                            <fontDescription key="fontDescription" name=".AppleSystemUIFont" family=".AppleSystemUIFont" pointSize="17"/>
-                                            <state key="normal" title="Connect"/>
+                                            <state key="normal">
+                                                <attributedString key="attributedTitle">
+                                                    <fragment content="Connect">
+                                                        <attributes>
+                                                            <font key="NSFont" size="17" name=".AppleSystemUIFont"/>
+                                                        </attributes>
+                                                    </fragment>
+                                                </attributedString>
+                                            </state>
                                             <connections>
                                                 <action selector="setConnectedDevice:" destination="qYO-Jp-PkV" eventType="touchUpInside" id="8nt-UG-8an"/>
                                                 <segue destination="4dX-mX-HxP" kind="show" id="XkP-0j-pee"/>
                                             </connections>
                                         </button>
                                     </subviews>
-                                    <color key="backgroundColor" red="0.26051741839999998" green="0.2605243921" blue="0.260520637" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <color key="backgroundColor" name="Background"/>
                                 </tableViewCellContentView>
-                                <color key="backgroundColor" red="0.26051741839999998" green="0.2605243921" blue="0.260520637" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="backgroundColor" name="Background"/>
                                 <connections>
                                     <outlet property="RSSILabel" destination="aR1-rG-fom" id="3gu-WJ-TWt"/>
                                     <outlet property="RSSIValue" destination="hT6-KB-0yw" id="QS8-D2-whc"/>
@@ -92,6 +99,9 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="Connect BLE Device" id="QQl-Oh-sHd"/>
+                    <connections>
+                        <outlet property="deviceTableView" destination="19O-2k-KZo" id="mb4-29-lOR"/>
+                    </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="J9z-56-QFR" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -159,6 +169,9 @@
                                         </fragment>
                                     </attributedString>
                                 </state>
+                                <connections>
+                                    <action selector="RevertToOriginalSettings:" destination="R0A-of-WvX" eventType="touchUpInside" id="wZh-nt-cNe"/>
+                                </connections>
                             </button>
                         </subviews>
                         <color key="backgroundColor" red="0.26051741839999998" green="0.2605243921" blue="0.260520637" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
@@ -182,7 +195,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" red="0.26051741839999998" green="0.2605243921" blue="0.260520637" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                        <color key="sectionIndexBackgroundColor" red="0.26051741839999998" green="0.2605243921" blue="0.260520637" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="sectionIndexBackgroundColor" name="Background"/>
                         <prototypes>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="ModeTableViewCell" rowHeight="75" id="huJ-ER-jN3" customClass="ModeTableViewCell" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target">
                                 <rect key="frame" x="0.0" y="28" width="375" height="75"/>
@@ -232,7 +245,7 @@
                                     </subviews>
                                     <gestureRecognizers/>
                                 </tableViewCellContentView>
-                                <color key="backgroundColor" red="0.57414853570000002" green="0.57416242360000003" blue="0.57415497299999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="backgroundColor" name="Background"/>
                                 <gestureRecognizers/>
                                 <connections>
                                     <outlet property="color1View" destination="65n-4k-neO" id="nKN-fY-uRB"/>
@@ -306,9 +319,9 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                             </imageView>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="dAW-iB-6AU">
-                                <rect key="frame" x="167" y="158" width="42" height="33"/>
+                                <rect key="frame" x="166" y="158" width="44" height="34"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="18"/>
                                 <state key="normal" title="Undo"/>
                             </button>
                             <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" image="ColorPicker" translatesAutoresizingMaskIntoConstraints="NO" id="Rfu-zK-vie">
@@ -320,21 +333,21 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                             </slider>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="x6E-nF-aKy">
-                                <rect key="frame" x="163" y="203" width="50" height="33"/>
+                                <rect key="frame" x="162" y="203" width="53" height="34"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="18"/>
                                 <state key="normal" title="Revert"/>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ZWF-BK-XBP">
-                                <rect key="frame" x="275" y="159" width="42" height="33"/>
+                                <rect key="frame" x="274" y="159" width="44" height="34"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="18"/>
                                 <state key="normal" title="Undo"/>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mIl-kL-Z5a">
-                                <rect key="frame" x="271" y="204" width="50" height="33"/>
+                                <rect key="frame" x="270" y="204" width="53" height="34"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="18"/>
                                 <state key="normal" title="Revert"/>
                             </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Color 1" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1yd-zp-1cc">
@@ -489,6 +502,9 @@
         <image name="Connection" width="48" height="48"/>
         <image name="EditIcon" width="86" height="146"/>
         <image name="SettingsIcon" width="50" height="50"/>
+        <namedColor name="Background">
+            <color red="0.210999995470047" green="0.210999995470047" blue="0.210999995470047" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
         <namedColor name="NonSelectedText">
             <color red="0.57400000095367432" green="0.57400000095367432" blue="0.57400000095367432" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
