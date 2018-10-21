@@ -6,7 +6,8 @@
 //  Copyright © 2018 Bryce Suzuki. All rights reserved.
 //
 
-import UIKit
+import UIKit;
+//import CoreBluetooth;
 
 class ModeTableViewCell: UITableViewCell
 {
@@ -34,6 +35,9 @@ class ModeTableViewCell: UITableViewCell
     {
         super.setSelected(selected, animated: animated)
 
+        
+        
+        
             // setting colors based on selection state
         if (selected)
         {

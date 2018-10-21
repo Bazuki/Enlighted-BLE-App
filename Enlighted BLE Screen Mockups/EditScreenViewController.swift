@@ -70,6 +70,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             bitmaps += [bitmap1, bitmap2, bitmap3, bitmap4];
         }
         
+        //TODO:
+            //allow for the selection of bitmaps
+        bitmapPicker.allowsSelection = true;
+        
         
             // Set the name
         modeLabel.text = /* String((Device.connectedDevice?.mode?.index)!) + "   " + */ (Device.connectedDevice?.mode?.name)!;

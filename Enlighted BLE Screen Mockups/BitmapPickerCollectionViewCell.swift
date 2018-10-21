@@ -13,6 +13,20 @@ class BitmapPickerCollectionViewCell: UICollectionViewCell
     // MARK: Properties
     @IBOutlet weak var bitmapImage: UIImageView!
     
-    
+        // credit to https://hackernoon.com/uicollectionviewcell-selection-made-easy-41dae148379d
+    override var isSelected: Bool
+    {
+        didSet
+        {
+            if self.isSelected
+            {
+                backgroundColor = UIColor(named: "SelectedModeBackground");
+            }
+            else
+            {
+                backgroundColor = UIColor.clear;
+            }
+        }
+    }
     
 }

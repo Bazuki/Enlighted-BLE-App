@@ -6,36 +6,44 @@
 //  Copyright © 2018 Bryce Suzuki. All rights reserved.
 //
 
-import UIKit
+import UIKit;
+import CoreBluetooth;
 
-class ModeTableViewController: UITableViewController
+class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegate
 {
+        // MARK: - Properties
     
-    // MARK: Properties
-    
-    // sample list of modes
+        // sample list of modes, since they can't be retrieved from the hardware right now
     var modes = [Mode]();
     
-    // whether or not the currently selected mode has to be initialized
+        // whether or not the currently selected mode has to be initialized
     var initialModeSelected = false;
+    
+        // the peripheral manager
+    var peripheralManager: CBPeripheralManager?;
     
     override func viewDidLoad()
     {
         super.viewDidLoad();
 
-        // Load the sample modes.
+            // Load the sample modes.
         loadSampleModes();
         
-        // setting this as the delegate of the viewController
+            // setting this as the delegate of the table view
         tableView.delegate = self;
         
-        // Uncomment the following line to preserve selection between presentations
+            // setting this as the delegate of the peripheral manager
+        peripheralManager = CBPeripheralManager(delegate: self, queue: nil);
+        
+            // Uncomment the following line to preserve selection between presentations
         self.clearsSelectionOnViewWillAppear = false
     }
 
     override func viewWillAppear(_ animated: Bool)
     {
         super.viewDidAppear(animated);
+        
+            // selects the mode currently selected on the device
         let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
         self.tableView.selectRow(at: indexPath, animated: animated, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
     }
@@ -45,7 +53,7 @@ class ModeTableViewController: UITableViewController
         // Dispose of any resources that can be recreated.
     }
 
-    // MARK: - Table view data source
+        // MARK: - Table view data source
 
     override func numberOfSections(in tableView: UITableView) -> Int
     {
@@ -84,7 +92,19 @@ class ModeTableViewController: UITableViewController
         return cell
     }
     
-    // MARK: UITableDelegate Methods
+    
+        // MARK: - CBPeripheralManagerDelegate methods
+    
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager)
+    {
+        if peripheral.state == .poweredOn {
+            return
+        }
+        print("Peripheral manager is running")
+    }
+    
+        // MARK: - UITableDelegate Methods
+    
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
     {
         // When selecting a mode,
@@ -92,15 +112,27 @@ class ModeTableViewController: UITableViewController
         // set the device's mode to that mode and update the index.
         Device.connectedDevice?.mode = modes[indexPath.row];
         Device.connectedDevice?.currentModeIndex = (Device.connectedDevice?.mode?.index)!;
+        updateModeOnHardware();
     }
     
-    // #Warning: Doesn't select initial mode yet
-    // doesn't work right now:
-    func tableView(_tableView: UITableView, willDisplayCell: ModeTableViewCell, forRowAtIndexPath: IndexPath)
+        // MARK: - BLE TX Methods
+    
+    func updateModeOnHardware()
     {
-        // if the page is loading for the first time, select the first mode by default.
-        willDisplayCell.setSelected(true, animated: true);
+        let valueString = "!B\(Device.connectedDevice!.currentModeIndex)1";
+        let valueNSString = (valueString as NSString).data(using:String.Encoding.utf8.rawValue);
+        //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
+        //{
+        Device.connectedDevice!.peripheral.writeValue(valueNSString!, for: Device.connectedDevice!.txCharacteristic!, type:CBCharacteristicWriteType.withoutResponse)
+        //}
     }
+    
+//    // old "initial selection" code
+//    func tableView(_tableView: UITableView, willDisplayCell: ModeTableViewCell, forRowAtIndexPath: IndexPath)
+//    {
+//        // if the page is loading for the first time, select the first mode by default.
+//        willDisplayCell.setSelected(true, animated: true);
+//    }
 
     /*
     // Override to support conditional editing of the table view.

@@ -12,7 +12,9 @@ class DeviceManagementViewController: UIViewController
 {
 
     @IBOutlet weak var deviceNameLabel: UILabel!
+    
     @IBOutlet weak var batteryStatusImage: UIImageView!
+    @IBOutlet weak var batteryPercentageLabel: UILabel!
     
     @IBOutlet weak var brightnessSlider: UISlider!
     
@@ -28,6 +30,9 @@ class DeviceManagementViewController: UIViewController
         
             // formatting the battery image to allow it to be tinted
         batteryStatusImage.image = batteryStatusImage.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate)
+        
+            // updating the battery percentage to display the percentage (temporarily).  200 means the battery value isn't readable
+        //batteryPercentageLabel.text = "\(Device.connectedDevice?.batteryPercentage ?? 200)%";
     }
 
     override func didReceiveMemoryWarning() {

@@ -22,7 +22,10 @@ class Device
     var brightness: Int;
     
     var peripheral: CBPeripheral!;
+    var txCharacteristic: CBCharacteristic?;
+    var rxCharacteristic: CBCharacteristic?;
     
+    var isConnected: Bool;
     
     // MARK: Singleton
     
@@ -43,22 +46,32 @@ class Device
         
         // initial value;
         brightness = 50;
+        
+            // mock declaration without a peripheral, so not connected
+        isConnected = false;
+        
     }
     
-    init(name:String, RSSI: Int, peripheral: CBPeripheral)
+    init(name: String, RSSI: Int, peripheral: CBPeripheral)
     {
         self.name = name;
         self.RSSI = RSSI;
         self.peripheral = peripheral;
         
-        // will also need to be read and set
+        
+        
+        // will also need to be read and set with the new protocol
         currentModeIndex = 1;
         brightness = 50;
+        
+        isConnected = true;
+        
     }
     
     // for setting an empty reference for the current device
     init?()
     {
+        isConnected = false;
         return nil;
     }
     
@@ -74,8 +87,37 @@ class Device
         batteryPercentage = percentage;
     }
     
+    func setTXCharacteristic(_ txCharacteristic: CBCharacteristic)
+    {
+        self.txCharacteristic = txCharacteristic;
+    }
+    
+    func setRXCharacteristic(_ rxCharacteristic: CBCharacteristic)
+    {
+        self.rxCharacteristic = rxCharacteristic;
+    }
+    
     public static func setConnectedDevice(newDevice: Device)
     {
         connectedDevice = newDevice;
+    }
+}
+
+
+
+
+// MARK: - Data + CRC
+extension Data {
+    mutating func appendCrc() {
+        var dataBytes = [UInt8](repeating: 0, count: count)
+        copyBytes(to: &dataBytes, count: count)
+        
+        var crc: UInt8 = 0
+        for i in dataBytes {    //add all bytes
+            crc = crc &+ i
+        }
+        crc = ~crc  //invert
+        
+        append(&crc, count: 1)
     }
 }
