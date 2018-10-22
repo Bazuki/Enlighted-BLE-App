@@ -14,14 +14,14 @@
         <!--Connect BLE Device-->
         <scene sceneID="Gk5-Lv-twr">
             <objects>
-                <tableViewController id="LHe-aM-hOS" customClass="BLEConnectionTableViewController" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target" sceneMemberID="viewController">
+                <tableViewController id="LHe-aM-hOS" customClass="BLEConnectionTableViewController" customModule="Enlighted_BLE_App" customModuleProvider="target" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="90" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" id="19O-2k-KZo">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" name="Background"/>
                         <color key="sectionIndexBackgroundColor" name="Background"/>
                         <prototypes>
-                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="BLEConnectionTableViewCell" rowHeight="75" id="qYO-Jp-PkV" customClass="BLEConnectionTableViewCell" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target">
+                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="BLEConnectionTableViewCell" rowHeight="75" id="qYO-Jp-PkV" customClass="BLEConnectionTableViewCell" customModule="Enlighted_BLE_App" customModuleProvider="target">
                                 <rect key="frame" x="0.0" y="28" width="375" height="75"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="qYO-Jp-PkV" id="A1h-WJ-tMg">
@@ -63,20 +63,11 @@
                                             <color key="textColor" red="0.57414853570000002" green="0.57416242360000003" blue="0.57415497299999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                             <nil key="highlightedColor"/>
                                         </label>
-                                        <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ihH-VE-oBM">
-                                            <rect key="frame" x="318" y="21" width="30" height="33"/>
+                                        <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ihH-VE-oBM">
+                                            <rect key="frame" x="346" y="26" width="13" height="23"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <accessibility key="accessibilityConfiguration" label="Connect"/>
-                                            <state key="normal">
-                                                <attributedString key="attributedTitle">
-                                                    <fragment content="Edit">
-                                                        <attributes>
-                                                            <font key="NSFont" size="17" name=".AppleSystemUIFont"/>
-                                                            <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
-                                                        </attributes>
-                                                    </fragment>
-                                                </attributedString>
-                                            </state>
+                                            <state key="normal" title="" image="EditIcon"/>
                                             <connections>
                                                 <action selector="setConnectedDevice:" destination="qYO-Jp-PkV" eventType="touchUpInside" id="8nt-UG-8an"/>
                                                 <segue destination="4dX-mX-HxP" kind="show" id="XkP-0j-pee"/>
@@ -112,7 +103,7 @@
         <!--Device Settings-->
         <scene sceneID="faW-OG-K33">
             <objects>
-                <viewController title="Device Settings" id="R0A-of-WvX" customClass="DeviceManagementViewController" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController title="Device Settings" id="R0A-of-WvX" customClass="DeviceManagementViewController" customModule="Enlighted_BLE_App" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="IyZ-5q-bbz">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -199,14 +190,14 @@
         <!--Choose Mode-->
         <scene sceneID="YaN-Af-CYf">
             <objects>
-                <tableViewController id="4dX-mX-HxP" customClass="ModeTableViewController" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target" sceneMemberID="viewController">
+                <tableViewController id="4dX-mX-HxP" customClass="ModeTableViewController" customModule="Enlighted_BLE_App" customModuleProvider="target" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="75" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" id="VfR-NM-1Bh">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" name="Background"/>
                         <color key="sectionIndexBackgroundColor" name="Background"/>
                         <prototypes>
-                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="ModeTableViewCell" rowHeight="75" id="huJ-ER-jN3" customClass="ModeTableViewCell" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target">
+                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="ModeTableViewCell" rowHeight="75" id="huJ-ER-jN3" customClass="ModeTableViewCell" customModule="Enlighted_BLE_App" customModuleProvider="target">
                                 <rect key="frame" x="0.0" y="28" width="375" height="75"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="huJ-ER-jN3" id="1Tz-FN-Uen">
@@ -224,13 +215,13 @@
                                             <rect key="frame" x="7" y="5" width="65" height="65"/>
                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         </imageView>
-                                        <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1vW-g7-2dR" userLabel="Color2" customClass="ColorPreview" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target">
+                                        <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1vW-g7-2dR" userLabel="Color2" customClass="ColorPreview" customModule="Enlighted_BLE_App" customModuleProvider="target">
                                             <rect key="frame" x="27" y="25" width="45" height="45"/>
                                             <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
                                             <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                             <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         </view>
-                                        <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="65n-4k-neO" userLabel="Color1" customClass="ColorPreview" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target">
+                                        <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="65n-4k-neO" userLabel="Color1" customClass="ColorPreview" customModule="Enlighted_BLE_App" customModuleProvider="target">
                                             <rect key="frame" x="7" y="5" width="45" height="45"/>
                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -293,7 +284,7 @@
         <!--Edit Mode-->
         <scene sceneID="cbh-fq-4YL">
             <objects>
-                <viewController id="NRi-c0-1SY" customClass="EditScreenViewController" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="NRi-c0-1SY" customClass="EditScreenViewController" customModule="Enlighted_BLE_App" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Buc-ix-6OJ">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -305,7 +296,7 @@
                                 <color key="textColor" name="Title"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qwd-8M-oS7" customClass="ColorPreview" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target">
+                            <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qwd-8M-oS7" customClass="ColorPreview" customModule="Enlighted_BLE_App" customModuleProvider="target">
                                 <rect key="frame" x="30" y="147" width="100" height="100"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -314,7 +305,7 @@
                                     <outletCollection property="gestureRecognizers" destination="qt2-zC-3qs" appends="YES" id="onG-f1-pmi"/>
                                 </connections>
                             </view>
-                            <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4WZ-Wh-Svo" customClass="ColorPreview" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target">
+                            <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4WZ-Wh-Svo" customClass="ColorPreview" customModule="Enlighted_BLE_App" customModuleProvider="target">
                                 <rect key="frame" x="246" y="147" width="100" height="100"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -405,7 +396,7 @@
                                     <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
                                 </collectionViewFlowLayout>
                                 <cells>
-                                    <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="BitmapPickerCollectionViewCell" id="mWm-Ur-ydN" customClass="BitmapPickerCollectionViewCell" customModule="Enlighted_BLE_Screen_Mockups" customModuleProvider="target">
+                                    <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="BitmapPickerCollectionViewCell" id="mWm-Ur-ydN" customClass="BitmapPickerCollectionViewCell" customModule="Enlighted_BLE_App" customModuleProvider="target">
                                         <rect key="frame" x="0.0" y="0.0" width="60" height="60"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">

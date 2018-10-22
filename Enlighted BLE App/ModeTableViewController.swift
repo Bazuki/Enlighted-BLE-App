@@ -27,13 +27,14 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         super.viewDidLoad();
 
             // Load the sample modes.
-        loadSampleModes();
+        loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
         
             // setting this as the delegate of the table view
         tableView.delegate = self;
         
             // setting this as the delegate of the peripheral manager
         peripheralManager = CBPeripheralManager(delegate: self, queue: nil);
+        //Device.connectedDevice!.peripheral.delegate = self as! CBPeripheralDelegate;
         
             // Uncomment the following line to preserve selection between presentations
         self.clearsSelectionOnViewWillAppear = false
@@ -43,7 +44,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidAppear(animated);
         
-            // selects the mode currently selected on the device
+            // gets and selects the mode currently selected on the device
+        getCurrentMode();
+        
         let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
         self.tableView.selectRow(at: indexPath, animated: animated, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
     }
@@ -117,14 +120,34 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
         // MARK: - BLE TX Methods
     
+        // TODO:
     func updateModeOnHardware()
     {
-        let valueString = "!B\(Device.connectedDevice!.currentModeIndex)1";
-        let valueNSString = (valueString as NSString).data(using:String.Encoding.utf8.rawValue);
+            // converting to an unsigned byte integer
+        let modeIndexUInt: UInt8 = UInt8(bitPattern: Int8(Device.connectedDevice!.currentModeIndex));
+        
+        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_MODE;// + "\(modeIndexUInt)";
+        //print(valueString);
+        let stringArray: [UInt8] = Array(valueString.utf8);
+        let valueArray = stringArray + [modeIndexUInt]
+            // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
+        let valueData = NSData(bytes: valueArray, length: 4)
+        
+        //print("\(String(describing: valueNSString))");
+        //let valueNSData = valueNSString! + modeIndexUInt;
         //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
         //{
-        Device.connectedDevice!.peripheral.writeValue(valueNSString!, for: Device.connectedDevice!.txCharacteristic!, type:CBCharacteristicWriteType.withoutResponse)
+        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+        
+        //Device.connectedDevice!.peripheral.writeValue(valueNSString!, for: Device.connectedDevice!.txCharacteristic!, type:CBCharacteristicWriteType.withoutResponse)
         //}
+    }
+    
+    func getCurrentMode()
+    {
+        let inputString = EnlightedBLEProtocol.ENL_BLE_GET_LIMITS;
+        let inputNSString = (inputString as NSString).data(using: String.Encoding.utf8.rawValue);
+        Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
     }
     
 //    // old "initial selection" code
@@ -173,17 +196,20 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     // MARK: - Navigation
 
         // credit to https://stackoverflow.com/questions/28471164/how-to-set-back-button-text-in-swift
+    
+    // TODO: before going to connection screen, disconnect from current peripheral
 //    override func prepare(for segue: UIStoryboardSegue, sender: Any?)
 //    {
-//        let backItem
-//        // Get the new view controller using segue.destinationViewController.
-//        // Pass the selected object to the new view controller.
+//        if (segue.identifier == "Connect BLE Device")
+//        {
+//            BLEConnectionTableViewController.disconnectFromDevice(BLEConnectionTableViewController);
+//        }
 //    }
-    
+//
     
     // MARK: Private Methods
     
-    private func loadSampleModes()
+    private func loadSampleModes(_ numberOfModes: Int)
     {
         // colors for certain modes
         let colorArray1 = [UIColor.green, UIColor.yellow];
@@ -191,27 +217,57 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         let bitmap1 = UIImage(named: "Bitmap1");
         let bitmap2 = UIImage(named: "Bitmap2");
         
-        guard let mode1 = Mode(name:"SLOW TWINKLE", index: 1, usesBitmap: false, bitmap: nil, colors: colorArray1) else
+        if (numberOfModes >= 1)
         {
-            fatalError("unable to instantiate mode1");
+            guard let mode1 = Mode(name:"SLOW TWINKLE", index: 1, usesBitmap: false, bitmap: nil, colors: colorArray1) else
+            {
+                fatalError("unable to instantiate mode1");
+            }
+            modes += [mode1];
         }
         
-        guard let mode2 = Mode(name:"MEDIUM TWINKLE", index: 2, usesBitmap: false, bitmap: nil, colors: colorArray2) else
+        if (numberOfModes >= 2)
         {
-            fatalError("unable to instantiate mode2");
+            guard let mode2 = Mode(name:"MEDIUM TWINKLE", index: 2, usesBitmap: false, bitmap: nil, colors: colorArray2) else
+            {
+                fatalError("unable to instantiate mode2");
+            }
+            modes += [mode2];
         }
         
-        guard let mode3 = Mode(name:"FAST TWINKLE", index: 3, usesBitmap: true, bitmap: bitmap1, colors: [nil]) else
+        if (numberOfModes >= 3)
         {
-            fatalError("unable to instantiate mode3");
+            guard let mode3 = Mode(name:"FAST TWINKLE", index: 3, usesBitmap: true, bitmap: bitmap1, colors: [nil]) else
+            {
+                fatalError("unable to instantiate mode3");
+            }
+            modes += [mode3];
         }
         
-        guard let mode4 = Mode(name:"EXTREMELY LONG TEST NAME (2 Lines)", index: 4, usesBitmap: true, bitmap: bitmap2, colors: [nil]) else
+        
+        if (numberOfModes >= 4)
         {
-            fatalError("unable to instantiate mode4");
+            guard let mode4 = Mode(name:"EXTREMELY LONG TEST NAME (2 Lines)", index: 4, usesBitmap: true, bitmap: bitmap2, colors: [nil]) else
+            {
+                fatalError("unable to instantiate mode4");
+            }
+            modes += [mode4];
         }
         
-        modes += [mode1, mode2, mode3, mode4];
+        if (numberOfModes > 4)
+        {
+            for index in 5...numberOfModes
+            {
+                let colorArray = [UIColor.black, UIColor.white];
+                guard let mode = Mode(name: "mode\(index)", index: index, usesBitmap: false, bitmap: nil, colors: colorArray) else
+                {
+                    fatalError("unable to instantiate mode\(index)");
+                }
+                modes += [mode];
+            }
+        }
+        
+        //4modes += [mode1, mode2, mode3, mode4];
         
     }
 

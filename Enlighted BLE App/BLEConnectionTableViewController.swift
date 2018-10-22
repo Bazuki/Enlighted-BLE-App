@@ -15,7 +15,7 @@ var batteryCharacteristic : CBCharacteristic?;
 
 var blePeripheral: CBPeripheral?;
     // temporary place to display read Characteristic strings, before parsing
-var characteristicASCIIValue = NSString();
+var rxCharacteristicValue = String();//NSData();
 
 
 class BLEConnectionTableViewController: UITableViewController, CBCentralManagerDelegate, CBPeripheralDelegate
@@ -101,12 +101,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         self.centralManager?.stopScan()
         print("Scan Stopped")
         print("Number of Peripherals Found: \(peripherals.count)")
-        if (!Device.connectedDevice!.isConnected)
-        {
-                // if the device hasn't connected, keep scanning
-            //startScan();
-
-        }
+//        if (!Device.connectedDevice!.isConnected)
+//        {
+//                // if the device hasn't connected, keep scanning
+//            //startScan();
+//
+//        }
         
     }
     
@@ -137,23 +137,36 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         if characteristic == rxCharacteristic
         {
                     // temporary code from the chat app, will be changed later to parse read info
-//            if let ASCIIstring = NSString(data: characteristic.value!, encoding: String.Encoding.utf8.rawValue)
-//            {
-//                characteristicASCIIValue = ASCIIstring
-//                print("Value Recieved: \((characteristicASCIIValue as String))")
-//                NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
-//            }
+            let rxValue = [UInt8](characteristic.value!);
+            
+            
+            
+            let rxString = String(bytes: rxValue, encoding: .utf8);
+            
+            print("Value Recieved: " + rxString!, Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
+            
+            
+                // if the first letter is "L", we're getting the current mode, lower-, and upper-mode count limits.
+            if (rxString?[(rxString?.startIndex)!] == "L")
+            {
+                //print(Int(rxValue[1]));
+                Device.connectedDevice?.currentModeIndex = Int(rxValue[1]);
+                Device.connectedDevice?.maxNumModes = Int(rxValue[3]);
+                
+            }
+        
+            NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
         }
         
-            // updating battery information on device
-        if characteristic == batteryCharacteristic
-        {
-                // credit to https://useyourloaf.com/blog/swift-integer-quick-guide/for help with encoding int8
-            let value = characteristic.value;
-            let valueUInt8 = [UInt8](value!);
-            let batteryLevel: Int32 = Int32(bitPattern: UInt32(valueUInt8[0]));
-            Device.connectedDevice?.setBatteryPercentage(percentage: Int(batteryLevel));
-        }
+//            // updating battery information on device (unused service)
+//        if characteristic == batteryCharacteristic
+//        {
+//                // credit to https://useyourloaf.com/blog/swift-integer-quick-guide/for help with encoding int8
+//            let value = characteristic.value;
+//            let valueUInt8 = [UInt8](value!);
+//            let batteryLevel: Int32 = Int32(bitPattern: UInt32(valueUInt8[0]));
+//            Device.connectedDevice?.setBatteryPercentage(percentage: Int(batteryLevel));
+//        }
     }
     
         // writing to txCharacteristic
@@ -314,12 +327,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         if Device.connectedDevice!.peripheral != nil
         {
             centralManager?.cancelPeripheralConnection(Device.connectedDevice!.peripheral);
+            Device.connectedDevice!.isConnected = false;
         }
     }
     
     
 
         // MARK: - UIViewController Methods
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -328,6 +343,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         //loadSampleDevices();
         
         centralManager = CBCentralManager(delegate:self, queue: nil);
+        
+        
         
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false

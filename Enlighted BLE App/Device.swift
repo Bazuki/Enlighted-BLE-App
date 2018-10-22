@@ -16,8 +16,12 @@ class Device
     var name: String;
     var RSSI: Int;
     var batteryPercentage: Int = 100;
+        // the current mode
     var currentModeIndex: Int;
     var mode = Mode();
+    
+        // the max number of modes
+    var maxNumModes: Int;
     
     var brightness: Int;
     
@@ -25,7 +29,7 @@ class Device
     var txCharacteristic: CBCharacteristic?;
     var rxCharacteristic: CBCharacteristic?;
     
-    var isConnected: Bool;
+    var isConnected: Bool = false;
     
     // MARK: Singleton
     
@@ -43,6 +47,7 @@ class Device
         
         // starting at mode 1; in the real app, would read current mode from device
         currentModeIndex = 1;
+        maxNumModes = 4;
         
         // initial value;
         brightness = 50;
@@ -62,6 +67,7 @@ class Device
         
         // will also need to be read and set with the new protocol
         currentModeIndex = 1;
+        maxNumModes = 4;
         brightness = 50;
         
         isConnected = true;

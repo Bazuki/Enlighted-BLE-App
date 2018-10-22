@@ -13,6 +13,7 @@
 		9E604EFD21535D1900734E4E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9E604EFC21535D1900734E4E /* Assets.xcassets */; };
 		9E604F0021535D1900734E4E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9E604EFE21535D1900734E4E /* LaunchScreen.storyboard */; };
 		9E604F0B21535D1900734E4E /* Enlighted_BLE_Screen_MockupsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E604F0A21535D1900734E4E /* Enlighted_BLE_Screen_MockupsTests.swift */; };
+		9E679225217D35AC00FAF765 /* EnlightedBLEProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E679224217D35AC00FAF765 /* EnlightedBLEProtocol.swift */; };
 		9E693676215DA3A500B26C9C /* ModeTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E693675215DA3A500B26C9C /* ModeTableViewCell.swift */; };
 		9E693678215EC11100B26C9C /* ModeTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E693677215EC11100B26C9C /* ModeTableViewController.swift */; };
 		9E69367A215EC1F200B26C9C /* Mode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E693679215EC1F200B26C9C /* Mode.swift */; };
@@ -37,16 +38,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		9E604EF221535D1200734E4E /* Enlighted BLE Screen Mockups.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Enlighted BLE Screen Mockups.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E604EF221535D1200734E4E /* Enlighted BLE App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Enlighted BLE App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E604EF521535D1200734E4E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9E604EF721535D1200734E4E /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		9E604EFA21535D1200734E4E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		9E604EFC21535D1900734E4E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9E604EFF21535D1900734E4E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		9E604F0121535D1900734E4E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		9E604F0621535D1900734E4E /* Enlighted BLE Screen MockupsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Enlighted BLE Screen MockupsTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E604F0621535D1900734E4E /* Enlighted BLE AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Enlighted BLE AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E604F0A21535D1900734E4E /* Enlighted_BLE_Screen_MockupsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enlighted_BLE_Screen_MockupsTests.swift; sourceTree = "<group>"; };
 		9E604F0C21535D1900734E4E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9E679224217D35AC00FAF765 /* EnlightedBLEProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnlightedBLEProtocol.swift; sourceTree = "<group>"; };
 		9E693675215DA3A500B26C9C /* ModeTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeTableViewCell.swift; sourceTree = "<group>"; };
 		9E693677215EC11100B26C9C /* ModeTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeTableViewController.swift; sourceTree = "<group>"; };
 		9E693679215EC1F200B26C9C /* Mode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mode.swift; sourceTree = "<group>"; };
@@ -81,8 +83,8 @@
 		9E604EE921535D1200734E4E = {
 			isa = PBXGroup;
 			children = (
-				9E604EF421535D1200734E4E /* Enlighted BLE Screen Mockups */,
-				9E604F0921535D1900734E4E /* Enlighted BLE Screen MockupsTests */,
+				9E604EF421535D1200734E4E /* Enlighted BLE App */,
+				9E604F0921535D1900734E4E /* Enlighted BLE AppTests */,
 				9E604EF321535D1200734E4E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,13 +92,13 @@
 		9E604EF321535D1200734E4E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9E604EF221535D1200734E4E /* Enlighted BLE Screen Mockups.app */,
-				9E604F0621535D1900734E4E /* Enlighted BLE Screen MockupsTests.xctest */,
+				9E604EF221535D1200734E4E /* Enlighted BLE App.app */,
+				9E604F0621535D1900734E4E /* Enlighted BLE AppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		9E604EF421535D1200734E4E /* Enlighted BLE Screen Mockups */ = {
+		9E604EF421535D1200734E4E /* Enlighted BLE App */ = {
 			isa = PBXGroup;
 			children = (
 				9E604EF521535D1200734E4E /* AppDelegate.swift */,
@@ -111,30 +113,31 @@
 				9E693679215EC1F200B26C9C /* Mode.swift */,
 				9E6936852160430A00B26C9C /* BitmapPickerCollectionViewCell.swift */,
 				9E69367F215F11AF00B26C9C /* EditScreenViewController.swift */,
+				9E679224217D35AC00FAF765 /* EnlightedBLEProtocol.swift */,
 				9EE0BCEF217287E500E1403A /* UUIDKey.swift */,
 				9E604EF921535D1200734E4E /* Main.storyboard */,
 				9E604EFC21535D1900734E4E /* Assets.xcassets */,
 				9E604EFE21535D1900734E4E /* LaunchScreen.storyboard */,
 				9E604F0121535D1900734E4E /* Info.plist */,
 			);
-			path = "Enlighted BLE Screen Mockups";
+			path = "Enlighted BLE App";
 			sourceTree = "<group>";
 		};
-		9E604F0921535D1900734E4E /* Enlighted BLE Screen MockupsTests */ = {
+		9E604F0921535D1900734E4E /* Enlighted BLE AppTests */ = {
 			isa = PBXGroup;
 			children = (
 				9E604F0A21535D1900734E4E /* Enlighted_BLE_Screen_MockupsTests.swift */,
 				9E604F0C21535D1900734E4E /* Info.plist */,
 			);
-			path = "Enlighted BLE Screen MockupsTests";
+			path = "Enlighted BLE AppTests";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		9E604EF121535D1200734E4E /* Enlighted BLE Screen Mockups */ = {
+		9E604EF121535D1200734E4E /* Enlighted BLE App */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9E604F0F21535D1900734E4E /* Build configuration list for PBXNativeTarget "Enlighted BLE Screen Mockups" */;
+			buildConfigurationList = 9E604F0F21535D1900734E4E /* Build configuration list for PBXNativeTarget "Enlighted BLE App" */;
 			buildPhases = (
 				9E604EEE21535D1200734E4E /* Sources */,
 				9E604EEF21535D1200734E4E /* Frameworks */,
@@ -144,14 +147,14 @@
 			);
 			dependencies = (
 			);
-			name = "Enlighted BLE Screen Mockups";
+			name = "Enlighted BLE App";
 			productName = "Enlighted BLE Screen Mockups";
-			productReference = 9E604EF221535D1200734E4E /* Enlighted BLE Screen Mockups.app */;
+			productReference = 9E604EF221535D1200734E4E /* Enlighted BLE App.app */;
 			productType = "com.apple.product-type.application";
 		};
-		9E604F0521535D1900734E4E /* Enlighted BLE Screen MockupsTests */ = {
+		9E604F0521535D1900734E4E /* Enlighted BLE AppTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9E604F1221535D1900734E4E /* Build configuration list for PBXNativeTarget "Enlighted BLE Screen MockupsTests" */;
+			buildConfigurationList = 9E604F1221535D1900734E4E /* Build configuration list for PBXNativeTarget "Enlighted BLE AppTests" */;
 			buildPhases = (
 				9E604F0221535D1900734E4E /* Sources */,
 				9E604F0321535D1900734E4E /* Frameworks */,
@@ -162,9 +165,9 @@
 			dependencies = (
 				9E604F0821535D1900734E4E /* PBXTargetDependency */,
 			);
-			name = "Enlighted BLE Screen MockupsTests";
+			name = "Enlighted BLE AppTests";
 			productName = "Enlighted BLE Screen MockupsTests";
-			productReference = 9E604F0621535D1900734E4E /* Enlighted BLE Screen MockupsTests.xctest */;
+			productReference = 9E604F0621535D1900734E4E /* Enlighted BLE AppTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -191,7 +194,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 9E604EED21535D1200734E4E /* Build configuration list for PBXProject "Enlighted BLE Screen Mockups" */;
+			buildConfigurationList = 9E604EED21535D1200734E4E /* Build configuration list for PBXProject "Enlighted BLE App" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -204,8 +207,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				9E604EF121535D1200734E4E /* Enlighted BLE Screen Mockups */,
-				9E604F0521535D1900734E4E /* Enlighted BLE Screen MockupsTests */,
+				9E604EF121535D1200734E4E /* Enlighted BLE App */,
+				9E604F0521535D1900734E4E /* Enlighted BLE AppTests */,
 			);
 		};
 /* End PBXProject section */
@@ -241,6 +244,7 @@
 				9EE0BCF0217287E600E1403A /* UUIDKey.swift in Sources */,
 				9E604EF821535D1200734E4E /* ViewController.swift in Sources */,
 				9E69367A215EC1F200B26C9C /* Mode.swift in Sources */,
+				9E679225217D35AC00FAF765 /* EnlightedBLEProtocol.swift in Sources */,
 				9E693678215EC11100B26C9C /* ModeTableViewController.swift in Sources */,
 				9E69367E215EE6C800B26C9C /* ColorPreview.swift in Sources */,
 				9E604EF621535D1200734E4E /* AppDelegate.swift in Sources */,
@@ -264,7 +268,7 @@
 /* Begin PBXTargetDependency section */
 		9E604F0821535D1900734E4E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 9E604EF121535D1200734E4E /* Enlighted BLE Screen Mockups */;
+			target = 9E604EF121535D1200734E4E /* Enlighted BLE App */;
 			targetProxy = 9E604F0721535D1900734E4E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -409,7 +413,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 7XMZT9C4P5;
-				INFOPLIST_FILE = "Enlighted BLE Screen Mockups/Info.plist";
+				INFOPLIST_FILE = "Enlighted BLE App/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -427,7 +431,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 7XMZT9C4P5;
-				INFOPLIST_FILE = "Enlighted BLE Screen Mockups/Info.plist";
+				INFOPLIST_FILE = "Enlighted BLE App/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -455,7 +459,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 4.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Enlighted BLE Screen Mockups.app/Enlighted BLE Screen Mockups";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Enlighted BLE App.app/Enlighted BLE App";
 			};
 			name = Debug;
 		};
@@ -475,14 +479,14 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 4.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Enlighted BLE Screen Mockups.app/Enlighted BLE Screen Mockups";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Enlighted BLE App.app/Enlighted BLE App";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		9E604EED21535D1200734E4E /* Build configuration list for PBXProject "Enlighted BLE Screen Mockups" */ = {
+		9E604EED21535D1200734E4E /* Build configuration list for PBXProject "Enlighted BLE App" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9E604F0D21535D1900734E4E /* Debug */,
@@ -491,7 +495,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9E604F0F21535D1900734E4E /* Build configuration list for PBXNativeTarget "Enlighted BLE Screen Mockups" */ = {
+		9E604F0F21535D1900734E4E /* Build configuration list for PBXNativeTarget "Enlighted BLE App" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9E604F1021535D1900734E4E /* Debug */,
@@ -500,7 +504,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		9E604F1221535D1900734E4E /* Build configuration list for PBXNativeTarget "Enlighted BLE Screen MockupsTests" */ = {
+		9E604F1221535D1900734E4E /* Build configuration list for PBXNativeTarget "Enlighted BLE AppTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9E604F1321535D1900734E4E /* Debug */,
