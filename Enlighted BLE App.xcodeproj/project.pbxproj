@@ -12,7 +12,7 @@
 		9E604EFB21535D1200734E4E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9E604EF921535D1200734E4E /* Main.storyboard */; };
 		9E604EFD21535D1900734E4E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9E604EFC21535D1900734E4E /* Assets.xcassets */; };
 		9E604F0021535D1900734E4E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9E604EFE21535D1900734E4E /* LaunchScreen.storyboard */; };
-		9E604F0B21535D1900734E4E /* Enlighted_BLE_Screen_MockupsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E604F0A21535D1900734E4E /* Enlighted_BLE_Screen_MockupsTests.swift */; };
+		9E604F0B21535D1900734E4E /* Enlighted_BLE_AppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E604F0A21535D1900734E4E /* Enlighted_BLE_AppTests.swift */; };
 		9E679225217D35AC00FAF765 /* EnlightedBLEProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E679224217D35AC00FAF765 /* EnlightedBLEProtocol.swift */; };
 		9E693676215DA3A500B26C9C /* ModeTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E693675215DA3A500B26C9C /* ModeTableViewCell.swift */; };
 		9E693678215EC11100B26C9C /* ModeTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E693677215EC11100B26C9C /* ModeTableViewController.swift */; };
@@ -46,7 +46,7 @@
 		9E604EFF21535D1900734E4E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		9E604F0121535D1900734E4E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9E604F0621535D1900734E4E /* Enlighted BLE AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Enlighted BLE AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		9E604F0A21535D1900734E4E /* Enlighted_BLE_Screen_MockupsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enlighted_BLE_Screen_MockupsTests.swift; sourceTree = "<group>"; };
+		9E604F0A21535D1900734E4E /* Enlighted_BLE_AppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enlighted_BLE_AppTests.swift; sourceTree = "<group>"; };
 		9E604F0C21535D1900734E4E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9E679224217D35AC00FAF765 /* EnlightedBLEProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnlightedBLEProtocol.swift; sourceTree = "<group>"; };
 		9E693675215DA3A500B26C9C /* ModeTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeTableViewCell.swift; sourceTree = "<group>"; };
@@ -126,7 +126,7 @@
 		9E604F0921535D1900734E4E /* Enlighted BLE AppTests */ = {
 			isa = PBXGroup;
 			children = (
-				9E604F0A21535D1900734E4E /* Enlighted_BLE_Screen_MockupsTests.swift */,
+				9E604F0A21535D1900734E4E /* Enlighted_BLE_AppTests.swift */,
 				9E604F0C21535D1900734E4E /* Info.plist */,
 			);
 			path = "Enlighted BLE AppTests";
@@ -259,7 +259,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9E604F0B21535D1900734E4E /* Enlighted_BLE_Screen_MockupsTests.swift in Sources */,
+				9E604F0B21535D1900734E4E /* Enlighted_BLE_AppTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

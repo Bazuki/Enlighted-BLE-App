@@ -8,7 +8,7 @@
 
 import UIKit
 
-class EditScreenViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate
+class EditScreenViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, ISColorWheelDelegate
 {
     
     
@@ -39,7 +39,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     @IBOutlet weak var saturationLabel: UILabel!
     
-  
+    //var _colorWheel: ISColorWheel = ISColorWheel();
     
     // a list of the selectable bitmaps
     var bitmaps = [UIImage?]();
@@ -47,6 +47,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     override func viewDidLoad()
     {
         super.viewDidLoad()
+        
+        //_colorWheel = [[ISColorWheel alloc] initWithFrame:CGRectMake(size.width / 2 - wheelSize.width / 2,
+        //    size.height * .1,
+        //    wheelSize.width,
+        //    wheelSize.height)];
         
         if (Device.connectedDevice?.mode?.usesBitmap)!
         {

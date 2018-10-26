@@ -2,6 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "self:/Users/brycesuzuki/Documents/XCode/Enlighted BLE App Screens/Enlighted BLE Screen Mockups/Enlighted BLE App.xcodeproj">
+      location = "group:/Users/brycesuzuki/Documents/XCode/Enlighted BLE App Screens/Enlighted BLE App/Enlighted BLE App/Source">
+   </FileRef>
+   <FileRef
+      location = "self:">
    </FileRef>
 </Workspace>
