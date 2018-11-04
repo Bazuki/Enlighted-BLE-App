@@ -8,7 +8,7 @@
 
 import UIKit
 
-class EditScreenViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, ISColorWheelDelegate
+class EditScreenViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate//, ISColorWheelDelegate
 {
     
     
@@ -40,7 +40,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBOutlet weak var saturationLabel: UILabel!
     
     //var delegate =
-    var _colorWheel: ISColorWheel = ISColorWheel();
+    //var _colorWheel: ISColorWheel = ISColorWheel();
     
     // a list of the selectable bitmaps
     var bitmaps = [UIImage?]();

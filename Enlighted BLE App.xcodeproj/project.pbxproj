@@ -426,7 +426,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_OBJC_BRIDGING_HEADER = "Enlighted-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "Enlighted BLE App/Enlighted-Bridging-Header.h";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 4.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -446,7 +446,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_OBJC_BRIDGING_HEADER = "Enlighted-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "Enlighted BLE App/Enlighted-Bridging-Header.h";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 4.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

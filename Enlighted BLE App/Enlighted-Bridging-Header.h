@@ -6,9 +6,9 @@
 //  Copyright © 2018 Bryce Suzuki. All rights reserved.
 //
 
-#ifndef Enlighted_Bridging_Header_h
-#define Enlighted_Bridging_Header_h
-
-#import "ISColorWheel.h"
-
-#endif /* Enlighted_Bridging_Header_h */
+//#ifndef Enlighted_Bridging_Header_h
+//#define Enlighted_Bridging_Header_h
+//
+//#import "ISColorWheel.h"
+//
+//#endif /* Enlighted_Bridging_Header_h */
