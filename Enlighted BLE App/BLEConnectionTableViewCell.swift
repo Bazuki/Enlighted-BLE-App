@@ -21,6 +21,11 @@ class BLEConnectionTableViewCell: UITableViewCell
     
     var device: Device!;
     
+    var cellIsSelected = false;
+    
+    var timer = Timer();
+    var connectTime = 2;
+    
     override func awakeFromNib()
     {
         super.awakeFromNib()
@@ -33,9 +38,21 @@ class BLEConnectionTableViewCell: UITableViewCell
     override func setSelected(_ selected: Bool, animated: Bool)
     {
         super.setSelected(selected, animated: animated)
-
-        // Configure the view for the selected state
+        
+        cellIsSelected = selected;
+        
         connectButton.isHidden = !selected;
+            // button is disabled by default for a bit to allow the device to connect
+        
+        
+        if (selected && !(Device.connectedDevice?.isConnected ?? false))
+        {
+            connectButton.isEnabled = false;
+            timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(enableButton), userInfo: nil, repeats: false)
+        }
+        
+            // Configure the view for the selected state
+        
         
         if (selected)
         {
@@ -56,11 +73,9 @@ class BLEConnectionTableViewCell: UITableViewCell
         
     }
     
-    @IBAction func setConnectedDevice(_ sender: UIButton)
+    @objc func enableButton()
     {
-        //Device.setConnectedDevice(newDevice:self.device);
-            // connect to this cell's device's peripheral, if it has one (should have one unless it's running on the simlulator without Bluetooth);
-        //BLEConnectionTableViewController.connectToDevice(self.device.peripheral!);
+        connectButton.isEnabled = true;
     }
     
 }

@@ -70,7 +70,7 @@ class Device
         maxNumModes = 4;
         brightness = 50;
         
-        isConnected = true;
+        isConnected = false;
         
     }
     

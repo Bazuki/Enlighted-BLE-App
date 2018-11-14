@@ -29,11 +29,15 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     var centralManager : CBCentralManager!;
         // A timer object to help in searching
     var timer = Timer();
+    var scanTimer = Timer();
+    
+    var scanTimeInterval: Double = 20;
     
         // list of peripherals, and their associated RSSI values
     var peripherals: [CBPeripheral] = [];
     var RSSIs = [NSNumber]();
     var data = NSMutableData();
+    
     
     
     @IBOutlet weak var deviceTableView: UITableView!
@@ -47,6 +51,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         {
             print("Bluetooth Enabled")
             startScan();
+            
+            // should scan multiple times
+            
+            //scanTimer = Timer.scheduledTimer(timeInterval: scanTimeInterval, target: self, selector: #selector(startScan), userInfo: nil, repeats: true);// startScan();
         }
         else
         {
@@ -136,7 +144,19 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // parsing/dealing with the info read from the firmware
         if characteristic == rxCharacteristic
         {
-                    // temporary code from the chat app, will be changed later to parse read info
+            
+                // if there's an error, it shouldn'y keep going
+            if let e = error
+            {
+                print("ERROR didUpdateValueFor \(e)");
+                return;
+            }
+            
+//            guard let failableValue = characteristic.value else
+//            {
+//
+//            }
+            
             let rxValue = [UInt8](characteristic.value!);
             
             
@@ -212,6 +232,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
             // erase data we might have
         data.length = 0;
+        
+        Device.connectedDevice?.isConnected = true;
+        
         
             // Discovery callback
         peripheral.delegate = self;
