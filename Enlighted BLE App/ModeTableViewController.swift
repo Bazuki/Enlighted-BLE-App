@@ -44,8 +44,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidAppear(animated);
         
-            // gets and selects the mode currently selected on the device
-        getCurrentMode();
+            // getLimits for this device
+        getLimits();
         
         let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
         self.tableView.selectRow(at: indexPath, animated: animated, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
@@ -143,12 +143,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         //}
     }
     
-    func getCurrentMode()
-    {
-        let inputString = EnlightedBLEProtocol.ENL_BLE_GET_LIMITS;
-        let inputNSString = (inputString as NSString).data(using: String.Encoding.utf8.rawValue);
-        Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
-    }
+    
     
 //    // old "initial selection" code
 //    func tableView(_tableView: UITableView, willDisplayCell: ModeTableViewCell, forRowAtIndexPath: IndexPath)
@@ -209,6 +204,17 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     // MARK: Private Methods
     
+        // sends getLimits to the hardware
+    private func getLimits()
+    {
+        print("Requesting current mode on Tx Characteristic");
+        let inputString = EnlightedBLEProtocol.ENL_BLE_GET_LIMITS;
+        print("Sending: " + inputString);
+        let inputNSString = (inputString as NSString).data(using: String.Encoding.utf8.rawValue);
+        Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withResponse);
+    }
+    
+        // loads placeholder modes, up till the max mode count from getLimits
     private func loadSampleModes(_ numberOfModes: Int)
     {
         // colors for certain modes

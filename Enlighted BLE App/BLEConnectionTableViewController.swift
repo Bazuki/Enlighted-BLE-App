@@ -43,6 +43,28 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     @IBOutlet weak var deviceTableView: UITableView!
     
     
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        
+        //loadSampleDevices();
+        
+        centralManager = CBCentralManager(delegate:self, queue: nil);
+        
+        
+        
+        // Uncomment the following line to preserve selection between presentations
+        // self.clearsSelectionOnViewWillAppear = false
+        
+        // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
+        // self.navigationItem.rightBarButtonItem = self.editButtonItem
+        
+        
+            // Disconnect detection should work even when the viewcontroller is not shown (From Bluefruit code)
+//        didDisconnectFromPeripheralObserver = NotificationCenter.default.addObserver(forName: .didDisconnectFromPeripheral, object: nil, queue: .main, using: didDisconnectFromPeripheral)
+        
+    }
+    
         // MARK: Bluetooth
     
     func centralManagerDidUpdateState(_ central: CBCentralManager)
@@ -78,8 +100,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         self.visibleDevices.append(Device(name: peripheral.name!, RSSI: RSSI.intValue, peripheral: peripheral));
         
         peripheral.delegate = self;
-            // discovering Bluefruit GATT services
-        //peripheral.discoverServices([BLEService_UUID]);
+            // discovering Bluefruit GATT services (should this be done here?)
+        peripheral.discoverServices([BLEService_UUID]);
             // discovering BLE services related to battery
         //peripheral.discoverServices([BLEBatteryService_UUID]);
             // reloading table view data
@@ -100,7 +122,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print("Now scanning...");
         self.timer.invalidate();
         centralManager?.scanForPeripherals(withServices: [BLEService_UUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey:false])
-        Timer.scheduledTimer(timeInterval: 17, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false);
+        Timer.scheduledTimer(timeInterval: 3, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false);
     }
     
         // cancelling the scan for peripherals
@@ -118,25 +140,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
     }
     
-        // console updates for notification state for a given service, taken from Bluefruit's "simple chat app".
-    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?)
-    {
-        print("*******************************************************")
-        
-        if (error != nil)
-        {
-            print("Error changing notification state:\(String(describing: error?.localizedDescription))")
-            
-        } else
-        {
-            print("Characteristic's value subscribed")
-        }
-        
-        if (characteristic.isNotifying)
-        {
-            print ("Subscribed. Notification has begun for: \(characteristic.uuid)")
-        }
-    }
+    
     
         // called automatically after characteristics we've subscribed to are updated
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?)
@@ -148,7 +152,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // if there's an error, it shouldn'y keep going
             if let e = error
             {
-                print("ERROR didUpdateValueFor \(e)");
+                print("ERROR didUpdateValueFor \(e.localizedDescription)");
                 return;
             }
             
@@ -162,13 +166,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             
             
             let rxString = String(bytes: rxValue, encoding: .utf8);
-            
-            print("Value Recieved: " + rxString!, Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
+           // print("Raw Value Recieved: \(characteristic.value)");
+            print("First char recieved: " + rxString!);
             
             
                 // if the first letter is "L", we're getting the current mode, lower-, and upper-mode count limits.
             if (rxString?[(rxString?.startIndex)!] == "L")
             {
+                print("Value Recieved: " + rxString!, Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
                 //print(Int(rxValue[1]));
                 Device.connectedDevice?.currentModeIndex = Int(rxValue[1]);
                 Device.connectedDevice?.maxNumModes = Int(rxValue[3]);
@@ -177,6 +182,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
             NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
         }
+        
+        
         
 //            // updating battery information on device (unused service)
 //        if characteristic == batteryCharacteristic
@@ -226,14 +233,19 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print("Connection complete");
         print("Peripheral info: \(peripheral) ");
         
+            // set connected flag on device object
+        Device.connectedDevice?.isConnected = true;
+        
+            
+        
             // stop scanning
         centralManager?.stopScan();
-        print("Scan stopped");
+        //print("Scan stopped");
         
             // erase data we might have
         data.length = 0;
         
-        Device.connectedDevice?.isConnected = true;
+        
         
         
             // Discovery callback
@@ -274,7 +286,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         if ((error) != nil)
         {
-            print("Error discovering services: \(error!.localizedDescription)");
+            print("Error discovering characteristics: \(error!.localizedDescription)");
             return;
         }
         
@@ -288,7 +300,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         for characteristic in characteristics
         {
             
-                // looks for the transmission characteristic
+                // looks for the read characteristic
             if characteristic.uuid.isEqual(BLE_Characteristic_uuid_Rx)
             {
                 rxCharacteristic = characteristic;
@@ -302,7 +314,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 print("Rx Characteristic: \(characteristic.uuid)");
             }
             
-                // looks for the read characteristic
+                // looks for the transmission characteristic
             if characteristic.uuid.isEqual(BLE_Characteristic_uuid_Tx)
             {
                 txCharacteristic = characteristic;
@@ -345,6 +357,26 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         }
     }
     
+        // console updates for notification state for a given service, taken from Bluefruit's "simple chat app".
+    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?)
+    {
+        print("*******************************************************")
+        
+        if (error != nil)
+        {
+            print("Error changing notification state:\(String(describing: error?.localizedDescription))")
+            
+        } else
+        {
+            print("Characteristic's value subscribed")
+        }
+        
+        if (characteristic.isNotifying)
+        {
+            print ("Subscribed. Notification has begun for: \(characteristic.uuid)")
+        }
+    }
+    
     func disconnectFromDevice()
     {
         if Device.connectedDevice!.peripheral != nil
@@ -359,22 +391,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // MARK: - UIViewController Methods
     
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        
-        //loadSampleDevices();
-        
-        centralManager = CBCentralManager(delegate:self, queue: nil);
-        
-        
-        
-        // Uncomment the following line to preserve selection between presentations
-        // self.clearsSelectionOnViewWillAppear = false
-
-        // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-        // self.navigationItem.rightBarButtonItem = self.editButtonItem
-    }
+    
 
     override func didReceiveMemoryWarning()
     {
@@ -477,6 +494,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     
     // MARK: Private Methods
+       
     
         // making fake devices to showcase the UI
     private func loadSampleDevices()

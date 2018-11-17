@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreBluetooth
 
 class BLEConnectionTableViewCell: UITableViewCell
 {
@@ -24,7 +25,7 @@ class BLEConnectionTableViewCell: UITableViewCell
     var cellIsSelected = false;
     
     var timer = Timer();
-    var connectTime = 2;
+    var connectTime = 1;
     
     override func awakeFromNib()
     {
@@ -48,7 +49,7 @@ class BLEConnectionTableViewCell: UITableViewCell
         if (selected && !(Device.connectedDevice?.isConnected ?? false))
         {
             connectButton.isEnabled = false;
-            timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(enableButton), userInfo: nil, repeats: false)
+            timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: false)
         }
         
             // Configure the view for the selected state
@@ -75,7 +76,18 @@ class BLEConnectionTableViewCell: UITableViewCell
     
     @objc func enableButton()
     {
-        connectButton.isEnabled = true;
+            // if the device is successfully connected, stop the timer and enable the button
+        if (Device.connectedDevice?.isConnected ?? false)
+        {
+            timer.invalidate();
+            connectButton.isEnabled = true;
+            print("Enabling button");
+        }
+        else
+        {
+            print("Not connected yet, keeping button disabled");
+        }
+        
     }
     
 }
