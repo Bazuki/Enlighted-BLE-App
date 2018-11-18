@@ -7,12 +7,10 @@
 //
 
 import UIKit
+import CoreBluetooth
 
-class EditScreenViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate//, ISColorWheelDelegate
+class EditScreenViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, CBPeripheralManagerDelegate//, ISColorWheelDelegate
 {
-    
-    
-    
     // MARK: Properties
 
     @IBOutlet weak var modeLabel: UILabel!
@@ -39,6 +37,9 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     @IBOutlet weak var saturationLabel: UILabel!
     
+        // the peripheral manager
+    var peripheralManager: CBPeripheralManager?;
+    
     //var delegate =
     //var _colorWheel: ISColorWheel = ISColorWheel();
     
@@ -49,7 +50,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     {
         super.viewDidLoad()
         
-        
+        peripheralManager = CBPeripheralManager(delegate: self, queue: nil);
         
         if (Device.connectedDevice?.mode?.usesBitmap)!
         {
@@ -64,13 +65,14 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         bitmapPicker.delegate = self;
         
         let bitmap1 = UIImage(named: "Bitmap1");
-        let bitmap2 = UIImage(named: "Bitmap2");
-        let bitmap3 = UIImage(named: "Bitmap3");
-        let bitmap4 = UIImage(named: "Bitmap4");
+        //let bitmap2 = UIImage(named: "Bitmap2");
+        //let bitmap3 = UIImage(named: "Bitmap3");
+        //let bitmap4 = UIImage(named: "Bitmap4");
             // Add selectable bitmaps (with 20 values, so that it can be spaced correctly)
-        for _ in 1...5
+        let maxNumBitmaps: Int = Device.connectedDevice?.maxBitmaps ?? 10;
+        for _ in 1...maxNumBitmaps
         {
-            bitmaps += [bitmap1, bitmap2, bitmap3, bitmap4];
+            bitmaps += [bitmap1];
         }
         
         //TODO:
@@ -148,6 +150,16 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         // Dispose of any resources that can be recreated.
     }
     
+    // MARK: CBPeripheralDelegate functions
+    
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager)
+    {
+        if peripheral.state == .poweredOn {
+            return
+        }
+        print("Peripheral manager is running")
+    }
+    
     // MARK: CollectionViewDataSource functions
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int
@@ -167,6 +179,29 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         cell.bitmapImage.image = bitmaps[indexPath.row];
         
         return cell;
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath)
+    {
+        Device.connectedDevice?.mode?.bitmapIndex = indexPath.row + 1;
+        
+        print("Will set to bitmap: \(indexPath.row + 1) ");
+        
+        let bitmapIndexUInt: UInt8 = UInt8(bitPattern: Int8(indexPath.row + 1));
+        
+        
+        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_BITMAP;// + "\(modeIndexUInt)";
+        
+        
+        let stringArray: [UInt8] = Array(valueString.utf8);
+        let valueArray = stringArray + [bitmapIndexUInt]
+        // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
+        let valueData = NSData(bytes: valueArray, length: 4)
+        
+        print("sending: " + valueString, bitmapIndexUInt);
+        
+        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+        
     }
     
     func getRGBStringFromUIColor(_ color: UIColor) -> String

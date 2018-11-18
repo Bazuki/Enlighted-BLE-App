@@ -131,10 +131,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         self.centralManager?.stopScan()
         print("Scan Stopped")
         print("Number of Peripherals Found: \(peripherals.count)")
-//        if (!Device.connectedDevice!.isConnected)
+//        if (!Device.connectedDevice!.isConnected && !Device.connectedDevice!.isConnecting)
 //        {
 //                // if the device hasn't connected, keep scanning
-//            //startScan();
+//            startScan();
 //
 //        }
         
@@ -163,11 +163,19 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             
             let rxValue = [UInt8](characteristic.value!);
             
-            
-            
             let rxString = String(bytes: rxValue, encoding: .utf8);
            // print("Raw Value Recieved: \(characteristic.value)");
-            print("First char recieved: " + rxString!);
+//            guard (rxString != nil) else
+//            {
+//                print("Recieved \(rxValue)");
+//                return;
+//            }
+            if (rxString == nil)
+            {
+                print("Recieved \(rxValue)");
+            }
+            
+            print("First char recieved: " + (rxString ?? "ERROR"));
             
             
                 // if the first letter is "L", we're getting the current mode, lower-, and upper-mode count limits.
@@ -176,12 +184,20 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 print("Value Recieved: " + rxString!, Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
                 //print(Int(rxValue[1]));
                 Device.connectedDevice?.currentModeIndex = Int(rxValue[1]);
-                Device.connectedDevice?.maxNumModes = Int(rxValue[3]);
-                
+                Device.connectedDevice?.maxNumModes = Int(rxValue[2]);
+                Device.connectedDevice?.maxBitmaps = Int(rxValue[3]);
+            }
+            
+                // if the first letter is "G", we're getting the brightness, on a scale from 0-255;
+            if (rxString?[(rxString?.startIndex)!] == "G")
+            {
+                print("Value Recieved: " + rxString!, Int(rxValue[1]));
+                Device.connectedDevice?.brightness = Int(rxValue[1]);
             }
         
             NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
         }
+        
         
         
         
@@ -206,7 +222,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // and the txCharacteristic variable is set
             if let txCharacteristic = txCharacteristic
             {
-                blePeripheral.writeValue(valueString!, for: txCharacteristic, type: CBCharacteristicWriteType.withResponse);
+                blePeripheral.writeValue(valueString!, for: txCharacteristic, type: CBCharacteristicWriteType.withoutResponse);
             }
         }
     }
@@ -234,7 +250,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print("Peripheral info: \(peripheral) ");
         
             // set connected flag on device object
+        
         Device.connectedDevice?.isConnected = true;
+        Device.connectedDevice?.isConnecting = false;
         
             
         
@@ -336,6 +354,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             }
             
             peripheral.discoverDescriptors(for: characteristic);
+            Device.connectedDevice?.hasDiscoveredCharacteristics = true;
         }
     }
     
@@ -406,10 +425,30 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
     {
-            // set the connected device and connect to that device
-        Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
         
-        connectToDevice();
+            // if the current connectedDevice doesn't exist, then select the one at IndexPath
+        guard Device.connectedDevice != nil else
+        {
+            //disconnectFromDevice();  // no need to disconnect if there isn't a connected device
+            Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
+            Device.connectedDevice?.isConnected = false;
+            Device.connectedDevice?.isConnecting = true;
+            connectToDevice();
+            return;
+        }
+        
+            // if the current connectedDevice does exist, only select it if it isn't already connected
+        if (Device.connectedDevice!.peripheral != visibleDevices[indexPath.row].peripheral)
+        {
+                // disconnect from old devices, if any
+            disconnectFromDevice();
+            Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
+            Device.connectedDevice?.isConnected = false;
+            Device.connectedDevice?.isConnecting = true;
+            connectToDevice();
+        }
+        
+        
     }
     
     override func numberOfSections(in tableView: UITableView) -> Int

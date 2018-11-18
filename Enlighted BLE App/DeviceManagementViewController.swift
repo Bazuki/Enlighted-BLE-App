@@ -7,9 +7,12 @@
 //
 
 import UIKit
+import CoreBluetooth
 
-class DeviceManagementViewController: UIViewController
+class DeviceManagementViewController: UIViewController, CBPeripheralManagerDelegate
 {
+    
+    //MARK: Properties
 
     @IBOutlet weak var deviceNameLabel: UILabel!
     
@@ -18,6 +21,9 @@ class DeviceManagementViewController: UIViewController
     
     @IBOutlet weak var brightnessSlider: UISlider!
     
+        // the peripheral manager
+    var peripheralManager: CBPeripheralManager?;
+    
     override func viewDidLoad()
     {
         super.viewDidLoad()
@@ -25,16 +31,26 @@ class DeviceManagementViewController: UIViewController
             // setting the device name
         deviceNameLabel.text = Device.connectedDevice?.name;
         
-            // getting and updating the slider with the device's brightness
-        brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
+        
+        
         
             // formatting the battery image to allow it to be tinted
         batteryStatusImage.image = batteryStatusImage.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate)
+        
+            // setting this as the delegate of the peripheral manager
+        peripheralManager = CBPeripheralManager(delegate: self, queue: nil);
         
             // updating the battery percentage to display the percentage (temporarily).  200 means the battery value isn't readable
         //batteryPercentageLabel.text = "\(Device.connectedDevice?.batteryPercentage ?? 200)%";
     }
 
+    override func viewWillAppear(_ animated: Bool)
+    {
+        super.viewWillAppear(animated);
+            // getting and updating the slider with the device's brightness
+        brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -47,8 +63,30 @@ class DeviceManagementViewController: UIViewController
     
     @IBAction func changeBrightness(_ sender: UISlider)
     {
+        print("New slider value: \(sender.value)");
         Device.connectedDevice?.brightness = Int(sender.value);
+        
+            // converting to an unsigned byte integer – Int8s can only display up to 127, so we have to (subtract one and ?) halve the value, then double it before casting to UInt8
+        var brightnessIndexUInt: UInt8 = UInt8(bitPattern: Int8(Device.connectedDevice!.brightness / 2));
+        
+        brightnessIndexUInt *= 2;
+        
+        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS;// + "\(modeIndexUInt)";
+        //print(valueString);
+        let stringArray: [UInt8] = Array(valueString.utf8);
+        let valueArray = stringArray + [brightnessIndexUInt]
+        // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
+        let valueData = NSData(bytes: valueArray, length: 4)
+        
+        print("sending: " + valueString, (Device.connectedDevice!.brightness / 2) * 2);
+        //print("\(String(describing: valueNSString))");
+        //let valueNSData = valueNSString! + modeIndexUInt;
+        //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
+        //{
+        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
     }
+    
+    
     
     // MARK: Actions
     
@@ -73,6 +111,14 @@ class DeviceManagementViewController: UIViewController
         
         self.present(dialogMessage, animated: true, completion: nil);
         
+    }
+    
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager)
+    {
+        if peripheral.state == .poweredOn {
+            return
+        }
+        print("Peripheral manager is running")
     }
     
     

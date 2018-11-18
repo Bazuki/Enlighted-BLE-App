@@ -12,10 +12,12 @@ import CoreBluetooth;
 class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegate
 {
         // MARK: - Properties
+    @IBOutlet weak var modeTableView: UITableView!
     
         // sample list of modes, since they can't be retrieved from the hardware right now
     var modes = [Mode]();
     
+    var timer = Timer();
         // whether or not the currently selected mode has to be initialized
     var initialModeSelected = false;
     
@@ -26,8 +28,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidLoad();
 
-            // Load the sample modes.
-        loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
+            // getLimits for this device
+        getLimits();
+        
         
             // setting this as the delegate of the table view
         tableView.delegate = self;
@@ -44,11 +47,36 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidAppear(animated);
         
-            // getLimits for this device
-        getLimits();
+            // If the currentModeIndex (and by extension, the max number of modes) has been found, load the sample modes.
+        if ((Device.connectedDevice?.currentModeIndex)! > 0)
+        {
+            loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
+            let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
+            self.tableView.selectRow(at: indexPath, animated: animated, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
+            
+                // getBrightness for this device, so that we'll know it when we change it on the settings screen
+            getBrightness()
+        }
+        else
+        {
+            timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: false);
+        }
+    }
+    
+    @objc func setUpTable()
+    {
+        if ((Device.connectedDevice?.currentModeIndex)! > 0)
+        {
+            timer.invalidate();
+            loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
+            let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
+            
+            modeTableView.reloadData();
+            self.tableView.selectRow(at: indexPath, animated: true, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
+                // getBrightness for this device, so that we'll know it when we change it on the settings screen
+            getBrightness()
+        }
         
-        let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
-        self.tableView.selectRow(at: indexPath, animated: animated, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
     }
     
     override func didReceiveMemoryWarning() {
@@ -137,6 +165,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         //let valueNSData = valueNSString! + modeIndexUInt;
         //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
         //{
+        print("sending " + valueString, Device.connectedDevice!.currentModeIndex);
+        
         Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
         
         //Device.connectedDevice!.peripheral.writeValue(valueNSString!, for: Device.connectedDevice!.txCharacteristic!, type:CBCharacteristicWriteType.withoutResponse)
@@ -207,11 +237,19 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // sends getLimits to the hardware
     private func getLimits()
     {
-        print("Requesting current mode on Tx Characteristic");
+        //print("Requesting current mode on Tx Characteristic");
         let inputString = EnlightedBLEProtocol.ENL_BLE_GET_LIMITS;
         print("Sending: " + inputString);
         let inputNSString = (inputString as NSString).data(using: String.Encoding.utf8.rawValue);
-        Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withResponse);
+        Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+    }
+    
+    private func getBrightness()
+    {
+        let inputString = EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS;
+        print("Sending: " + inputString);
+        let inputNSString = (inputString as NSString).data(using: String.Encoding.utf8.rawValue);
+        Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
     }
     
         // loads placeholder modes, up till the max mode count from getLimits
@@ -264,8 +302,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         {
             for index in 5...numberOfModes
             {
-                let colorArray = [UIColor.black, UIColor.white];
-                guard let mode = Mode(name: "mode\(index)", index: index, usesBitmap: false, bitmap: nil, colors: colorArray) else
+                //let colorArray = [UIColor.black, UIColor.white];
+                guard let mode = Mode(name: "mode\(index)", index: index, usesBitmap: true, bitmap: bitmap2, colors: [nil]) else
                 {
                     fatalError("unable to instantiate mode\(index)");
                 }

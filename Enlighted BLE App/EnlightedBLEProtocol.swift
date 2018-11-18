@@ -15,8 +15,11 @@ class EnlightedBLEProtocol
     
     // MARK: Getters
     static let ENL_BLE_GET_LIMITS = "!GL"
+    static let ENL_BLE_GET_BRIGHTNESS = "!GG"
     
     // MARK: Setters
     static let ENL_BLE_SET_MODE = "!SM"
     static let ENL_BLE_SET_COLOR = "!SC"
+    static let ENL_BLE_SET_BRIGHTNESS = "!SG"
+    static let ENL_BLE_SET_BITMAP = "!SB"
 }

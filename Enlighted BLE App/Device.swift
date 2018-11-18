@@ -22,6 +22,8 @@ class Device
     
         // the max number of modes
     var maxNumModes: Int;
+        // the max number of bitmaps
+    var maxBitmaps: Int;
     
     var brightness: Int;
     
@@ -30,6 +32,8 @@ class Device
     var rxCharacteristic: CBCharacteristic?;
     
     var isConnected: Bool = false;
+    var isConnecting: Bool = false;
+    var hasDiscoveredCharacteristics: Bool = false;
     
     // MARK: Singleton
     
@@ -45,16 +49,18 @@ class Device
         // just for this demo, choosing a random int between 1 and 100 as the "RSSI value"
         RSSI = Int(arc4random_uniform(100) + 1);
         
-        // starting at mode 1; in the real app, would read current mode from device
-        currentModeIndex = 1;
+        // starting at mode -1; in the real app, would read current mode from device
+        currentModeIndex = -1;
         maxNumModes = 4;
+        maxBitmaps = 10;
         
         // initial value;
         brightness = 50;
         
             // mock declaration without a peripheral, so not connected
         isConnected = false;
-        
+        isConnecting = false;
+        hasDiscoveredCharacteristics = false;
     }
     
     init(name: String, RSSI: Int, peripheral: CBPeripheral)
@@ -66,18 +72,22 @@ class Device
         
         
         // will also need to be read and set with the new protocol
-        currentModeIndex = 1;
+        currentModeIndex = -1;
         maxNumModes = 4;
-        brightness = 50;
+        maxBitmaps = 20;
+        brightness = 150;
         
         isConnected = false;
-        
+        isConnecting = false;
+        hasDiscoveredCharacteristics = false;
     }
     
     // for setting an empty reference for the current device
     init?()
     {
         isConnected = false;
+        isConnecting = false;
+        hasDiscoveredCharacteristics = false;
         return nil;
     }
     

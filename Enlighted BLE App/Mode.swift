@@ -25,6 +25,8 @@ class Mode
     // a reference to the current bitmap, but only necessary for a bitmap mode
     var bitmap: UIImage?;
     
+    var bitmapIndex: Int?;
+    
     // a reference to the colors used by the mode (if it isn't a bitmap mode)
     var color1: UIColor?;
     
@@ -52,6 +54,7 @@ class Mode
         if (usesBitmap)
         {
             self.bitmap = bitmap;
+            self.bitmapIndex = 1;
         }
             // otherwise pass the two colors that make up the pattern
         else
@@ -67,6 +70,7 @@ class Mode
         self.name = "Default";
         self.index = 1;
         self.usesBitmap = false;
+        self.bitmapIndex = 1;
         color1 = UIColor.red
         color2 = UIColor.blue;
         

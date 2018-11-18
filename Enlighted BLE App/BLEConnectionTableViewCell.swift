@@ -27,33 +27,41 @@ class BLEConnectionTableViewCell: UITableViewCell
     var timer = Timer();
     var connectTime = 1;
     
+    var wasSelected = false;
+    
     override func awakeFromNib()
     {
         super.awakeFromNib()
         // Initialization code
         
-            // Formatting the image to allow for recoloration
+            // Formatting the images to allow for recoloration
         connectionImage.image = connectionImage.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
+            //recoloring doesn't allow for enabling/disabling graphics
+        //connectButton.imageView?.image = connectButton.imageView?.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
     }
 
     override func setSelected(_ selected: Bool, animated: Bool)
     {
         super.setSelected(selected, animated: animated)
         
-        cellIsSelected = selected;
-        
-        connectButton.isHidden = !selected;
-            // button is disabled by default for a bit to allow the device to connect
+            // can only be selected if it isn't already
         
         
-        if (selected && !(Device.connectedDevice?.isConnected ?? false))
+        
+        
+        
+            // button is disabled by default until the device is connected
+        //print("Is the device connected? \(Device.connectedDevice?.isConnected ?? true)");
+        if (selected && !wasSelected)// && Device.connectedDevice?.isConnecting ?? false)
         {
             connectButton.isEnabled = false;
-            timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: false)
+            timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: true);
         }
         
-            // Configure the view for the selected state
+        connectButton.isHidden = !selected;
         
+        
+            // Configure the view for the selected state
         
         if (selected)
         {
@@ -72,12 +80,14 @@ class BLEConnectionTableViewCell: UITableViewCell
             RSSIValue.textColor = UIColor(named: "NonSelectedText");
         }
         
+        wasSelected = selected;
+        
     }
     
     @objc func enableButton()
     {
             // if the device is successfully connected, stop the timer and enable the button
-        if (Device.connectedDevice?.isConnected ?? false)
+        if (Device.connectedDevice?.hasDiscoveredCharacteristics ?? false)
         {
             timer.invalidate();
             connectButton.isEnabled = true;
