@@ -149,6 +149,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         if characteristic == rxCharacteristic
         {
             
+            
+            
                 // if there's an error, it shouldn'y keep going
             if let e = error
             {
@@ -156,45 +158,51 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 return;
             }
             
-//            guard let failableValue = characteristic.value else
-//            {
-//
-//            }
+            var receivedArray: [UInt8] = [];
             
             let rxValue = [UInt8](characteristic.value!);
             
-            let rxString = String(bytes: rxValue, encoding: .utf8);
-           // print("Raw Value Recieved: \(characteristic.value)");
-//            guard (rxString != nil) else
-//            {
-//                print("Recieved \(rxValue)");
-//                return;
-//            }
+            receivedArray = Array(characteristic.value!);
+            
+                // converting data to a string
+            let rxString = String(bytes: receivedArray, encoding: .ascii);
+            
+                //converting first byte into an int, for the 1 or 0 success responses
+            let rxInt = Int(receivedArray[0]);
+            
             if (rxString == nil)
             {
                 print("Recieved \(rxValue)");
             }
-            
-            print("First char recieved: " + (rxString ?? "ERROR"));
+            else
+            {
+                //print("String recieved: " + (rxString ?? "ERROR"));
+            }
             
             
                 // if the first letter is "L", we're getting the current mode, lower-, and upper-mode count limits.
-            if (rxString?[(rxString?.startIndex)!] == "L")
+            if (rxString?.prefix(1) == "L") //[(rxString?.startIndex)!] == "L")
             {
-                print("Value Recieved: " + rxString!, Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
+                print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
                 //print(Int(rxValue[1]));
                 Device.connectedDevice?.currentModeIndex = Int(rxValue[1]);
                 Device.connectedDevice?.maxNumModes = Int(rxValue[2]);
                 Device.connectedDevice?.maxBitmaps = Int(rxValue[3]);
             }
-            
                 // if the first letter is "G", we're getting the brightness, on a scale from 0-255;
-            if (rxString?[(rxString?.startIndex)!] == "G")
+            else if (rxString?.prefix(1) == "G") //[(rxString?.startIndex)!] == "G")
             {
-                print("Value Recieved: " + rxString!, Int(rxValue[1]));
+                print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]));
                 Device.connectedDevice?.brightness = Int(rxValue[1]);
             }
-        
+            else if (rxInt == 1)
+            {
+                print("Command succeeded.");
+            }
+            else if (rxInt == 0)
+            {
+                print("Command failed.");
+            }
             NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
         }
         

@@ -68,8 +68,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         //let bitmap2 = UIImage(named: "Bitmap2");
         //let bitmap3 = UIImage(named: "Bitmap3");
         //let bitmap4 = UIImage(named: "Bitmap4");
-            // Add selectable bitmaps (with 20 values, so that it can be spaced correctly)
-        let maxNumBitmaps: Int = Device.connectedDevice?.maxBitmaps ?? 10;
+            // Add selectable bitmaps, up to the limit from getLimit()
+        let maxNumBitmaps: Int = Device.connectedDevice?.maxBitmaps ?? 10; 
         for _ in 1...maxNumBitmaps
         {
             bitmaps += [bitmap1];

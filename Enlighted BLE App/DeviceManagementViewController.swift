@@ -66,10 +66,9 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         print("New slider value: \(sender.value)");
         Device.connectedDevice?.brightness = Int(sender.value);
         
-            // converting to an unsigned byte integer – Int8s can only display up to 127, so we have to (subtract one and ?) halve the value, then double it before casting to UInt8
-        var brightnessIndexUInt: UInt8 = UInt8(bitPattern: Int8(Device.connectedDevice!.brightness / 2));
+            // converting to an unsigned byte integer, to be passed to the hardware
+        var brightnessIndexUInt: UInt8 = UInt8(Device.connectedDevice!.brightness);
         
-        brightnessIndexUInt *= 2;
         
         let valueString = EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS;// + "\(modeIndexUInt)";
         //print(valueString);
