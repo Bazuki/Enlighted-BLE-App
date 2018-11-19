@@ -47,8 +47,14 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     override func viewWillAppear(_ animated: Bool)
     {
         super.viewWillAppear(animated);
-            // getting and updating the slider with the device's brightness
+        getValue(EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL);
+        
+        // getting and updating the slider with the device's brightness
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
+        //batteryPercentageLabel.text = String((Device.connectedDevice?.batteryPercentage)!);
+        
+        
+        
     }
     
     override func didReceiveMemoryWarning() {
@@ -83,7 +89,10 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
         //{
         Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+        Device.connectedDevice!.requestWithoutResponse = true;
     }
+    
+    
     
     
     
@@ -118,6 +127,20 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
             return
         }
         print("Peripheral manager is running")
+    }
+    
+    //Mark: Private Methods
+    
+    // sends get commands to the hardware, using the protocol as the inputString
+    private func getValue(_ inputString: String)
+    {
+        let inputNSString = (inputString as NSString).data(using: String.Encoding.ascii.rawValue);
+        // https://stackoverflow.com/questions/40088253/how-can-i-print-the-content-of-a-variable-of-type-data-using-swift for printing NSString
+        print("Sending: " + inputString, inputNSString! as NSData);
+        Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+            // "active request" flag
+        Device.connectedDevice!.requestWithoutResponse = true;
+        
     }
     
     

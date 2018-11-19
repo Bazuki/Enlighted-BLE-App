@@ -20,6 +20,9 @@ class Device
     var currentModeIndex: Int;
     var mode = Mode();
     
+        // a list of all the modes this device has, from getModes;
+    var modes = [Mode]();
+    
         // the max number of modes
     var maxNumModes: Int;
         // the max number of bitmaps
@@ -37,6 +40,9 @@ class Device
     var requestedLimits = false;
     var requestedBrightness = false;
     var requestedBattery = false;
+    var requestedName = false;
+    var requestedMode = false;
+    var requestWithoutResponse = false;
     
     var readyToShowModes = false;
     

@@ -39,7 +39,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     var RSSIs = [NSNumber]();
     var data = NSMutableData();
     
-    
+        // variables to help in parsing names
+    var currentlyParsingName = false;
+    var incompleteName: String = "";
     
     @IBOutlet weak var deviceTableView: UITableView!
     
@@ -150,8 +152,6 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         if characteristic == rxCharacteristic
         {
             
-            
-            
                 // if there's an error, it shouldn't keep going
             if let e = error
             {
@@ -174,6 +174,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             
             
             print("received response on rxCharacteristic");
+                // stopping "active request" flag, because a response has been received
+            if ((Device.connectedDevice?.requestWithoutResponse)!)
+            {
+                Device.connectedDevice?.requestWithoutResponse = false;
+            }
             
                 // if the first letter is "L", we're getting the current mode, lower-, and upper-mode count limits.
             if (rxString?.prefix(1) == "L") //[(rxString?.startIndex)!] == "L")
@@ -200,6 +205,35 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 let voltage = (Float(ADCValue) / 1024) * 16.5;
                     // calculates the battery percentage given the voltage
                 Device.connectedDevice?.batteryPercentage = calculateBatteryPercentage(voltage);
+            }
+                // if the first character is a " (quote) we're starting to get a name of a mode
+            else if (rxString?.prefix(1) == "\"")
+            {
+                print("Receiving name: " + rxString!);
+                    // if the end quote is in this string, the whole name was sent in one packet
+                if (rxString!.suffix(1) == "\"")
+                {
+                    let parsedName = rxString!;
+                        // taking off quotes
+                    let filteredName = parsedName.filter { $0 != "\"" }
+                    Device.connectedDevice?.modes += [createSampleDeviceWithName(filteredName)]
+                    Device.connectedDevice?.requestedName = false;
+                    
+                }
+                    // otherwise we have to wait for the second half
+                else
+                {
+                    currentlyParsingName = true;
+                    incompleteName = rxString!.filter { $0 != "\"" };
+                }
+            }
+                // if the last letter is a quote, we're getting the second part of a name of a mode
+            else if (currentlyParsingName && rxString?.suffix(1) == "\"")
+            {
+                currentlyParsingName = false;
+                let completeName = incompleteName + rxString!.filter { $0 != "\"" };
+                Device.connectedDevice?.modes += [createSampleDeviceWithName(completeName)]
+                Device.connectedDevice?.requestedName = false;
             }
             else if (rxInt == 1)
             {
@@ -562,24 +596,38 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     // MARK: Private Methods
     
+    private func createSampleDeviceWithName(_ name: String) -> Mode
+    {
+        let bitmap2 = UIImage(named: "Bitmap2");
+        let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
+        
+            // adding a blank mode with just the correct name (hopefully)
+        return Mode(name: name, index: currentIndex, usesBitmap: true, bitmap: bitmap2, colors: [nil])!;
+        
+    }
+            
     private func calculateBatteryPercentage(_ voltage: Float) -> Int
     {
+        print("received voltage of \(voltage)");
         // key representing voltage thresholds for battery percentages (index 0 is 0%, 1 is 5%, 2 is 10%, etc).  From Development Details document.
         let batteryCapacityKey: [Float] = [0, 6.98, 8.71, 9.17, 9.37, 9.51, 9.63, 9.72, 9.79, 9.84, 9.88, 9.91, 9.93, 9.95, 9.96, 9.97, 9.98, 10, 10.09, 10.38, 10.91];
         
+        var index: Int = 20;
         // going through the key
-        for i in 20...0
+        for i in 0...20
         {
+            
                 // if the voltage is ever greater than or equal to a key value, than the corresponding percentage is returned
-            if (voltage >= batteryCapacityKey[i])
+            if (voltage >= batteryCapacityKey[index])
             {
-                return i * 5;
+                print("calculated a percentage of \(index * 5)");
+                return index * 5;
             }
-            else
-            {   // error response
-                return -1;
-            }
+            
+            index = index - 1;
         }
+        
+        return -1
         
     }
     

@@ -201,6 +201,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         print("sending: " + valueString, bitmapIndexUInt);
         
         Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            // "active request" flag
+        Device.connectedDevice?.requestWithoutResponse = true;
         
     }
     

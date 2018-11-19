@@ -48,7 +48,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         super.viewDidAppear(animated);
         
             // Set the timer that governs the setup of the mode table
-        timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
+        timer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
         
     }
     
@@ -58,7 +58,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         if ((Device.connectedDevice?.readyToShowModes)!)
         {
             timer.invalidate();
-            loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
+            //loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
+                // load up the modes stored on the device object
+            modes = (Device.connectedDevice?.modes)!;
             let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
             
             modeTableView.reloadData();
@@ -100,6 +102,19 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 }
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
+            }
+                    // if we haven't gotten all the modes, keep chugging
+            else if ((Device.connectedDevice?.modes.count)! < (Device.connectedDevice?.maxNumModes)!)
+            {
+                    // if we haven't yet, request the name of the first mode we need
+                if (!(Device.connectedDevice?.requestedName)!)
+                {
+                        // getting the name of the next Mode
+                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInt: (Device.connectedDevice?.modes.count)! + 1);
+                    Device.connectedDevice?.requestedName = true;
+                }
+                
+                return
             }
                 // once all setup is done, we are ready to show the modes
             else
@@ -183,7 +198,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     func updateModeOnHardware()
     {
             // converting to an unsigned byte integer
-        let modeIndexUInt: UInt8 = UInt8(bitPattern: Int8(Device.connectedDevice!.currentModeIndex));
+        let modeIndexUInt: UInt8 = UInt8(Device.connectedDevice!.currentModeIndex);
         
         let valueString = EnlightedBLEProtocol.ENL_BLE_SET_MODE;// + "\(modeIndexUInt)";
         //print(valueString);
@@ -196,10 +211,11 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         //let valueNSData = valueNSString! + modeIndexUInt;
         //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
         //{
-        print("sending " + valueString, Device.connectedDevice!.currentModeIndex);
+        print("sending " + valueString, Device.connectedDevice!.currentModeIndex, valueArray);
         
         Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
-        
+            // setting "active request" flag
+        Device.connectedDevice!.requestWithoutResponse = true;
         //Device.connectedDevice!.peripheral.writeValue(valueNSString!, for: Device.connectedDevice!.txCharacteristic!, type:CBCharacteristicWriteType.withoutResponse)
         //}
     }
@@ -265,12 +281,31 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     // MARK: Private Methods
     
-        // sends get commands to the hardware, using the protocol as the inputString
-    private func getValue(_ inputString: String)
+        // sends get commands to the hardware, using the protocol as the inputString (and an optional int at the end)
+    private func getValue(_ inputString: String, inputInt: Int = -1)
     {
-        print("Sending: " + inputString);
-        let inputNSString = (inputString as NSString).data(using: String.Encoding.utf8.rawValue);
-        Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+        
+            // if an input value was specified, especially for the getName/getMode commands, add it to the package
+        if (inputInt != -1)
+        {
+            let uInputInt: UInt8 = UInt8(inputInt);
+            let stringArray: [UInt8] = Array(inputString.utf8);
+            let outputArray = stringArray + [uInputInt];
+            let outputData = NSData(bytes: outputArray, length: 4)
+            print("Sending: " + inputString, inputInt, outputArray);
+            Device.connectedDevice!.peripheral.writeValue(outputData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+        }
+        else
+        {
+            let inputNSString = (inputString as NSString).data(using: String.Encoding.ascii.rawValue);
+            // https://stackoverflow.com/questions/40088253/how-can-i-print-the-content-of-a-variable-of-type-data-using-swift for printing NSString
+            print("Sending: " + inputString, inputNSString! as NSData);
+            Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+        }
+        
+        
+            // "active request" flag
+        Device.connectedDevice!.requestWithoutResponse = true;
     }
     
         // loads placeholder modes, up till the max mode count from getLimits
