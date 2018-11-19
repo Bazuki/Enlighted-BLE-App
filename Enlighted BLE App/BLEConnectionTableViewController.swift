@@ -8,6 +8,7 @@
 
 import UIKit
 import CoreBluetooth
+import AVFoundation
 
 var txCharacteristic : CBCharacteristic?;
 var rxCharacteristic : CBCharacteristic?;
@@ -140,7 +141,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
     }
     
-    
+    //MARK: Parsing rxCharacteristic
     
         // called automatically after characteristics we've subscribed to are updated
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?)
@@ -151,12 +152,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             
             
             
-                // if there's an error, it shouldn'y keep going
+                // if there's an error, it shouldn't keep going
             if let e = error
             {
                 print("ERROR didUpdateValueFor \(e.localizedDescription)");
                 return;
             }
+            
             
             var receivedArray: [UInt8] = [];
             
@@ -170,15 +172,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 //converting first byte into an int, for the 1 or 0 success responses
             let rxInt = Int(receivedArray[0]);
             
-            if (rxString == nil)
-            {
-                print("Recieved \(rxValue)");
-            }
-            else
-            {
-                //print("String recieved: " + (rxString ?? "ERROR"));
-            }
             
+            print("received response on rxCharacteristic");
             
                 // if the first letter is "L", we're getting the current mode, lower-, and upper-mode count limits.
             if (rxString?.prefix(1) == "L") //[(rxString?.startIndex)!] == "L")
@@ -195,6 +190,17 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]));
                 Device.connectedDevice?.brightness = Int(rxValue[1]);
             }
+                // if the first letter is "B", we're getting the battery, which must be manipulated to give percentage
+            else if (rxString?.prefix(1) == "B")
+            {
+                
+                    // conversion from https://stackoverflow.com/questions/32830866/how-in-swift-to-convert-int16-to-two-uint8-bytes
+                let ADCValue = Int16(rxValue[1]) << 8 | Int16(rxValue[2]);
+                print("Value Recieved: " + rxString!.prefix(1), Int(ADCValue));
+                let voltage = (Float(ADCValue) / 1024) * 16.5;
+                    // calculates the battery percentage given the voltage
+                Device.connectedDevice?.batteryPercentage = calculateBatteryPercentage(voltage);
+            }
             else if (rxInt == 1)
             {
                 print("Command succeeded.");
@@ -202,6 +208,20 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             else if (rxInt == 0)
             {
                 print("Command failed.");
+                    // vibrate if command failed
+                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+            }
+            else
+            {
+                print("unable to parse response, might be unimplemented");
+                if (rxString == nil)
+                {
+                    print("Recieved \(rxValue)");
+                }
+                else
+                {
+                    print("String recieved: " + (rxString ?? "ERROR"));
+                }
             }
             NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
         }
@@ -541,9 +561,29 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     
     // MARK: Private Methods
-       
     
-        // making fake devices to showcase the UI
+    private func calculateBatteryPercentage(_ voltage: Float) -> Int
+    {
+        // key representing voltage thresholds for battery percentages (index 0 is 0%, 1 is 5%, 2 is 10%, etc).  From Development Details document.
+        let batteryCapacityKey: [Float] = [0, 6.98, 8.71, 9.17, 9.37, 9.51, 9.63, 9.72, 9.79, 9.84, 9.88, 9.91, 9.93, 9.95, 9.96, 9.97, 9.98, 10, 10.09, 10.38, 10.91];
+        
+        // going through the key
+        for i in 20...0
+        {
+                // if the voltage is ever greater than or equal to a key value, than the corresponding percentage is returned
+            if (voltage >= batteryCapacityKey[i])
+            {
+                return i * 5;
+            }
+            else
+            {   // error response
+                return -1;
+            }
+        }
+        
+    }
+    
+        // making fake devices to showcase the UI (no longer necessary since we can connect to real devices)
     private func loadSampleDevices()
     {
         

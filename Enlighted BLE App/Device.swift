@@ -15,7 +15,7 @@ class Device
     
     var name: String;
     var RSSI: Int;
-    var batteryPercentage: Int = 100;
+    var batteryPercentage: Int = -1;
         // the current mode
     var currentModeIndex: Int;
     var mode = Mode();
@@ -34,6 +34,11 @@ class Device
     var isConnected: Bool = false;
     var isConnecting: Bool = false;
     var hasDiscoveredCharacteristics: Bool = false;
+    var requestedLimits = false;
+    var requestedBrightness = false;
+    var requestedBattery = false;
+    
+    var readyToShowModes = false;
     
     // MARK: Singleton
     
@@ -55,7 +60,7 @@ class Device
         maxBitmaps = 10;
         
         // initial value;
-        brightness = 50;
+        brightness = -1;
         
             // mock declaration without a peripheral, so not connected
         isConnected = false;
@@ -75,7 +80,7 @@ class Device
         currentModeIndex = -1;
         maxNumModes = 4;
         maxBitmaps = 20;
-        brightness = 150;
+        brightness = -1;
         
         isConnected = false;
         isConnecting = false;

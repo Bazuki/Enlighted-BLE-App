@@ -29,8 +29,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         super.viewDidLoad();
 
             // getLimits for this device
-        getLimits();
-        
+        getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
+        Device.connectedDevice?.requestedLimits = true;
         
             // setting this as the delegate of the table view
         tableView.delegate = self;
@@ -47,25 +47,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidAppear(animated);
         
-            // If the currentModeIndex (and by extension, the max number of modes) has been found, load the sample modes.
-        if ((Device.connectedDevice?.currentModeIndex)! > 0)
-        {
-            loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
-            let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
-            self.tableView.selectRow(at: indexPath, animated: animated, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
-            
-                // getBrightness for this device, so that we'll know it when we change it on the settings screen
-            getBrightness()
-        }
-        else
-        {
-            timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: false);
-        }
+            // Set the timer that governs the setup of the mode table
+        timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
+        
     }
     
     @objc func setUpTable()
     {
-        if ((Device.connectedDevice?.currentModeIndex)! > 0)
+            // if it's ready to show modes, do so
+        if ((Device.connectedDevice?.readyToShowModes)!)
         {
             timer.invalidate();
             loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
@@ -73,8 +63,49 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             
             modeTableView.reloadData();
             self.tableView.selectRow(at: indexPath, animated: true, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
-                // getBrightness for this device, so that we'll know it when we change it on the settings screen
-            getBrightness()
+        }
+            // otherwise do preparatory steps
+        else
+        {
+                // if getLimits hasn't received a value yet
+            if ((Device.connectedDevice?.currentModeIndex)! < 0)
+            {
+                    // if we haven't already, getLimits for this device, so that we'll know it when we change it on the settings screen
+                if (!(Device.connectedDevice?.requestedLimits)!)
+                {
+                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
+                    Device.connectedDevice?.requestedLimits = true;
+                }
+                    // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
+                return;
+            }
+            else if (((Device.connectedDevice?.brightness)! < 0))
+            {
+                // if we haven't already, getBrightness for this device, so that we'll know it when we change it on the settings screen
+                if (!(Device.connectedDevice?.requestedBrightness)!)
+                {
+                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS);
+                    Device.connectedDevice?.requestedBrightness = true;
+                }
+                // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
+                return;
+            }
+            else if ((Device.connectedDevice?.batteryPercentage)! < 0)
+            {
+                // if we haven't already, getBatteryLevel for this device, so that we'll know it when we change it on the settings screen
+                if (!(Device.connectedDevice?.requestedBattery)!)
+                {
+                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL);
+                    Device.connectedDevice?.requestedBattery = true;
+                }
+                // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
+                return;
+            }
+                // once all setup is done, we are ready to show the modes
+            else
+            {
+                Device.connectedDevice?.readyToShowModes = true;
+            }
         }
         
     }
@@ -234,19 +265,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     // MARK: Private Methods
     
-        // sends getLimits to the hardware
-    private func getLimits()
+        // sends get commands to the hardware, using the protocol as the inputString
+    private func getValue(_ inputString: String)
     {
-        //print("Requesting current mode on Tx Characteristic");
-        let inputString = EnlightedBLEProtocol.ENL_BLE_GET_LIMITS;
-        print("Sending: " + inputString);
-        let inputNSString = (inputString as NSString).data(using: String.Encoding.utf8.rawValue);
-        Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
-    }
-    
-    private func getBrightness()
-    {
-        let inputString = EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS;
         print("Sending: " + inputString);
         let inputNSString = (inputString as NSString).data(using: String.Encoding.utf8.rawValue);
         Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);

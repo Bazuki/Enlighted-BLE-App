@@ -77,7 +77,7 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
         let valueData = NSData(bytes: valueArray, length: 4)
         
-        print("sending: " + valueString, (Device.connectedDevice!.brightness / 2) * 2);
+        print("sending: " + valueString, (Device.connectedDevice!.brightness));
         //print("\(String(describing: valueNSString))");
         //let valueNSData = valueNSString! + modeIndexUInt;
         //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
