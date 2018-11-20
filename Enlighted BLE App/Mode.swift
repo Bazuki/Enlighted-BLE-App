@@ -64,6 +64,34 @@ class Mode
         }
     }
     
+    init?(name:String, index:Int, usesBitmap: Bool, bitmapIndex: Int?, colors: [UIColor?])
+    {
+        // check for empty references
+        if name.isEmpty || index < 1
+        {
+            return nil;
+        }
+        
+        // initializing stored variables
+        self.name = name;
+        self.index = index;
+        self.usesBitmap = usesBitmap;
+        
+        // if it's a bitmap, assign the bitmap passed in the constructor
+        if (usesBitmap)
+        {
+                // sample bitmap until getBitmap works
+            self.bitmap = UIImage(named: "Bitmap2");
+            self.bitmapIndex = bitmapIndex;
+        }
+            // otherwise pass the two colors that make up the pattern
+        else
+        {
+            self.color1 = colors[0];
+            self.color2 = colors[1];
+        }
+    }
+    
         //  Default initialization
     init?()
     {

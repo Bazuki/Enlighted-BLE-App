@@ -41,6 +41,7 @@ class Device
     var requestedBrightness = false;
     var requestedBattery = false;
     var requestedName = false;
+    var receivedName = false;
     var requestedMode = false;
     var requestWithoutResponse = false;
     

@@ -41,10 +41,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
         // variables to help in parsing names
     var currentlyParsingName = false;
-    var incompleteName: String = "";
+    var parsedName: String = "";
     
     @IBOutlet weak var deviceTableView: UITableView!
     
+    //MARK: UIViewController Methods
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -53,7 +54,6 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         //loadSampleDevices();
         
         centralManager = CBCentralManager(delegate:self, queue: nil);
-        
         
         
         // Uncomment the following line to preserve selection between presentations
@@ -66,6 +66,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // Disconnect detection should work even when the viewcontroller is not shown (From Bluefruit code)
 //        didDisconnectFromPeripheralObserver = NotificationCenter.default.addObserver(forName: .didDisconnectFromPeripheral, object: nil, queue: .main, using: didDisconnectFromPeripheral)
         
+    }
+    
+    override func viewWillAppear(_ animated: Bool)
+    {
+        super.viewWillAppear(animated);
+        
+            // if we're currently connected to a device as we enter this screen, disconnect (because we'll be choosing a new one)
+        disconnectFromDevice();
     }
     
         // MARK: Bluetooth
@@ -173,7 +181,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             let rxInt = Int(receivedArray[0]);
             
             
-            print("received response on rxCharacteristic");
+           // print("received response on rxCharacteristic");
                 // stopping "active request" flag, because a response has been received
             if ((Device.connectedDevice?.requestWithoutResponse)!)
             {
@@ -206,6 +214,34 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // calculates the battery percentage given the voltage
                 Device.connectedDevice?.batteryPercentage = calculateBatteryPercentage(voltage);
             }
+                // if the first letter is "M", we're getting details about a mode, and need to add it to the Device.connectedDevice's list
+            else if (rxString?.prefix(1) == "M")
+            {
+                    // the first value after "M" determines whether or not it's a bitmap-type mode
+                let usesBitmap = (rxValue[1] == 0);
+                
+                let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
+                
+                // if it's a bitmap mode, we should create one and add it to the Device's list
+                if (usesBitmap)
+                {
+                    print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
+                    let bitmapIndex = Int(rxValue[2]);
+                    Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil])!];
+                }
+                else
+                {
+                    print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                    
+                    let color1 = UIColor(displayP3Red: CGFloat(Float(rxValue[2]) / 255), green: CGFloat(Float(rxValue[3]) / 255), blue: CGFloat(Float(rxValue[4]) / 255), alpha: 1)
+                    let color2 = UIColor(displayP3Red: CGFloat(Float(rxValue[5]) / 255), green: CGFloat(Float(rxValue[6]) / 255), blue: CGFloat(Float(rxValue[7]) / 255), alpha: 1)
+                    Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [color1, color2])!];
+                    
+                }
+                Device.connectedDevice?.requestedName = false;
+                Device.connectedDevice?.requestedMode = false;
+                
+            }
                 // if the first character is a " (quote) we're starting to get a name of a mode
             else if (rxString?.prefix(1) == "\"")
             {
@@ -213,27 +249,27 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // if the end quote is in this string, the whole name was sent in one packet
                 if (rxString!.suffix(1) == "\"")
                 {
-                    let parsedName = rxString!;
+                    let receivedName = rxString!;
                         // taking off quotes
-                    let filteredName = parsedName.filter { $0 != "\"" }
-                    Device.connectedDevice?.modes += [createSampleDeviceWithName(filteredName)]
-                    Device.connectedDevice?.requestedName = false;
+                    parsedName = receivedName.filter { $0 != "\"" }
+                    //Device.connectedDevice?.requestedName = false;
+                    Device.connectedDevice?.receivedName = true;
                     
                 }
                     // otherwise we have to wait for the second half
                 else
                 {
                     currentlyParsingName = true;
-                    incompleteName = rxString!.filter { $0 != "\"" };
+                    parsedName = rxString!.filter { $0 != "\"" };
                 }
             }
                 // if the last letter is a quote, we're getting the second part of a name of a mode
             else if (currentlyParsingName && rxString?.suffix(1) == "\"")
             {
                 currentlyParsingName = false;
-                let completeName = incompleteName + rxString!.filter { $0 != "\"" };
-                Device.connectedDevice?.modes += [createSampleDeviceWithName(completeName)]
-                Device.connectedDevice?.requestedName = false;
+                parsedName = parsedName + rxString!.filter { $0 != "\"" };
+                //Device.connectedDevice?.requestedName = false;
+                Device.connectedDevice?.receivedName = true;
             }
             else if (rxInt == 1)
             {
@@ -460,7 +496,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     func disconnectFromDevice()
     {
-        if Device.connectedDevice!.peripheral != nil
+        if Device.connectedDevice?.peripheral != nil
         {
             centralManager?.cancelPeripheralConnection(Device.connectedDevice!.peripheral);
             Device.connectedDevice!.isConnected = false;
@@ -599,16 +635,16 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     private func createSampleDeviceWithName(_ name: String) -> Mode
     {
         let bitmap2 = UIImage(named: "Bitmap2");
-        let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
+        
         
             // adding a blank mode with just the correct name (hopefully)
-        return Mode(name: name, index: currentIndex, usesBitmap: true, bitmap: bitmap2, colors: [nil])!;
+        return Mode(name: name, index: -1, usesBitmap: true, bitmap: bitmap2, colors: [nil])!;
         
     }
             
     private func calculateBatteryPercentage(_ voltage: Float) -> Int
     {
-        print("received voltage of \(voltage)");
+        //print("received voltage of \(voltage)");
         // key representing voltage thresholds for battery percentages (index 0 is 0%, 1 is 5%, 2 is 10%, etc).  From Development Details document.
         let batteryCapacityKey: [Float] = [0, 6.98, 8.71, 9.17, 9.37, 9.51, 9.63, 9.72, 9.79, 9.84, 9.88, 9.91, 9.93, 9.95, 9.96, 9.97, 9.98, 10, 10.09, 10.38, 10.91];
         

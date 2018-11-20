@@ -112,9 +112,17 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                         // getting the name of the next Mode
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInt: (Device.connectedDevice?.modes.count)! + 1);
                     Device.connectedDevice?.requestedName = true;
+                    Device.connectedDevice?.receivedName = false;
+                }
+                    // if we're done getting the name but have not yet asked for the mode
+                else if ((Device.connectedDevice?.receivedName)! && !(Device.connectedDevice?.requestedMode)!)
+                {
+                        // getting the details about the next Mode
+                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInt: (Device.connectedDevice?.modes.count)! + 1);
+                    Device.connectedDevice?.requestedMode = true;
                 }
                 
-                return
+                return;
             }
                 // once all setup is done, we are ready to show the modes
             else
