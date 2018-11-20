@@ -18,6 +18,7 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     
     @IBOutlet weak var batteryStatusImage: UIImageView!
     @IBOutlet weak var batteryPercentageLabel: UILabel!
+    @IBOutlet weak var batteryPercentage: UILabel!
     
     @IBOutlet weak var brightnessSlider: UISlider!
     
@@ -41,7 +42,7 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         peripheralManager = CBPeripheralManager(delegate: self, queue: nil);
         
             // updating the battery percentage to display the percentage (temporarily).  200 means the battery value isn't readable
-        //batteryPercentageLabel.text = "\(Device.connectedDevice?.batteryPercentage ?? 200)%";
+        batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
     }
 
     override func viewWillAppear(_ animated: Bool)
@@ -51,7 +52,7 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         
         // getting and updating the slider with the device's brightness
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
-        //batteryPercentageLabel.text = String((Device.connectedDevice?.batteryPercentage)!);
+        batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
         
         
         
