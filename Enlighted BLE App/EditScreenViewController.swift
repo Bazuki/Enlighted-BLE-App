@@ -183,6 +183,31 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath)
     {
+        if (!(Device.connectedDevice?.isConnected)!)
+        {
+            print("Device is not connected");
+            return;
+        }
+        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        {
+            print("Disconnected");
+            
+            // error popup
+            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                print("Should go to the Connect Screen at this point, still need to implement");
+            })
+            
+            dialogMessage.addAction(ok);
+            
+            self.present(dialogMessage, animated: true, completion: nil);
+            // shows the Connection page (hopefully/eventually)
+            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+            //self.show(newViewController, sender: self);
+            return;
+        }
+        
         Device.connectedDevice?.mode?.bitmapIndex = indexPath.row + 1;
         
         print("Will set to bitmap: \(indexPath.row + 1) ");

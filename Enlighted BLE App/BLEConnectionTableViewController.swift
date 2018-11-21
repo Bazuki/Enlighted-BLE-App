@@ -50,8 +50,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         super.viewDidLoad()
         
         
-            // moving to viewWillAppear so that it will scan on re-entry
-        //centralManager = CBCentralManager(delegate:self, queue: nil);
+        
+        centralManager = CBCentralManager(delegate:self, queue: nil);
         
         
         // Uncomment the following line to preserve selection between presentations
@@ -70,10 +70,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         super.viewWillAppear(animated);
         
-        centralManager = CBCentralManager(delegate:self, queue: nil);
+        
+        //centralManager = CBCentralManager(delegate:self, queue: nil);
         
             // if we're currently connected to a device as we enter this screen, disconnect (because we'll be choosing a new one)
         disconnectFromDevice();
+    }
+    
+        // start scan on appearance of viewController
+    override func viewDidAppear(_ animated: Bool)
+    {
+        super.viewDidAppear(animated);
+        startScan();
     }
     
     override func didReceiveMemoryWarning()
@@ -174,56 +182,51 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print("Scan Stopped")
         print("Number of Peripherals Found: \(peripherals.count)")
         
+        // if we aren't connected to a device, keep trying
+        if (Device.connectedDevice == nil || Device.connectedDevice?.name == "emptyDevice")
+        {
             // going through devices
-        if (peripherals.count > 0 && visibleDevices.count > 0)
-        {
-            var deviceIndex = 0;
-            while (deviceIndex < visibleDevices.count)
+            if (visibleDevices.count > 0)
             {
+                var deviceIndex = 0;
+                while (deviceIndex < visibleDevices.count)
+                {
                     // update device RSSIs of devices we know
-                if let foundPeripheralIndex = peripherals.firstIndex(of: visibleDevices[deviceIndex].peripheral)
-                {
-                    visibleDevices[deviceIndex].RSSI = RSSIs[foundPeripheralIndex].intValue;
+                    if let foundPeripheralIndex = peripherals.firstIndex(of: visibleDevices[deviceIndex].peripheral)
+                    {
+                        visibleDevices[deviceIndex].RSSI = RSSIs[foundPeripheralIndex].intValue;
                         // since we already have a Device for this peripheral, we can remove it (and its corresponding RSSI value)
-                    peripherals.remove(at: foundPeripheralIndex);
-                    RSSIs.remove(at: foundPeripheralIndex);
-                    
-                    deviceIndex += 1;
+                        peripherals.remove(at: foundPeripheralIndex);
+                        RSSIs.remove(at: foundPeripheralIndex);
+                        
+                        deviceIndex += 1;
+                    }
+                    else if !peripherals.contains(visibleDevices[deviceIndex].peripheral)
+                    {
+                        print("Removing device named \(visibleDevices[deviceIndex].name)");
+                        visibleDevices.remove(at: deviceIndex);
+                    }
+                    else
+                    {
+                        deviceIndex += 1;
+                    }
                 }
-                else if !peripherals.contains(visibleDevices[deviceIndex].peripheral)
-                {
-                    print("Removing device named \(visibleDevices[deviceIndex].name)");
-                    visibleDevices.remove(at: deviceIndex);
-                }
-                else
-                {
-                    deviceIndex += 1;
-                }
+                deviceTableView.reloadData();
             }
-            deviceTableView.reloadData();
-        }
-        
+            
             // we removed peripherals we have devices for already, so there should only be "new" peripherals in this array now
-        if (peripherals.count > 0)
-        {
-            print("Found an extra peripheral besides the \(visibleDevices.count) we already knew about");
-            for i in 0...(peripherals.count - 1)
+            if (peripherals.count > 0)
             {
-                print("Found a new device named \(peripherals[i].name), adding it");
-                visibleDevices.append(Device(name: peripherals[i].name!, RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
+                print("Found an extra peripheral besides the \(visibleDevices.count) we already knew about");
+                for i in 0...(peripherals.count - 1)
+                {
+                    print("Found a new device named \(peripherals[i].name), adding it");
+                    visibleDevices.append(Device(name: peripherals[i].name!, RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
+                }
             }
-        }
-            // adding a new device to the list, to be displayed
-            // if we haven't ever connected to a device, keep trying
-        if (Device.connectedDevice == nil)
-        {
-                // if the device hasn't connected, keep scanning
+            
+            // if the device hasn't connected, keep scanning
             startScan();
-        }
-            // or if we disconnected we have to keep scanning
-        else if (Device.connectedDevice!.name == "emptyDevice")
-        {
-            startScan()
         }
         
     }
@@ -390,6 +393,30 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // writing to txCharacteristic
     func writeValue(data: String)
     {
+        if (!(Device.connectedDevice?.isConnected)!)
+        {
+            print("Device is not connected");
+            return;
+        }
+        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        {
+            print("Disconnected");
+            
+            // error popup
+            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                print("Should go to the Connect Screen at this point, still need to implement");
+            })
+            
+            dialogMessage.addAction(ok);
+            
+            self.present(dialogMessage, animated: true, completion: nil);
+            // shows the Connection page (hopefully/eventually)
+            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+            //self.show(newViewController, sender: self);
+        }
+        
         let valueString = (data as NSString).data(using: String.Encoding.utf8.rawValue);
             // if the blePeripheral variable is set
         if let blePeripheral = blePeripheral
@@ -601,11 +628,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
     {
-        guard visibleDevices.count >= indexPath.row else
-        {
-            print("The device in the list doesn't exist yet");
-            return;
-        }
+//        guard visibleDevices.count >= indexPath.row else
+//        {
+//            print("The device in the list doesn't exist yet");
+//            return;
+//        }
         
             // if the current connectedDevice doesn't exist, then select the one at IndexPath
         guard Device.connectedDevice != nil && Device.connectedDevice?.name != "emptyDevice" else

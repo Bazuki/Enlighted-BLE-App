@@ -221,6 +221,30 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // TODO:
     func updateModeOnHardware()
     {
+        if (!(Device.connectedDevice?.isConnected)!)
+        {
+            print("Device is not connected");
+            return;
+        }
+        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        {
+            print("Disconnected");
+            
+            // error popup
+            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                print("Should go to the Connect Screen at this point, still need to implement");
+            })
+            
+            dialogMessage.addAction(ok);
+            
+            self.present(dialogMessage, animated: true, completion: nil);
+            // shows the Connection page (hopefully/eventually)
+            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+            //self.show(newViewController, sender: self);
+        }
+        
             // converting to an unsigned byte integer
         let modeIndexUInt: UInt8 = UInt8(Device.connectedDevice!.currentModeIndex);
         
@@ -236,6 +260,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
         //{
         print("sending " + valueString, Device.connectedDevice!.currentModeIndex, valueArray);
+        
+            // checking to see if we're disconnected (will have to do from every command)
+        
+        
         
         Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
             // setting "active request" flag
@@ -313,6 +341,28 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             print("Device is not connected");
             return;
         }
+        
+        if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        {
+            print("Disconnected");
+            
+            // error popup
+            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                print("Should go to the Connect Screen at this point, still need to implement");
+            })
+            
+            dialogMessage.addAction(ok);
+            
+            self.present(dialogMessage, animated: true, completion: nil);
+            // shows the Connection page (hopefully/eventually)
+            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+            //self.show(newViewController, sender: self);
+            return;
+        }
+        
+        
         
             // if an input value was specified, especially for the getName/getMode commands, add it to the package
         if (inputInt != -1)

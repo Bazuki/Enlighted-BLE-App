@@ -70,6 +70,13 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     
     @IBAction func changeBrightness(_ sender: UISlider)
     {
+        
+        if (!(Device.connectedDevice?.isConnected)!)
+        {
+            print("Device is not connected");
+            return;
+        }
+        
         print("New slider value: \(sender.value)");
         Device.connectedDevice?.brightness = Int(sender.value);
         
@@ -135,6 +142,30 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     // sends get commands to the hardware, using the protocol as the inputString
     private func getValue(_ inputString: String)
     {
+        if (!(Device.connectedDevice?.isConnected)!)
+        {
+            print("Device is not connected");
+            return;
+        }
+        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        {
+            print("Disconnected");
+            
+            // error popup
+            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                print("Should go to the Connect Screen at this point, still need to implement");
+            })
+            
+            dialogMessage.addAction(ok);
+            
+            self.present(dialogMessage, animated: true, completion: nil);
+            // shows the Connection page (hopefully/eventually)
+            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+            //self.show(newViewController, sender: self);
+        }
+        
         let inputNSString = (inputString as NSString).data(using: String.Encoding.ascii.rawValue);
         // https://stackoverflow.com/questions/40088253/how-can-i-print-the-content-of-a-variable-of-type-data-using-swift for printing NSString
         print("Sending: " + inputString, inputNSString! as NSData);
