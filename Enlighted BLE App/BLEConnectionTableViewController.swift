@@ -45,15 +45,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     @IBOutlet weak var deviceTableView: UITableView!
     
-    //MARK: UIViewController Methods
-    
+        // MARK: - UIViewController Methods
     override func viewDidLoad() {
         super.viewDidLoad()
         
         
-        //loadSampleDevices();
-        
-        centralManager = CBCentralManager(delegate:self, queue: nil);
+            // moving to viewWillAppear so that it will scan on re-entry
+        //centralManager = CBCentralManager(delegate:self, queue: nil);
         
         
         // Uncomment the following line to preserve selection between presentations
@@ -72,11 +70,19 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         super.viewWillAppear(animated);
         
+        centralManager = CBCentralManager(delegate:self, queue: nil);
+        
             // if we're currently connected to a device as we enter this screen, disconnect (because we'll be choosing a new one)
         disconnectFromDevice();
     }
     
-        // MARK: Bluetooth
+    override func didReceiveMemoryWarning()
+    {
+        super.didReceiveMemoryWarning()
+        // Dispose of any resources that can be recreated.
+    }
+    
+        // MARK: - Bluetooth
     
     func centralManagerDidUpdateState(_ central: CBCentralManager)
     {
@@ -107,12 +113,26 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         self.peripherals.append(peripheral);
         self.RSSIs.append(RSSI);
         
-            // adding a new device to the list, to be displayed
-        self.visibleDevices.append(Device(name: peripheral.name!, RSSI: RSSI.intValue, peripheral: peripheral));
+            // handled in cancelScan()
+//        if let devicesIndex = self.visibleDevices.firstIndex(where: { (device: Device) -> Bool in
+//            return device.peripheral == peripheral;
+//            })
+//        {
+//            print("Found this peripheral at index \(devicesIndex), updating RSSI");
+//            self.visibleDevices[devicesIndex].RSSI = RSSI.intValue;
+//        }
+//            // otherwise, add it to the list
+//        else if !(self.visibleDevices.contains(where: { $0.peripheral == peripheral }))
+//        {
+//            print("Didn't find this peripheral, adding it to the list (visibleDevices is \(visibleDevices.count) items long");
+//            self.visibleDevices.append(Device(name: peripheral.name!, RSSI: RSSI.intValue, peripheral: peripheral));
+//        }
+        
+        
         
         peripheral.delegate = self;
-            // discovering Bluefruit GATT services (should this be done here?)
-        peripheral.discoverServices([BLEService_UUID]);
+            // discovering Bluefruit GATT services (shouldn't be done here, this is for connected devices)
+        //peripheral.discoverServices([BLEService_UUID]);
             // discovering BLE services related to battery
         //peripheral.discoverServices([BLEBatteryService_UUID]);
             // reloading table view data
@@ -130,10 +150,21 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // starting to scan for peripherals that have Bluefruit's unique GATT indicator
     @objc func startScan()
     {
+            // don't scan if we can't
+        if (centralManager.state != CBManagerState.poweredOn)
+        {
+            print("Bluetooth isn't available right now, make sure it's activated on your phone");
+            return;
+        }
+            // clearing the visibleDevices list when we're scanning again
+        //visibleDevices = [Device]();
+        peripherals = [CBPeripheral]();
+        RSSIs = [NSNumber]();
+        
         print("Now scanning...");
         self.timer.invalidate();
         centralManager?.scanForPeripherals(withServices: [BLEService_UUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey:false])
-        Timer.scheduledTimer(timeInterval: 3, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false);
+        Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false);
     }
     
         // cancelling the scan for peripherals
@@ -142,12 +173,58 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         self.centralManager?.stopScan()
         print("Scan Stopped")
         print("Number of Peripherals Found: \(peripherals.count)")
-//        if (!Device.connectedDevice!.isConnected && !Device.connectedDevice!.isConnecting)
-//        {
-//                // if the device hasn't connected, keep scanning
-//            startScan();
-//
-//        }
+        
+            // going through devices
+        if (peripherals.count > 0 && visibleDevices.count > 0)
+        {
+            var deviceIndex = 0;
+            while (deviceIndex < visibleDevices.count)
+            {
+                    // update device RSSIs of devices we know
+                if let foundPeripheralIndex = peripherals.firstIndex(of: visibleDevices[deviceIndex].peripheral)
+                {
+                    visibleDevices[deviceIndex].RSSI = RSSIs[foundPeripheralIndex].intValue;
+                        // since we already have a Device for this peripheral, we can remove it (and its corresponding RSSI value)
+                    peripherals.remove(at: foundPeripheralIndex);
+                    RSSIs.remove(at: foundPeripheralIndex);
+                    
+                    deviceIndex += 1;
+                }
+                else if !peripherals.contains(visibleDevices[deviceIndex].peripheral)
+                {
+                    print("Removing device named \(visibleDevices[deviceIndex].name)");
+                    visibleDevices.remove(at: deviceIndex);
+                }
+                else
+                {
+                    deviceIndex += 1;
+                }
+            }
+            deviceTableView.reloadData();
+        }
+        
+            // we removed peripherals we have devices for already, so there should only be "new" peripherals in this array now
+        if (peripherals.count > 0)
+        {
+            print("Found an extra peripheral besides the \(visibleDevices.count) we already knew about");
+            for i in 0...(peripherals.count - 1)
+            {
+                print("Found a new device named \(peripherals[i].name), adding it");
+                visibleDevices.append(Device(name: peripherals[i].name!, RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
+            }
+        }
+            // adding a new device to the list, to be displayed
+            // if we haven't ever connected to a device, keep trying
+        if (Device.connectedDevice == nil)
+        {
+                // if the device hasn't connected, keep scanning
+            startScan();
+        }
+            // or if we disconnected we have to keep scanning
+        else if (Device.connectedDevice!.name == "emptyDevice")
+        {
+            startScan()
+        }
         
     }
     
@@ -356,7 +433,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
             // stop scanning
         centralManager?.stopScan();
-        //print("Scan stopped");
+        print("Scan stopped");
+            // stopping the normal scan timer
+        timer.invalidate();
         
             // erase data we might have
         data.length = 0;
@@ -500,32 +579,36 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         {
             centralManager?.cancelPeripheralConnection(Device.connectedDevice!.peripheral);
             Device.connectedDevice!.isConnected = false;
+            Device.connectedDevice!.hasDiscoveredCharacteristics = false;
+            Device.connectedDevice? = Device(true);
+                // setting the connectedDevice to the "emptyDevice" placeholder
         }
     }
     
     
 
-        // MARK: - UIViewController Methods
+
     
     
     
 
-    override func didReceiveMemoryWarning()
-    {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
+    
 
-    // MARK: - Table view data source
+    // Table view data source
 
     
     // MARK: - UITableDelegate Methods
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
     {
+        guard visibleDevices.count >= indexPath.row else
+        {
+            print("The device in the list doesn't exist yet");
+            return;
+        }
         
             // if the current connectedDevice doesn't exist, then select the one at IndexPath
-        guard Device.connectedDevice != nil else
+        guard Device.connectedDevice != nil && Device.connectedDevice?.name != "emptyDevice" else
         {
             //disconnectFromDevice();  // no need to disconnect if there isn't a connected device
             Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
@@ -534,6 +617,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             connectToDevice();
             return;
         }
+        
+        
         
             // if the current connectedDevice does exist, only select it if it isn't already connected
         if (Device.connectedDevice!.peripheral != visibleDevices[indexPath.row].peripheral)

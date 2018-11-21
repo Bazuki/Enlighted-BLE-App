@@ -220,8 +220,15 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         green *= 255;
         blue *= 255;
         
-        // adding to string
-        let output = String("R: " + red.description + " G: " + green.description + " B: " + blue.description);
+            // making them ints so they fit in the text box
+        let redString = String(Int(red));
+        let greenString = String(Int(green));
+        let blueString = String(Int(blue));
+        
+            // adding to string
+        var output: String = "R: " + redString;
+        output += " G: " + greenString;
+        output += " B: " + blueString;
         return output;
     }
     

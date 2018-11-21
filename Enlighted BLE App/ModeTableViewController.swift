@@ -28,7 +28,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidLoad();
 
-            // getLimits for this device
+        // getLimits for this device
         getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
         Device.connectedDevice?.requestedLimits = true;
         
@@ -47,6 +47,20 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidAppear(animated);
         
+            // if we have all the modes, we're ready to display them
+        Device.connectedDevice?.readyToShowModes = (Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes);
+        
+            // if we didn't completely get the mode list (i.e. aren't totally ready to show modes)
+        if (!(Device.connectedDevice?.readyToShowModes)!)
+        {
+                // reset the variables, so we get all of them
+            Device.connectedDevice?.requestedName = false;
+            //Device.connectedDevice?.modes = [Mode]();
+            Device.connectedDevice?.requestedMode = false;
+            Device.connectedDevice?.readyToShowModes = false;
+        }
+       
+        print("Setting timer");
             // Set the timer that governs the setup of the mode table
         timer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
         
@@ -58,6 +72,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         if ((Device.connectedDevice?.readyToShowModes)!)
         {
             timer.invalidate();
+            print("Showing modes");
             //loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
                 // load up the modes stored on the device object
             modes = (Device.connectedDevice?.modes)!;
@@ -110,6 +125,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 if (!(Device.connectedDevice?.requestedName)!)
                 {
                         // getting the name of the next Mode
+                    //print("Getting details about mode #\((Device.connectedDevice?.modes.count)! + 1)");
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInt: (Device.connectedDevice?.modes.count)! + 1);
                     Device.connectedDevice?.requestedName = true;
                     Device.connectedDevice?.receivedName = false;
@@ -292,6 +308,11 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // sends get commands to the hardware, using the protocol as the inputString (and an optional int at the end)
     private func getValue(_ inputString: String, inputInt: Int = -1)
     {
+        if (!(Device.connectedDevice?.isConnected)!)
+        {
+            print("Device is not connected");
+            return;
+        }
         
             // if an input value was specified, especially for the getName/getMode commands, add it to the package
         if (inputInt != -1)

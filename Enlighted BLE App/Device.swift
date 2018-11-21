@@ -103,6 +103,29 @@ class Device
         return nil;
     }
     
+    init(_ emptyDevice: Bool)
+    {
+        
+        self.name = "emptyDevice";
+            
+            // just for this demo, choosing a random int between 1 and 100 as the "RSSI value"
+        RSSI = -1;
+            
+            // starting at mode -1; in the real app, would read current mode from device
+        currentModeIndex = -1;
+        maxNumModes = -1;
+        maxBitmaps = -1;
+            
+            // initial value;
+        brightness = -1;
+            
+            // mock declaration without a peripheral, so not connected
+        isConnected = false;
+        isConnecting = false;
+        hasDiscoveredCharacteristics = false;
+        
+    }
+    
     // MARK: Actions
     
     func setBrightness(value:Int)
