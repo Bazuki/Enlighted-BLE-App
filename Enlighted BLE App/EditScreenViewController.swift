@@ -8,6 +8,7 @@
 
 import UIKit
 import CoreBluetooth
+import QuartzCore
 
 class EditScreenViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, CBPeripheralManagerDelegate//, ISColorWheelDelegate
 {
@@ -64,15 +65,25 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         bitmapPicker.dataSource = self;
         bitmapPicker.delegate = self;
         
-        let bitmap1 = UIImage(named: "Bitmap1");
+        let errorBitmap = UIImage(named: "Bitmap2");
         //let bitmap2 = UIImage(named: "Bitmap2");
         //let bitmap3 = UIImage(named: "Bitmap3");
         //let bitmap4 = UIImage(named: "Bitmap4");
             // Add selectable bitmaps, up to the limit from getLimit()
         let maxNumBitmaps: Int = Device.connectedDevice?.maxBitmaps ?? 10; 
-        for _ in 1...maxNumBitmaps
+        
+            // if Get Thumbnails worked, use those thumbnails
+        if (Device.connectedDevice?.thumbnails.count == maxNumBitmaps)
         {
-            bitmaps += [bitmap1];
+            bitmaps = (Device.connectedDevice?.thumbnails)!;
+        }
+            // otherwise use the error bitmap
+        else
+        {
+            for _ in 0...maxNumBitmaps - 1
+            {
+                bitmaps += [errorBitmap];
+            }
         }
         
         //TODO:
@@ -88,7 +99,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             // making different things show up depending on mode type
         if (Device.connectedDevice?.mode?.usesBitmap)!
         {
-            bitmapUIImage.image = Device.connectedDevice?.mode?.bitmap;
+            bitmapUIImage.image = Device.connectedDevice?.thumbnails[(Device.connectedDevice?.mode?.bitmapIndex)! - 1];
+            
+            // should disable anti-aliasing to some degree
+            bitmapUIImage.layer.magnificationFilter = kCAFilterNearest;
+            bitmapUIImage.layer.minificationFilter = kCAFilterNearest;
             bitmapUIImage.isHidden = false;
             
             bitmapPicker.isHidden = false;
@@ -210,14 +225,15 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
         Device.connectedDevice?.mode?.bitmapIndex = indexPath.row + 1;
         
+            // updating the header image
+        bitmapUIImage.image = Device.connectedDevice?.thumbnails[(Device.connectedDevice?.mode?.bitmapIndex)! - 1];
+        
         print("Will set to bitmap: \(indexPath.row + 1) ");
         
         let bitmapIndexUInt: UInt8 = UInt8(bitPattern: Int8(indexPath.row + 1));
         
-        
         let valueString = EnlightedBLEProtocol.ENL_BLE_SET_BITMAP;// + "\(modeIndexUInt)";
-        
-        
+    
         let stringArray: [UInt8] = Array(valueString.utf8);
         let valueArray = stringArray + [bitmapIndexUInt]
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift

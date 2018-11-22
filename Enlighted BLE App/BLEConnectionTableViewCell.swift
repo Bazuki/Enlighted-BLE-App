@@ -89,9 +89,10 @@ class BLEConnectionTableViewCell: UITableViewCell
             // if the device is successfully connected, stop the timer and enable the button
         if (Device.connectedDevice?.hasDiscoveredCharacteristics ?? false && (Device.connectedDevice?.isConnected)!)
         {
-            timer.invalidate();
+            //timer.invalidate();
             connectButton.isEnabled = true;
             print("Enabling button");
+            timer.invalidate();
         }
         else
         {

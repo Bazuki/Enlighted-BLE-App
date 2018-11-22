@@ -20,8 +20,14 @@ class Device
     var currentModeIndex: Int;
     var mode = Mode();
     
-        // a list of all the modes this device has, from getModes;
+        // a list of all the modes this device has, from Get Mode;
     var modes = [Mode]();
+    
+        // a list of all the thumbnails this device has, from Get Thumbnail
+    var thumbnails = [UIImage]();
+    
+        // a way to track where Get Thumbnail is in getting a thumbnail
+    var thumbnailRowIndex: Int = 0;
     
         // the max number of modes
     var maxNumModes: Int;
@@ -43,6 +49,7 @@ class Device
     var requestedName = false;
     var receivedName = false;
     var requestedMode = false;
+    var requestedThumbnail = false;
     var requestWithoutResponse = false;
     
     var readyToShowModes = false;

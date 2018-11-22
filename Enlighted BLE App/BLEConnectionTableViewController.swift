@@ -43,6 +43,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     var currentlyParsingName = false;
     var parsedName: String = "";
     
+        // pixel data – credit to https://stackoverflow.com/questions/30958427/pixel-array-to-uiimage-in-swift
+    public struct Pixel
+    {
+        var r: UInt8;
+        var g: UInt8;
+        var b: UInt8;
+        var a: UInt8 = 255;
+    }
+    
+    var bitmapPixels = [Pixel]();
+    var bitmapPixelRow = [Pixel]();
+    
     @IBOutlet weak var deviceTableView: UITableView!
     
         // MARK: - UIViewController Methods
@@ -53,7 +65,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         centralManager = CBCentralManager(delegate:self, queue: nil);
         
-        
+        NotificationCenter.default.addObserver(self, selector: #selector(resetThumbnailRow), name: Notification.Name(rawValue: "resendRow"), object: nil)
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
         
@@ -322,8 +334,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 Device.connectedDevice?.requestedMode = false;
                 
             }
-                // if the first character is a " (quote) we're starting to get a name of a mode
-            else if (rxString?.prefix(1) == "\"")
+                // if the first character is a " (quote) we're starting to get a name of a mode (unless we're currently parsing a name, in which case it could be that only the final quote was sent in the second packet (and it shouldn't be a new name in that case)
+            else if (rxString?.prefix(1) == "\"" && !currentlyParsingName)
             {
                 print("Receiving name: " + rxString!);
                     // if the end quote is in this string, the whole name was sent in one packet
@@ -350,6 +362,52 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 parsedName = parsedName + rxString!.filter { $0 != "\"" };
                 //Device.connectedDevice?.requestedName = false;
                 Device.connectedDevice?.receivedName = true;
+            }
+                // if it's a 15-byte value and we've requested the thumbnail, it's probably the thumbnail
+            else if ((Device.connectedDevice?.requestedThumbnail)! && rxValue.count == 15)
+            {
+                    // debug message, but super slow to print every time
+                //print("Value Received: \(rxValue[0], rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7], rxValue[8], rxValue[9], rxValue[10], rxValue[11], rxValue[12], rxValue[13], rxValue[14])");
+                
+                for i in 0...4
+                {
+                    let indexOffset = i * 3;
+                    bitmapPixelRow.append(Pixel(r: rxValue[0 + indexOffset], g: rxValue[1 + indexOffset], b: rxValue[2 + indexOffset], a: UInt8(255)));
+                }
+                    // debug message, might slow down the program too much
+                //print("Thumbnail \((Device.connectedDevice?.thumbnails.count)! + 1) is \(Float(bitmapPixels.count) / 4.0) percent complete");
+                    // if we just finished a row of 20 pixels, we can go on to the next one
+                if (bitmapPixelRow.count == 20)
+                {
+                        //print("Starting new row");
+                        // adding this row to the whole thing
+                    bitmapPixels += bitmapPixelRow;
+                        // resetting row
+                    bitmapPixelRow = [Pixel]();
+                    Device.connectedDevice?.thumbnailRowIndex += 1;
+                    Device.connectedDevice?.requestedThumbnail = false;
+                }
+                    // if the 20x20 grid is finished, turn it into a UIImage and go on to the next one
+                if (bitmapPixels.count >= 400)
+                {
+                    print("Finished bitmap");
+                        // Generate a new UIImage (20x20 is hardcoded)
+                    guard let newThumbnail = UIImageFromBitmap(pixels: bitmapPixels, width: 20) else
+                    {
+                        print("Was unable to generate UIImage thumbnail");
+                        return;
+                    }
+                        // add it to the Device
+                    Device.connectedDevice?.thumbnails.append(newThumbnail);
+                        // clear the Pixel array
+                    bitmapPixels = [Pixel]();
+                        // reset the row counter
+                    Device.connectedDevice?.thumbnailRowIndex = 0;
+                }
+                
+                
+                
+                
             }
             else if (rxInt == 1)
             {
@@ -744,6 +802,68 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     // MARK: Private Methods
     
+        // if we receive a timeout error after requesting a thumbnail row, we have to
+    @objc private func resetThumbnailRow()
+    {
+        print("Timed out, clearing row");
+            // clear the half-baked row
+        bitmapPixelRow = [Pixel]();
+            // tell the ModeTableViewController setup loop to get the thumbnails again
+        Device.connectedDevice?.requestedThumbnail = false;
+    }
+    
+        // credit to https://stackoverflow.com/questions/30958427/pixel-array-to-uiimage-in-swift
+    private func UIImageFromBitmap(pixels: [Pixel], width: Int) -> UIImage?
+    {
+        guard (width > 0) else
+        {
+            print("Insufficient width");
+            return nil;
+        }
+        guard (pixels.count % width == 0) else
+        {
+            print("Pixel count isn't evenly divisible by the width");
+            return nil;
+        }
+        
+        let rgbColorSpace = CGColorSpaceCreateDeviceRGB();
+            //"Alpha" value is the last in structure
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue);
+        let bitsPerComponent = 8;
+        let bitsPerPixel = 32;
+        
+            // copy to mutable []
+        var data = pixels;
+        guard let providerRef = CGDataProvider(data: NSData(bytes: &data, length: data.count * MemoryLayout<Pixel>.size)) else
+        {
+            print("Unable to create dataprovider");
+            return nil;
+        }
+        
+            // creating a CGImage
+        guard let image = CGImage(
+            width: width,
+            height: pixels.count / width,
+            bitsPerComponent: bitsPerComponent,
+            bitsPerPixel: bitsPerPixel,
+            bytesPerRow: width * MemoryLayout<Pixel>.size,
+            space: rgbColorSpace,
+            bitmapInfo: bitmapInfo,
+            provider: providerRef,
+            decode: nil,
+            shouldInterpolate: false, // I think this is anti-aliasing, which we don't want
+            intent: .defaultIntent
+        )
+        else
+        {
+            print("Unable to create CGImage");
+            return nil;
+        }
+        
+            // returning a UIImage from that CGImage
+        return UIImage(cgImage: image);
+    }
+    
     private func createSampleDeviceWithName(_ name: String) -> Mode
     {
         let bitmap2 = UIImage(named: "Bitmap2");
@@ -792,4 +912,5 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         visibleDevices += [device1, device2, device3, device4];
         
     }
+    
 }

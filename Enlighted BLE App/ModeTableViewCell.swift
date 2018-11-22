@@ -7,6 +7,7 @@
 //
 
 import UIKit;
+import QuartzCore;
 //import CoreBluetooth;
 
 class ModeTableViewCell: UITableViewCell
@@ -16,6 +17,7 @@ class ModeTableViewCell: UITableViewCell
     @IBOutlet weak var modeLabel: UILabel!
     @IBOutlet weak var modeIndex: UILabel!
     @IBOutlet weak var modeBitmap: UIImageView!
+    @IBOutlet weak var colorPreviewWrapper: UIView!
     @IBOutlet weak var color1View: ColorPreview!
     @IBOutlet weak var color2View: ColorPreview!
     @IBOutlet weak var editModeButton: UIButton!
@@ -74,11 +76,26 @@ class ModeTableViewCell: UITableViewCell
         let originalImage = editModeButton.currentImage;
         let tintedImage = originalImage?.withRenderingMode(UIImageRenderingMode.alwaysTemplate)
         editModeButton.setImage(tintedImage, for: .normal)
+        
+        let errorBitmap = UIImage(named: "Bitmap2");
+        
             // if we need to display a bitmap
         if ((mode?.usesBitmap)!)
         {
+            colorPreviewWrapper.isHidden = true;
             modeBitmap.isHidden = false;
-            modeBitmap.image = mode?.bitmap;
+            if ((Device.connectedDevice?.thumbnails.count)! >= (mode?.bitmapIndex)!)
+            {
+                modeBitmap.image = Device.connectedDevice?.thumbnails[(mode?.bitmapIndex)! - 1]
+            }
+            else
+            {
+                modeBitmap.image = errorBitmap
+            }
+            
+            // should disable anti-aliasing to some degree
+            modeBitmap.layer.magnificationFilter = kCAFilterNearest;
+            modeBitmap.layer.minificationFilter = kCAFilterNearest;
             
             color1View.isHidden = true;
             color2View.isHidden = true;
@@ -86,6 +103,7 @@ class ModeTableViewCell: UITableViewCell
             // if we need to display two colors
         else
         {
+            colorPreviewWrapper.isHidden = false;
             modeBitmap.isHidden = true;
             
             color1View.setBackgroundColor(newColor: (mode?.color1)!)

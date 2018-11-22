@@ -19,6 +19,7 @@ class EnlightedBLEProtocol
     static let ENL_BLE_GET_BATTERY_LEVEL = "!GB"
     static let ENL_BLE_GET_NAME = "!GN"
     static let ENL_BLE_GET_MODE = "!GM"
+    static let ENL_BLE_GET_THUMBNAIL = "!GT"
     
     // MARK: Setters
     static let ENL_BLE_SET_MODE = "!SM"

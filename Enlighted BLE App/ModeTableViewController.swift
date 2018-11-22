@@ -18,6 +18,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     var modes = [Mode]();
     
     var timer = Timer();
+    var BLETimeoutTimer = Timer();
         // whether or not the currently selected mode has to be initialized
     var initialModeSelected = false;
     
@@ -47,8 +48,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidAppear(animated);
         
-            // if we have all the modes, we're ready to display them
-        Device.connectedDevice?.readyToShowModes = (Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes);
+            // if we have all the modes and thumbnails, we're ready to display them
+        Device.connectedDevice?.readyToShowModes = (Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps);
         
             // if we didn't completely get the mode list (i.e. aren't totally ready to show modes)
         if (!(Device.connectedDevice?.readyToShowModes)!)
@@ -62,7 +63,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
        
         print("Setting timer");
             // Set the timer that governs the setup of the mode table
-        timer = Timer.scheduledTimer(timeInterval: 0.05, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
+        timer = Timer.scheduledTimer(timeInterval: 0.025, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
         
     }
     
@@ -71,6 +72,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // if it's ready to show modes, do so
         if ((Device.connectedDevice?.readyToShowModes)!)
         {
+                // even after we display modes the first time, we want to keep updating them as we get more info
             timer.invalidate();
             print("Showing modes");
             //loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
@@ -140,6 +142,25 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 
                 return;
             }
+                // getting the thumbnails;  Currently cutting out in the middle of receiving a packet mid-row
+            else if ((Device.connectedDevice?.thumbnails.count)! < (Device.connectedDevice?.maxBitmaps)!)
+            {
+                    // if we haven't already
+                if (!(Device.connectedDevice?.requestedThumbnail)!)
+                {
+                    // if it's past the max, reset
+                    if ((Device.connectedDevice?.thumbnailRowIndex)! >= 20)
+                    {
+                        Device.connectedDevice?.thumbnailRowIndex = 0;
+                    }
+                        // request the current thumbnail at the current row
+                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL, inputInt:  (Device.connectedDevice?.thumbnails.count)! + 1, secondInputInt: (Device.connectedDevice?.thumbnailRowIndex)!);
+                    Device.connectedDevice?.requestedThumbnail = true;
+                    BLETimeoutTimer.invalidate();
+                    BLETimeoutTimer = Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(thumbnailTimeout), userInfo: nil, repeats: false);
+                }
+                return;
+            }
                 // once all setup is done, we are ready to show the modes
             else
             {
@@ -148,6 +169,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         }
         
     }
+    
+    @objc func thumbnailTimeout()
+    {
+        if ((Device.connectedDevice?.requestedThumbnail)!)
+        {
+            NotificationCenter.default.post(name: Notification.Name(rawValue: "resendRow"), object: nil);
+        }
+    }
+    
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
@@ -163,7 +193,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
-        return modes.count;
+        return (Device.connectedDevice?.modes.count)!;
     }
 
     
@@ -177,7 +207,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             fatalError("The dequeued cell is not an instance of ModeTableViewCell");
         }
 
-        let currentMode = modes[indexPath.row]
+        let currentMode = (Device.connectedDevice?.modes[indexPath.row])!;
+        
         
         cell.modeLabel.text = currentMode.name;
         cell.modeIndex.text = String(currentMode.index);
@@ -333,8 +364,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     // MARK: Private Methods
     
-        // sends get commands to the hardware, using the protocol as the inputString (and an optional int at the end)
-    private func getValue(_ inputString: String, inputInt: Int = -1)
+        // sends get commands to the hardware, using the protocol as the inputString (and an optional int or two at the end, for certain getters)
+    private func getValue(_ inputString: String, inputInt: Int = -1, secondInputInt: Int = -1)
     {
         if (!(Device.connectedDevice?.isConnected)!)
         {
@@ -345,7 +376,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
         {
             print("Disconnected");
-            
+                // stop the setup process, if active
+            timer.invalidate()
             // error popup
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
             let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
@@ -367,12 +399,25 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // if an input value was specified, especially for the getName/getMode commands, add it to the package
         if (inputInt != -1)
         {
-            let uInputInt: UInt8 = UInt8(inputInt);
-            let stringArray: [UInt8] = Array(inputString.utf8);
-            let outputArray = stringArray + [uInputInt];
-            let outputData = NSData(bytes: outputArray, length: 4)
-            print("Sending: " + inputString, inputInt, outputArray);
-            Device.connectedDevice!.peripheral.writeValue(outputData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            if (secondInputInt != -1)
+            {
+                let uInputInt: UInt8 = UInt8(inputInt);
+                let secondUInputInt: UInt8 = UInt8(secondInputInt);
+                let stringArray: [UInt8] = Array(inputString.utf8);
+                let outputArray = stringArray + [uInputInt] + [secondUInputInt];
+                let outputData = NSData(bytes: outputArray, length: 5)
+                print("Sending: " + inputString, inputInt, secondInputInt, outputArray);
+                Device.connectedDevice!.peripheral.writeValue(outputData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            }
+            else
+            {
+                let uInputInt: UInt8 = UInt8(inputInt);
+                let stringArray: [UInt8] = Array(inputString.utf8);
+                let outputArray = stringArray + [uInputInt];
+                let outputData = NSData(bytes: outputArray, length: 4)
+                print("Sending: " + inputString, inputInt, outputArray);
+                Device.connectedDevice!.peripheral.writeValue(outputData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            }
         }
         else
         {
