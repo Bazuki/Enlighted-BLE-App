@@ -50,6 +50,7 @@ class Device
     var receivedName = false;
     var requestedMode = false;
     var requestedThumbnail = false;
+    var requestedModeChange = false;
     var requestWithoutResponse = false;
     
     var readyToShowModes = false;

@@ -43,6 +43,11 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         
             // updating the battery percentage to display the percentage (temporarily).  200 means the battery value isn't readable
         batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(updateBrightnessValue), name: Notification.Name(rawValue: "gotBrightness"), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(updateBatteryPercentage), name: Notification.Name(rawValue: "gotBattery"), object: nil)
+        
     }
 
     override func viewWillAppear(_ animated: Bool)
@@ -53,8 +58,6 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         // getting and updating the slider with the device's brightness
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
         batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
-        
-        
         
     }
     
@@ -75,6 +78,25 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         {
             print("Device is not connected");
             return;
+        }
+        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        {
+            print("Disconnected");
+            
+            // error popup
+            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                print("Should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
+            })
+            
+            dialogMessage.addAction(ok);
+            
+            self.present(dialogMessage, animated: true, completion: nil);
+            // shows the Connection page (hopefully/eventually)
+            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+            //self.show(newViewController, sender: self);
         }
         
         print("New slider value: \(sender.value)");
@@ -112,12 +134,39 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         let dialogMessage = UIAlertController(title:"Confirm", message: "Are you sure you want to revert settings?  Your changes will be lost.", preferredStyle: .alert);
         
         // defining the confirm / revert button
-        let revert = UIAlertAction(title: "Revert", style: .default, handler: {(action) -> Void in
+        let revert = UIAlertAction(title: "Revert", style: .default, handler:
+        {(action) -> Void in
+                // clear mode list
+            Device.connectedDevice?.modes = [Mode]();
+                // clear thumbnail list
+            Device.connectedDevice?.thumbnails = [UIImage]();
+                // clear current thumbnail row
+            NotificationCenter.default.post(name: Notification.Name(rawValue: "resendRow"), object: nil);
+            
+                // credit to https://stackoverflow.com/questions/28190070/swift-poptoviewcontroller for navigating to a specific viewController
+            
+                // finding the index of the "Choose Mode" screen on the navigation stack
+            let modeTableVCIndex = self.navigationController?.viewControllers.firstIndex(where:
+            {(viewController) -> Bool in
+                if let _ = viewController as? ModeTableViewController
+                {
+                    return true;
+                }
+                return false;
+            })
+            
+                // getting a reference to that specific screen using the index we just found
+            let modeTableVC = self.navigationController?.viewControllers[modeTableVCIndex!] as! ModeTableViewController;
+            
+                // navigating back to that screen (at which point SetUpTable() should re-read values from the hardware)
+            _ = self.navigationController?.popToViewController(modeTableVC, animated: true)
+            
             print("Reverted to default settings");
         })
         
         // defining the cancel button
-        let cancel = UIAlertAction(title: "Cancel", style: .cancel) { (action) -> Void in
+        let cancel = UIAlertAction(title: "Cancel", style: .cancel)
+        { (action) -> Void in
             print("Cancelled");
         }
         
@@ -139,7 +188,19 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     
     //Mark: Private Methods
     
-    // sends get commands to the hardware, using the protocol as the inputString
+        // updating the battery percentage to what we read from summer
+    @objc private func updateBatteryPercentage()
+    {
+        batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
+    }
+    
+        // updating the brightness slider based on new values from hardware
+    @objc private func updateBrightnessValue()
+    {
+        brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
+    }
+    
+        // sends get commands to the hardware, using the protocol as the inputString
     private func getValue(_ inputString: String)
     {
         if (!(Device.connectedDevice?.isConnected)!)
@@ -155,7 +216,8 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
             let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
             {(action) -> Void in
-                print("Should go to the Connect Screen at this point, still need to implement");
+                print("Should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
             })
             
             dialogMessage.addAction(ok);

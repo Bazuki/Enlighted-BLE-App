@@ -87,13 +87,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
             // if we're currently connected to a device as we enter this screen, disconnect (because we'll be choosing a new one)
         disconnectFromDevice();
+        startScan();
     }
     
         // start scan on appearance of viewController
     override func viewDidAppear(_ animated: Bool)
     {
         super.viewDidAppear(animated);
-        startScan();
+        
     }
     
     override func didReceiveMemoryWarning()
@@ -294,6 +295,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             {
                 print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]));
                 Device.connectedDevice?.brightness = Int(rxValue[1]);
+                NotificationCenter.default.post(name: Notification.Name(rawValue: "gotBrightness"), object: nil);
             }
                 // if the first letter is "B", we're getting the battery, which must be manipulated to give percentage
             else if (rxString?.prefix(1) == "B")
@@ -305,6 +307,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 let voltage = (Float(ADCValue) / 1024) * 16.5;
                     // calculates the battery percentage given the voltage
                 Device.connectedDevice?.batteryPercentage = calculateBatteryPercentage(voltage);
+                NotificationCenter.default.post(name: Notification.Name(rawValue: "gotBattery"), object: nil);
             }
                 // if the first letter is "M", we're getting details about a mode, and need to add it to the Device.connectedDevice's list
             else if (rxString?.prefix(1) == "M")
@@ -404,14 +407,15 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         // reset the row counter
                     Device.connectedDevice?.thumbnailRowIndex = 0;
                 }
-                
-                
-                
-                
             }
             else if (rxInt == 1)
             {
                 print("Command succeeded.");
+                if ((Device.connectedDevice?.requestedModeChange)!)
+                {
+                    Device.connectedDevice?.requestedModeChange = false;
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: "changedMode"), object: nil);
+                }
             }
             else if (rxInt == 0)
             {
@@ -464,7 +468,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
             let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
             {(action) -> Void in
-                print("Should go to the Connect Screen at this point, still need to implement");
+                print("Should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
             })
             
             dialogMessage.addAction(ok);
@@ -530,7 +535,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
             // Discovery callback
         peripheral.delegate = self;
-            // Only look for services that match the transmit UUID (and the battery service UUID)
+            // Only look for services that match the transmit UUID
         peripheral.discoverServices([BLEService_UUID]);
         //peripheral.discoverServices([BLEBatteryService_UUID]);
     }
@@ -603,21 +608,22 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 print("Tx Characteristic: \(characteristic.uuid)");
             }
             
-                // looks for the battery level characteristic
-            if characteristic.uuid.isEqual(BLE_Characteristic_uuid_batteryValue)
-            {
-                batteryCharacteristic = characteristic;
-                
-                    // once found, subscribe to this characteristic to update the battery level
-                peripheral.setNotifyValue(true, for: batteryCharacteristic!);
-                
-                peripheral.readValue(for: characteristic);
-                print("Battery characteristic: \(characteristic.uuid)");
-            }
+                // looks for the battery level characteristic (Never called, because we don't look for the battery service
+//            if characteristic.uuid.isEqual(BLE_Characteristic_uuid_batteryValue)
+//            {
+//                batteryCharacteristic = characteristic;
+//
+//                    // once found, subscribe to this characteristic to update the battery level
+//                peripheral.setNotifyValue(true, for: batteryCharacteristic!);
+//
+//                peripheral.readValue(for: characteristic);
+//                print("Battery characteristic: \(characteristic.uuid)");
+//            }
             
             peripheral.discoverDescriptors(for: characteristic);
-            Device.connectedDevice?.hasDiscoveredCharacteristics = true;
+            
         }
+        Device.connectedDevice?.hasDiscoveredCharacteristics = true;
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {

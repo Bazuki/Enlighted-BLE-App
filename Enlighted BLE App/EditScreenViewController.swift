@@ -9,6 +9,7 @@
 import UIKit
 import CoreBluetooth
 import QuartzCore
+import AVFoundation
 
 class EditScreenViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, CBPeripheralManagerDelegate//, ISColorWheelDelegate
 {
@@ -21,7 +22,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBOutlet weak var color1Selector: ColorPreview!
     @IBOutlet weak var color2Selector: ColorPreview!
     
-    @IBOutlet weak var colorPickerPlaceholder: UIImageView!
+    @IBOutlet weak var colorPickerWrapper: UIView!
+    
     @IBOutlet weak var intensitySliderPlaceholder: UISlider!
     
     @IBOutlet weak var bitmapPicker: UICollectionView!
@@ -44,8 +46,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     //var delegate =
     //var _colorWheel: ISColorWheel = ISColorWheel();
     
-    // a list of the selectable bitmaps
+        // a list of the selectable bitmaps
     var bitmaps = [UIImage?]();
+    
+        // a history of bitmaps, so that we can use "undo"
+    var bitmapHistory = [Int]();
     
     override func viewDidLoad()
     {
@@ -108,7 +113,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             
             bitmapPicker.isHidden = false;
             
-            colorPickerPlaceholder.isHidden = true;
+            colorPickerWrapper.isHidden = true;
             intensitySliderPlaceholder.isHidden = true;
             
             colorUndoButton.isHidden = true;
@@ -132,7 +137,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             
             bitmapPicker.isHidden = true;
             
-            colorPickerPlaceholder.isHidden = false;
+            colorPickerWrapper.isHidden = false;
             intensitySliderPlaceholder.isHidden = false;
             
             colorUndoButton.isHidden = false;
@@ -160,6 +165,23 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
     }
 
+    override func viewWillAppear(_ animated: Bool)
+    {
+        super.viewWillAppear(animated);
+        
+            // clearing history upon entry to the view screen
+        bitmapHistory = [Int]();
+        
+            // should automatically pre-select the correct bitmap
+        if ((Device.connectedDevice?.mode?.usesBitmap)!)
+        {
+            let indexPath = IndexPath(row: (Device.connectedDevice?.mode?.bitmapIndex)! - 1, section: 0);
+            bitmapPicker.selectItem(at: indexPath, animated: true, scrollPosition: UICollectionViewScrollPosition(rawValue: 0));
+                // on loading in, enforce the stored bitmap
+            setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
+        }
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -198,6 +220,22 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath)
     {
+        Device.connectedDevice?.mode?.bitmapIndex = indexPath.row + 1;
+        setBitmap(indexPath.row + 1);
+            // updating the header image
+        bitmapUIImage.image = Device.connectedDevice?.thumbnails[(Device.connectedDevice?.mode?.bitmapIndex)! - 1];
+        
+            // adding to the history (if it isn't already the most recent mode)
+        if (bitmapHistory.last != indexPath.row + 1)
+        {
+            bitmapHistory += [indexPath.row + 1];
+        }
+        
+        print("Will set to bitmap: \(indexPath.row + 1) ");
+    }
+    
+    func setBitmap(_ bitmapIndex: Int)
+    {
         if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
@@ -211,7 +249,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
             let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
             {(action) -> Void in
-                print("Should go to the Connect Screen at this point, still need to implement");
+                print("Should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
             })
             
             dialogMessage.addAction(ok);
@@ -223,17 +262,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             return;
         }
         
-        Device.connectedDevice?.mode?.bitmapIndex = indexPath.row + 1;
-        
-            // updating the header image
-        bitmapUIImage.image = Device.connectedDevice?.thumbnails[(Device.connectedDevice?.mode?.bitmapIndex)! - 1];
-        
-        print("Will set to bitmap: \(indexPath.row + 1) ");
-        
-        let bitmapIndexUInt: UInt8 = UInt8(bitPattern: Int8(indexPath.row + 1));
+        let bitmapIndexUInt: UInt8 = UInt8(bitmapIndex);
         
         let valueString = EnlightedBLEProtocol.ENL_BLE_SET_BITMAP;// + "\(modeIndexUInt)";
-    
+        
         let stringArray: [UInt8] = Array(valueString.utf8);
         let valueArray = stringArray + [bitmapIndexUInt]
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
@@ -242,7 +274,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         print("sending: " + valueString, bitmapIndexUInt);
         
         Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
-            // "active request" flag
+        // "active request" flag
         Device.connectedDevice?.requestWithoutResponse = true;
         
     }
@@ -296,7 +328,28 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         color1RGB.textColor = UIColor(named: "NonSelectedText");
     }
     
-    
+        // undoing bitmap selections
+    @IBAction func pressedBitmapUndo(_ sender: UIButton)
+    {
+        if (bitmapHistory.count > 1)
+        {
+                // going back in history
+            Device.connectedDevice?.mode?.bitmapIndex = bitmapHistory[bitmapHistory.count - 2];
+            setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
+                // updating the header image
+            bitmapUIImage.image = Device.connectedDevice?.thumbnails[(Device.connectedDevice?.mode?.bitmapIndex)! - 1];
+                // select the correct bitmap
+            let indexPath = IndexPath(row: (Device.connectedDevice?.mode?.bitmapIndex)! - 1, section: 0);
+            bitmapPicker.selectItem(at: indexPath, animated: true, scrollPosition: UICollectionViewScrollPosition(rawValue: 0));
+                // removing the last value
+            bitmapHistory.removeLast();
+        }
+        else
+        {
+            print("No more history to undo");
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+        }
+    }
     /*
     // MARK: - Navigation
 

@@ -14,6 +14,11 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // MARK: - Properties
     @IBOutlet weak var modeTableView: UITableView!
     
+        // the loading bar
+    @IBOutlet weak var loadingProgressView: UIProgressView!
+    
+    var progress: Float = 0;
+    
         // sample list of modes, since they can't be retrieved from the hardware right now
     var modes = [Mode]();
     
@@ -32,6 +37,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // getLimits for this device
         getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
         Device.connectedDevice?.requestedLimits = true;
+        progress += 0.04
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: "changedMode"), object: nil)
         
             // setting this as the delegate of the table view
         tableView.delegate = self;
@@ -51,14 +59,30 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // if we have all the modes and thumbnails, we're ready to display them
         Device.connectedDevice?.readyToShowModes = (Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps);
         
+            // configuring the style of the progress bar
+        loadingProgressView.progressViewStyle = UIProgressView.Style.bar;
+        
             // if we didn't completely get the mode list (i.e. aren't totally ready to show modes)
         if (!(Device.connectedDevice?.readyToShowModes)!)
         {
+            modes = [Mode]();
+            modeTableView.reloadData();
+            
+                // reset progress bar, and show
+            progress = 0;
+            loadingProgressView.setProgress(0, animated: false);
+            loadingProgressView.isHidden = false;
+            
                 // reset the variables, so we get all of them
             Device.connectedDevice?.requestedName = false;
             //Device.connectedDevice?.modes = [Mode]();
             Device.connectedDevice?.requestedMode = false;
             Device.connectedDevice?.readyToShowModes = false;
+        }
+        else
+        {
+            loadingProgressView.setProgress(1, animated: true);
+            loadingProgressView.isHidden = true;
         }
        
         print("Setting timer");
@@ -69,12 +93,18 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     @objc func setUpTable()
     {
+            // update progress
+        loadingProgressView.setProgress(progress, animated: true);
+        
             // if it's ready to show modes, do so
         if ((Device.connectedDevice?.readyToShowModes)!)
         {
                 // even after we display modes the first time, we want to keep updating them as we get more info
             timer.invalidate();
             print("Showing modes");
+            
+            loadingProgressView.isHidden = true;
+            
             //loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
                 // load up the modes stored on the device object
             modes = (Device.connectedDevice?.modes)!;
@@ -94,6 +124,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 {
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
                     Device.connectedDevice?.requestedLimits = true;
+                    progress += 0.4;
                 }
                     // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
@@ -105,6 +136,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 {
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS);
                     Device.connectedDevice?.requestedBrightness = true;
+                    progress += 0.03;
                 }
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
@@ -116,6 +148,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 {
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL);
                     Device.connectedDevice?.requestedBattery = true;
+                    progress += 0.03;
                 }
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
@@ -123,6 +156,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     // if we haven't gotten all the modes, keep chugging
             else if ((Device.connectedDevice?.modes.count)! < (Device.connectedDevice?.maxNumModes)!)
             {
+                    // how much progress each Get Name / Get Mode is worth
+                let progressValue: Float = 0.3 / (Float((Device.connectedDevice?.maxNumModes)!) * 2)
+                
                     // if we haven't yet, request the name of the first mode we need
                 if (!(Device.connectedDevice?.requestedName)!)
                 {
@@ -131,6 +167,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInt: (Device.connectedDevice?.modes.count)! + 1);
                     Device.connectedDevice?.requestedName = true;
                     Device.connectedDevice?.receivedName = false;
+                    progress += progressValue;
+                    //print("increasing progress by \(progressValue)");
                 }
                     // if we're done getting the name but have not yet asked for the mode
                 else if ((Device.connectedDevice?.receivedName)! && !(Device.connectedDevice?.requestedMode)!)
@@ -138,13 +176,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                         // getting the details about the next Mode
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInt: (Device.connectedDevice?.modes.count)! + 1);
                     Device.connectedDevice?.requestedMode = true;
+                    progress += progressValue;
                 }
                 
                 return;
             }
-                // getting the thumbnails;  Currently cutting out in the middle of receiving a packet mid-row
+                // getting the thumbnails;
             else if ((Device.connectedDevice?.thumbnails.count)! < (Device.connectedDevice?.maxBitmaps)!)
             {
+                let progressValue: Float = 0.6 / (Float((Device.connectedDevice?.maxBitmaps)!) * 20);
                     // if we haven't already
                 if (!(Device.connectedDevice?.requestedThumbnail)!)
                 {
@@ -156,6 +196,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                         // request the current thumbnail at the current row
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL, inputInt:  (Device.connectedDevice?.thumbnails.count)! + 1, secondInputInt: (Device.connectedDevice?.thumbnailRowIndex)!);
                     Device.connectedDevice?.requestedThumbnail = true;
+                    
+                    progress += progressValue;
+                    //print("increasing progress by \(progressValue)");
+                    
                     BLETimeoutTimer.invalidate();
                     BLETimeoutTimer = Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(thumbnailTimeout), userInfo: nil, repeats: false);
                 }
@@ -174,6 +218,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         if ((Device.connectedDevice?.requestedThumbnail)!)
         {
+            let progressValue: Float = 0.6 / (Float((Device.connectedDevice?.maxBitmaps)!) * 20);
+            progress -= progressValue;
             NotificationCenter.default.post(name: Notification.Name(rawValue: "resendRow"), object: nil);
         }
     }
@@ -265,7 +311,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
             let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
             {(action) -> Void in
-                print("Should go to the Connect Screen at this point, still need to implement");
+                print("Should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
             })
             
             dialogMessage.addAction(ok);
@@ -299,10 +346,65 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
             // setting "active request" flag
         Device.connectedDevice!.requestWithoutResponse = true;
+        Device.connectedDevice?.requestedModeChange = true;
         //Device.connectedDevice!.peripheral.writeValue(valueNSString!, for: Device.connectedDevice!.txCharacteristic!, type:CBCharacteristicWriteType.withoutResponse)
         //}
     }
     
+        // because changes like bitmaps aren't saved to the hardware, we have to re-set them from our memory once the mode has changed
+    @objc func updateModeSettings()
+    {
+        if ((Device.connectedDevice?.mode?.usesBitmap)!)
+        {
+            setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
+        }
+    }
+    
+        // needs to be done on selection so that it can match the phone
+    func setBitmap(_ bitmapIndex: Int)
+    {
+        if (!(Device.connectedDevice?.isConnected)!)
+        {
+            print("Device is not connected");
+            return;
+        }
+        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        {
+            print("Disconnected");
+            
+            // error popup
+            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                print("Should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
+            })
+            
+            dialogMessage.addAction(ok);
+            
+            self.present(dialogMessage, animated: true, completion: nil);
+            // shows the Connection page (hopefully/eventually)
+            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+            //self.show(newViewController, sender: self);
+            return;
+        }
+        
+        let bitmapIndexUInt: UInt8 = UInt8(bitmapIndex);
+        
+        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_BITMAP;// + "\(modeIndexUInt)";
+        
+        let stringArray: [UInt8] = Array(valueString.utf8);
+        let valueArray = stringArray + [bitmapIndexUInt]
+        // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
+        let valueData = NSData(bytes: valueArray, length: 4)
+        
+        print("sending: " + valueString, bitmapIndexUInt);
+        
+        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+        // "active request" flag
+        Device.connectedDevice?.requestWithoutResponse = true;
+        
+    }
     
     
 //    // old "initial selection" code
@@ -382,7 +484,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
             let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
             {(action) -> Void in
-                print("Should go to the Connect Screen at this point, still need to implement");
+                print("Should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
             })
             
             dialogMessage.addAction(ok);
