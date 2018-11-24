@@ -24,6 +24,7 @@ class Device: NSObject, NSCoding
         static let modes = "modes";
         static let thumbnails = "thumbnails";
         static let name = "name";
+        static let NSUUID = "nsuuid";
     }
     
     // MARK: Archiving Paths
@@ -57,6 +58,7 @@ class Device: NSObject, NSCoding
     var peripheral: CBPeripheral!;
     var txCharacteristic: CBCharacteristic?;
     var rxCharacteristic: CBCharacteristic?;
+    var UUID: NSUUID!;
     
     var isConnected: Bool = false;
     var isConnecting: Bool = false;
@@ -71,6 +73,9 @@ class Device: NSObject, NSCoding
     var requestedModeChange = false;
     var requestWithoutResponse = false;
     
+    var currentlyParsingName = false;
+    var currentlyBuildingThumbnails = false;
+    
     var readyToShowModes = false;
     
     // MARK: Singleton
@@ -81,39 +86,40 @@ class Device: NSObject, NSCoding
     // MARK: Initialization
     
     // creating a new "device" for purposes of flow, with useless parameters.  In actual implementation, these would be read from the device.
-    init(name:String)
-    {
-        self.name = name;
-        
-        // just for this demo, choosing a random int between 1 and 100 as the "RSSI value"
-        RSSI = Int(arc4random_uniform(100) + 1);
-        
-        // starting at mode -1; in the real app, would read current mode from device
-        currentModeIndex = -1;
-        maxNumModes = 4;
-        maxBitmaps = 10;
-        
-        // initial value;
-        brightness = -1;
-        
-            // mock declaration without a peripheral, so not connected
-        isConnected = false;
-        isConnecting = false;
-        hasDiscoveredCharacteristics = false;
-    }
+//    init(name:String)
+//    {
+//        self.name = name;
+//
+//        // just for this demo, choosing a random int between 1 and 100 as the "RSSI value"
+//        RSSI = Int(arc4random_uniform(100) + 1);
+//
+//        // starting at mode -1; in the real app, would read current mode from device
+//        currentModeIndex = -1;
+//        maxNumModes = 4;
+//        maxBitmaps = 10;
+//
+//        // initial value;
+//        brightness = -1;
+//
+//            // mock declaration without a peripheral, so not connected
+//        isConnected = false;
+//        isConnecting = false;
+//        hasDiscoveredCharacteristics = false;
+//    }
     
     init(name: String, RSSI: Int, peripheral: CBPeripheral)
     {
         self.name = name;
         self.RSSI = RSSI;
         self.peripheral = peripheral;
+        self.UUID = peripheral.identifier as NSUUID;
         
         
         
         // will also need to be read and set with the new protocol
         currentModeIndex = -1;
-        maxNumModes = 4;
-        maxBitmaps = 20;
+        maxNumModes = -1;
+        maxBitmaps = -1;
         brightness = -1;
         
         isConnected = false;
@@ -121,19 +127,20 @@ class Device: NSObject, NSCoding
         hasDiscoveredCharacteristics = false;
     }
     
-    init(name: String, modes: [Mode], thumbnails: [UIImage])
+    init(name: String, modes: [Mode], thumbnails: [UIImage], UUID: NSUUID)
     {
         self.name = name;
         self.RSSI = -1;
         self.peripheral = nil;
+        self.UUID = UUID;
         
         self.modes = modes;
         self.thumbnails = thumbnails;
         
         // will also need to be read and set with the new protocol
         currentModeIndex = -1;
-        maxNumModes = 4;
-        maxBitmaps = 20;
+        maxNumModes = -1;
+        maxBitmaps = -1;
         brightness = -1;
         
         isConnected = false;
@@ -154,10 +161,10 @@ class Device: NSObject, NSCoding
     {
         
         self.name = "emptyDevice";
-            
+        
             // just for this demo, choosing a random int between 1 and 100 as the "RSSI value"
         RSSI = -1;
-            
+        
             // starting at mode -1; in the real app, would read current mode from device
         currentModeIndex = -1;
         maxNumModes = -1;
@@ -207,7 +214,8 @@ class Device: NSObject, NSCoding
             // encoding name (in order to recognize it) and modes and thumbnails (because of their size)
         aCoder.encode(name, forKey: PropertyKey.name);
         aCoder.encode(modes, forKey: PropertyKey.modes);
-        print("Just encoded \(modes.count) modes");
+        aCoder.encode(UUID, forKey: PropertyKey.NSUUID)
+        //print("Just encoded \(modes.count) modes");
         aCoder.encode(thumbnails, forKey: PropertyKey.thumbnails);
     }
     
@@ -215,24 +223,30 @@ class Device: NSObject, NSCoding
     {
         guard let modes = aDecoder.decodeObject(forKey: PropertyKey.modes) as? [Mode] else
         {
-            os_log("Unable to decode the modes for the Device.", log: OSLog.default, type: .debug)
+            os_log("Unable to decode the modes for the Device.", log: OSLog.default, type: .debug);
             return nil;
         }
         
         guard let thumbnails = aDecoder.decodeObject(forKey: PropertyKey.thumbnails) as? [UIImage] else
         {
-            os_log("Unable to decode the thumbnails for the Device.", log: OSLog.default, type: .debug)
+            os_log("Unable to decode the thumbnails for the Device.", log: OSLog.default, type: .debug);
             return nil;
         }
         
         guard let name = aDecoder.decodeObject(forKey: PropertyKey.name) as? String else
         {
-            os_log("Unable to decode the name for the Device.", log: OSLog.default, type: .debug)
+            os_log("Unable to decode the name for the Device.", log: OSLog.default, type: .debug);
+            return nil;
+        }
+        
+        guard let UUID = aDecoder.decodeObject(forKey: PropertyKey.NSUUID) as? NSUUID else
+        {
+            os_log("Unable to decode the CBPeripheral for the Device.", log: OSLog.default, type: .debug);
             return nil;
         }
         
             // must call designated initializer.
-        self.init(name: name, modes: modes, thumbnails: thumbnails);
+        self.init(name: name, modes: modes, thumbnails: thumbnails, UUID: UUID);
     }
 }
 

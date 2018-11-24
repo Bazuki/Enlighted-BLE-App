@@ -31,8 +31,10 @@ class BLEConnectionTableViewCell: UITableViewCell
     
     override func awakeFromNib()
     {
-        super.awakeFromNib()
+        super.awakeFromNib();
         // Initialization code
+        
+        wasSelected = false;
         
             // Formatting the images to allow for recoloration
         connectionImage.image = connectionImage.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
@@ -87,7 +89,7 @@ class BLEConnectionTableViewCell: UITableViewCell
     @objc func enableButton()
     {
             // if the device is successfully connected, stop the timer and enable the button
-        if (Device.connectedDevice?.hasDiscoveredCharacteristics ?? false && (Device.connectedDevice?.isConnected)!)
+        if ((Device.connectedDevice?.hasDiscoveredCharacteristics)! && (Device.connectedDevice?.isConnected)!)
         {
             //timer.invalidate();
             connectButton.isEnabled = true;

@@ -39,11 +39,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
         // list of peripherals, and their associated RSSI values
     var peripherals: [CBPeripheral] = [];
+        // want to get "real" names from advertising data
+    var peripheralNames = [String]();
     var RSSIs = [NSNumber]();
     var data = NSMutableData();
     
         // variables to help in parsing names
-    var currentlyParsingName = false;
+    //var currentlyParsingName = false;
     var parsedName: String = "";
     
         // pixel data – credit to https://stackoverflow.com/questions/30958427/pixel-array-to-uiimage-in-swift
@@ -92,14 +94,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
             // if we're currently connected to a device as we enter this screen, disconnect (because we'll be choosing a new one)
         disconnectFromDevice();
-        startScan();
+        
+            // we want to clear the visibleDevices() array now that we have cached memory
+        visibleDevices = [Device]();
+        
+            // shorter scan on entry so that devices will be culled quickly
+        startScan(0.2);
     }
     
         // start scan on appearance of viewController
     override func viewDidAppear(_ animated: Bool)
     {
         super.viewDidAppear(animated);
-        
     }
     
     override func didReceiveMemoryWarning()
@@ -115,7 +121,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         if central.state == CBManagerState.poweredOn
         {
             print("Bluetooth Enabled")
-            startScan();
+            startScan(0.5);
             
             // should scan multiple times
             
@@ -137,6 +143,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber)
     {
         self.peripherals.append(peripheral);
+        self.peripheralNames.append(advertisementData[CBAdvertisementDataLocalNameKey] as! String);
         self.RSSIs.append(RSSI);
         
             // handled in cancelScan()
@@ -174,7 +181,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     }
     
         // starting to scan for peripherals that have Bluefruit's unique GATT indicator
-    @objc func startScan()
+    @objc func startScan(_ scanTime: Double)
     {
             // don't scan if we can't
         if (centralManager.state != CBManagerState.poweredOn)
@@ -190,7 +197,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print("Now scanning...");
         self.timer.invalidate();
         centralManager?.scanForPeripherals(withServices: [BLEService_UUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey:false])
-        Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false);
+        Timer.scheduledTimer(timeInterval: scanTime, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false);
     }
     
         // cancelling the scan for peripherals
@@ -203,18 +210,19 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // if we aren't connected to a device, keep trying
         if (Device.connectedDevice == nil || Device.connectedDevice?.name == "emptyDevice")
         {
-            // going through devices
+                // going through devices
             if (visibleDevices.count > 0)
             {
                 var deviceIndex = 0;
                 while (deviceIndex < visibleDevices.count)
                 {
-                    // update device RSSIs of devices we know
+                        // update device RSSIs of devices we know
                     if let foundPeripheralIndex = peripherals.firstIndex(of: visibleDevices[deviceIndex].peripheral)
                     {
                         visibleDevices[deviceIndex].RSSI = RSSIs[foundPeripheralIndex].intValue;
-                        // since we already have a Device for this peripheral, we can remove it (and its corresponding RSSI value)
+                            // since we already have a Device for this peripheral, we can remove it (and its corresponding RSSI value and name)
                         peripherals.remove(at: foundPeripheralIndex);
+                        peripheralNames.remove(at: foundPeripheralIndex);
                         RSSIs.remove(at: foundPeripheralIndex);
                         
                         deviceIndex += 1;
@@ -238,7 +246,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 print("Found an extra peripheral besides the \(visibleDevices.count) we already knew about");
                 for i in 0...(peripherals.count - 1)
                 {
-                    print("Found a new device named \(peripherals[i].name), adding it");
+                    print("Found a new device named \(peripheralNames[i]), adding it");
                     
                     if (cachedDevices.count > 0)
                     {
@@ -251,14 +259,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         {
                             
                                 // if they have the same name, use that instead of creating a new device
-                            if (cachedDevices[backwardsIndex - j].name == peripherals[i].name)
+                            if (cachedDevices[backwardsIndex - j].UUID! as UUID == peripherals[i].identifier)
                             {
                                 let newDevice = cachedDevices[backwardsIndex - j];
                                 newDevice.peripheral = peripherals[i];
                                 newDevice.RSSI = RSSIs[i].intValue;
                                 visibleDevices.append(newDevice);
                                 foundCachedDevice = true;
-                                print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total), adding \(peripherals[i].name) to visible device list");
+                                print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total), adding \(peripheralNames[i]) to visible device list");
                                 print("It has \(newDevice.modes.count) modes and \(newDevice.thumbnails.count) thumbnails stored");
                                 break;
                             }
@@ -268,20 +276,20 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         {
                             // otherwise create a brand-new device
                             print("Didn't recognize it from cache, creating new device");
-                            visibleDevices.append(Device(name: peripherals[i].name!, RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
+                            visibleDevices.append(Device(name: peripheralNames[i], RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
                         }
                     }
                     else
                     {
                         // otherwise create a brand-new device
-                        visibleDevices.append(Device(name: peripherals[i].name!, RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
+                        visibleDevices.append(Device(name: peripheralNames[i], RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
                     }
                 }
             }
             
             
             // if the device hasn't connected, keep scanning
-            startScan();
+            startScan(0.5);
         }
         
             // reload table
@@ -329,12 +337,69 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             }
             
                 // check for the end of a name first, because the first letter could be "L" or "M", etc.
-            if (currentlyParsingName && rxString?.suffix(1) == "\"")
+            if ((Device.connectedDevice?.currentlyParsingName)! && rxString?.suffix(1) == "\"")
             {
-                currentlyParsingName = false;
+                Device.connectedDevice?.currentlyParsingName = false;
                 parsedName = parsedName + rxString!.filter { $0 != "\"" };
                 //Device.connectedDevice?.requestedName = false;
                 Device.connectedDevice?.receivedName = true;
+            }
+                // if it's a 15-byte value and we've requested the thumbnail, it's probably the thumbnail
+            else if ((Device.connectedDevice?.requestedThumbnail)! && rxValue.count == 15)
+            {
+                // debug message, but super slow to print every time
+                //print("Value Received: \(rxValue[0], rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7], rxValue[8], rxValue[9], rxValue[10], rxValue[11], rxValue[12], rxValue[13], rxValue[14])");
+                
+                for i in 0...4
+                {
+                    let indexOffset = i * 3;
+                    bitmapPixelRow.append(Pixel(r: rxValue[0 + indexOffset], g: rxValue[1 + indexOffset], b: rxValue[2 + indexOffset], a: UInt8(255)));
+                }
+                // debug message, might slow down the program too much
+                //print("Thumbnail \((Device.connectedDevice?.thumbnails.count)! + 1) is \(Float(bitmapPixels.count) / 4.0) percent complete");
+                // if we just finished a row of 20 pixels, we can go on to the next one
+                if (bitmapPixelRow.count == 20)
+                {
+                    // if this command was interrupted, we need to make sure it ends, but we don't want it to leave a remnant in the pixel array
+                    if ((Device.connectedDevice?.currentlyBuildingThumbnails)!)
+                    {
+                        // adding this row to the whole thing
+                        bitmapPixels += bitmapPixelRow;
+                        // resetting row
+                        bitmapPixelRow = [Pixel]();
+                        Device.connectedDevice?.thumbnailRowIndex += 1;
+                    }
+                        // if we get a pixel row at the wrong time, we want to make sure the pixel array is empty for when we really want thumbnails
+                    else
+                    {
+                            // reset the whole thumbnail
+                        bitmapPixels = [Pixel]();
+                            // reset the row counter
+                        Device.connectedDevice?.thumbnailRowIndex = 0;
+                            // reset the individual row
+                        bitmapPixelRow = [Pixel]();
+                        
+                    }
+                    
+                    Device.connectedDevice?.requestedThumbnail = false;
+                }
+                // if the 20x20 grid is finished, turn it into a UIImage and go on to the next one
+                if (bitmapPixels.count >= 400)
+                {
+                    print("Finished bitmap");
+                    // Generate a new UIImage (20x20 is hardcoded)
+                    guard let newThumbnail = UIImageFromBitmap(pixels: bitmapPixels, width: 20) else
+                    {
+                        print("Was unable to generate UIImage thumbnail");
+                        return;
+                    }
+                    // add it to the Device
+                    Device.connectedDevice?.thumbnails.append(newThumbnail);
+                    // clear the Pixel array
+                    bitmapPixels = [Pixel]();
+                    // reset the row counter
+                    Device.connectedDevice?.thumbnailRowIndex = 0;
+                }
             }
                 // if the first letter is "L", we're getting the current mode, lower-, and upper-mode count limits.
             else if (rxString?.prefix(1) == "L") //[(rxString?.startIndex)!] == "L")
@@ -395,7 +460,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 
             }
                 // if the first character is a " (quote) we're starting to get a name of a mode (unless we're currently parsing a name, in which case it could be that only the final quote was sent in the second packet (and it shouldn't be a new name in that case)
-            else if (rxString?.prefix(1) == "\"" && !currentlyParsingName)
+            else if (rxString?.prefix(1) == "\"" && !(Device.connectedDevice?.currentlyParsingName)!)
             {
                 print("Receiving name: " + rxString!);
                     // if the end quote is in this string, the whole name was sent in one packet
@@ -411,50 +476,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // otherwise we have to wait for the second half
                 else
                 {
-                    currentlyParsingName = true;
+                    Device.connectedDevice?.currentlyParsingName = true;
                     parsedName = rxString!.filter { $0 != "\"" };
-                }
-            }
-                // if it's a 15-byte value and we've requested the thumbnail, it's probably the thumbnail
-            else if ((Device.connectedDevice?.requestedThumbnail)! && rxValue.count == 15)
-            {
-                    // debug message, but super slow to print every time
-                //print("Value Received: \(rxValue[0], rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7], rxValue[8], rxValue[9], rxValue[10], rxValue[11], rxValue[12], rxValue[13], rxValue[14])");
-                
-                for i in 0...4
-                {
-                    let indexOffset = i * 3;
-                    bitmapPixelRow.append(Pixel(r: rxValue[0 + indexOffset], g: rxValue[1 + indexOffset], b: rxValue[2 + indexOffset], a: UInt8(255)));
-                }
-                    // debug message, might slow down the program too much
-                //print("Thumbnail \((Device.connectedDevice?.thumbnails.count)! + 1) is \(Float(bitmapPixels.count) / 4.0) percent complete");
-                    // if we just finished a row of 20 pixels, we can go on to the next one
-                if (bitmapPixelRow.count == 20)
-                {
-                        //print("Starting new row");
-                        // adding this row to the whole thing
-                    bitmapPixels += bitmapPixelRow;
-                        // resetting row
-                    bitmapPixelRow = [Pixel]();
-                    Device.connectedDevice?.thumbnailRowIndex += 1;
-                    Device.connectedDevice?.requestedThumbnail = false;
-                }
-                    // if the 20x20 grid is finished, turn it into a UIImage and go on to the next one
-                if (bitmapPixels.count >= 400)
-                {
-                    print("Finished bitmap");
-                        // Generate a new UIImage (20x20 is hardcoded)
-                    guard let newThumbnail = UIImageFromBitmap(pixels: bitmapPixels, width: 20) else
-                    {
-                        print("Was unable to generate UIImage thumbnail");
-                        return;
-                    }
-                        // add it to the Device
-                    Device.connectedDevice?.thumbnails.append(newThumbnail);
-                        // clear the Pixel array
-                    bitmapPixels = [Pixel]();
-                        // reset the row counter
-                    Device.connectedDevice?.thumbnailRowIndex = 0;
                 }
             }
             else if (rxInt == 1)
@@ -750,6 +773,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // if the current connectedDevice doesn't exist, then select the one at IndexPath
         guard Device.connectedDevice != nil && Device.connectedDevice?.name != "emptyDevice" else
         {
+            print("Selected new device");
             //disconnectFromDevice();  // no need to disconnect if there isn't a connected device
             Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
             Device.connectedDevice?.isConnected = false;
@@ -769,6 +793,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             Device.connectedDevice?.isConnected = false;
             Device.connectedDevice?.isConnecting = true;
             connectToDevice();
+        }
+        else
+        {
+            print("Selected the same device");
         }
         
         
@@ -845,13 +873,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     // MARK: - Navigation
 
-    // changing the "back button" text to show that it will disconnect the device, and so that it will fit
-    // credit to https://stackoverflow.com/questions/28471164/how-to-set-back-button-text-in-swift
+    
     override func prepare(for segue: UIStoryboardSegue, sender: Any?)
     {
+            // changing the "back button" text to show that it will disconnect the device, and so that it will fit
+            // credit to https://stackoverflow.com/questions/28471164/how-to-set-back-button-text-in-swift
         let backItem = UIBarButtonItem();
         backItem.title = "Disconnect";
         navigationItem.backBarButtonItem = backItem;
+        
+            // clearing visibleDevices
+        visibleDevices = [Device]();
+        
     }
     
     
@@ -960,18 +993,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         return NSKeyedUnarchiver.unarchiveObject(withFile: Device.ArchiveURL.path) as? [Device];
     }
     
-        // making fake devices to showcase the UI (no longer necessary since we can connect to real devices)
-    private func loadSampleDevices()
-    {
-        
-        // Initializing some sample devices
-        let device1 = Device(name: "ENL1");
-        let device2 = Device(name: "ENL2");
-        let device3 = Device(name: "ENL3");
-        let device4 = Device(name: "ENL4");
-        
-        visibleDevices += [device1, device2, device3, device4];
-        
-    }
+//        // making fake devices to showcase the UI (no longer necessary since we can connect to real devices)
+//    private func loadSampleDevices()
+//    {
+//
+//        // Initializing some sample devices
+//        let device1 = Device(name: "ENL1");
+//        let device2 = Device(name: "ENL2");
+//        let device3 = Device(name: "ENL3");
+//        let device4 = Device(name: "ENL4");
+//
+//        visibleDevices += [device1, device2, device3, device4];
+//
+//    }
     
 }

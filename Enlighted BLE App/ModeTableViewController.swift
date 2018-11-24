@@ -57,6 +57,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidAppear(animated);
         
+            // making sure the main timer isn't running
+        timer.invalidate();
             // if we have all the modes and thumbnails, we're ready to display them
         Device.connectedDevice?.readyToShowModes = (Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps);
         
@@ -66,6 +68,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // if we didn't completely get the mode list (i.e. aren't totally ready to show modes)
         if (!(Device.connectedDevice?.readyToShowModes)!)
         {
+            print("Wasn't ready to show modes, restarting getting data");
             modes = [Mode]();
             modeTableView.reloadData();
             
@@ -76,6 +79,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             
                 // reset the variables, so we get all of them
             Device.connectedDevice?.requestedName = false;
+            Device.connectedDevice?.currentlyBuildingThumbnails = false;
             //Device.connectedDevice?.modes = [Mode]();
             Device.connectedDevice?.requestedMode = false;
             Device.connectedDevice?.readyToShowModes = false;
@@ -88,7 +92,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
        
         print("Setting timer");
             // Set the timer that governs the setup of the mode table
-        timer = Timer.scheduledTimer(timeInterval: 0.025, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
+        timer = Timer.scheduledTimer(timeInterval: 0.04, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
         
     }
     
@@ -116,8 +120,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             modeTableView.reloadData();
             self.tableView.selectRow(at: indexPath, animated: true, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
         }
-            // otherwise do preparatory steps
-        else
+            // otherwise do preparatory steps, as long as a multi-message response isn't currently happening
+        else if (Device.connectedDevice?.requestedThumbnail == false && Device.connectedDevice?.currentlyParsingName == false && Device.connectedDevice?.requestWithoutResponse == false)
         {
                 // if getLimits hasn't received a value yet
             if ((Device.connectedDevice?.currentModeIndex)! < 0)
@@ -187,6 +191,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // getting the thumbnails;
             else if ((Device.connectedDevice?.thumbnails.count)! < (Device.connectedDevice?.maxBitmaps)!)
             {
+                Device.connectedDevice?.currentlyBuildingThumbnails = true;
                 let progressValue: Float = 0.6 / (Float((Device.connectedDevice?.maxBitmaps)!) * 20);
                     // if we haven't already
                 if (!(Device.connectedDevice?.requestedThumbnail)!)
@@ -211,8 +216,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // once all setup is done, we are ready to show the modes
             else
             {
+                    // we want to make sure we don't have thumbnail remnants if the "Get Thumbnail" process is interrupted
+                Device.connectedDevice?.currentlyBuildingThumbnails = false;
+                
                 Device.connectedDevice?.readyToShowModes = true;
             }
+        }
+        else
+        {
+            print("We're mid-parse of something, so don't request anything else;  requestedThumbnail?: \(Device.connectedDevice?.requestedThumbnail) currentlyParsingName?: \(Device.connectedDevice?.currentlyParsingName) requestWithoutResponse?: \(Device.connectedDevice?.requestWithoutResponse) ");
         }
         
     }
@@ -644,8 +656,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // if there aren't any saved devices, save them now
         //TODO: overwrite old saves that have the same name
         
-            // if there's an old save with the same name, override it
-        if let indexOfDevice = cachedDevices.firstIndex(where: {$0.name == Device.connectedDevice?.name})
+            // if there's an old save with the same NSUUID, override it
+        if let indexOfDevice = cachedDevices.firstIndex(where: {$0.UUID == Device.connectedDevice?.peripheral.identifier as NSUUID?})
         {
             cachedDevices[indexOfDevice] = Device.connectedDevice!
                 // clearing out duplicates
