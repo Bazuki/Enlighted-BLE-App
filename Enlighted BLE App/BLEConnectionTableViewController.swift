@@ -26,6 +26,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // The devices that show up on the connection screen.
     var visibleDevices = [Device]();
     
+        // the devices we have stored in memory, which we will recognize by name
+    var cachedDevices = [Device]();
+    
         // The bluetooth CentralManager object controlling the connection to peripherals
     var centralManager : CBCentralManager!;
         // A timer object to help in searching
@@ -82,6 +85,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         super.viewWillAppear(animated);
         
+            // load cached devices
+        cachedDevices = loadDevices() ?? [Device]();
         
         //centralManager = CBCentralManager(delegate:self, queue: nil);
         
@@ -234,13 +239,53 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 for i in 0...(peripherals.count - 1)
                 {
                     print("Found a new device named \(peripherals[i].name), adding it");
-                    visibleDevices.append(Device(name: peripherals[i].name!, RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
+                    
+                    if (cachedDevices.count > 0)
+                    {
+                            // whether or not we recognized this device as one of our own
+                        var foundCachedDevice = false;
+                        
+                        let backwardsIndex = cachedDevices.count - 1;
+                            // going through cache to see if we can match the name
+                        for j in 0...(cachedDevices.count - 1)
+                        {
+                            
+                                // if they have the same name, use that instead of creating a new device
+                            if (cachedDevices[backwardsIndex - j].name == peripherals[i].name)
+                            {
+                                let newDevice = cachedDevices[backwardsIndex - j];
+                                newDevice.peripheral = peripherals[i];
+                                newDevice.RSSI = RSSIs[i].intValue;
+                                visibleDevices.append(newDevice);
+                                foundCachedDevice = true;
+                                print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total), adding \(peripherals[i].name) to visible device list");
+                                print("It has \(newDevice.modes.count) modes and \(newDevice.thumbnails.count) thumbnails stored");
+                                break;
+                            }
+                        }
+                        
+                        if (!foundCachedDevice)
+                        {
+                            // otherwise create a brand-new device
+                            print("Didn't recognize it from cache, creating new device");
+                            visibleDevices.append(Device(name: peripherals[i].name!, RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
+                        }
+                    }
+                    else
+                    {
+                        // otherwise create a brand-new device
+                        visibleDevices.append(Device(name: peripherals[i].name!, RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
+                    }
                 }
             }
+            
             
             // if the device hasn't connected, keep scanning
             startScan();
         }
+        
+            // reload table
+        deviceTableView.reloadData();
         
     }
     
@@ -274,15 +319,25 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             let rxInt = Int(receivedArray[0]);
             
             
-           // print("received response on rxCharacteristic");
+            print("received \(receivedArray)");
+            
+            
                 // stopping "active request" flag, because a response has been received
             if ((Device.connectedDevice?.requestWithoutResponse)!)
             {
                 Device.connectedDevice?.requestWithoutResponse = false;
             }
             
+                // check for the end of a name first, because the first letter could be "L" or "M", etc.
+            if (currentlyParsingName && rxString?.suffix(1) == "\"")
+            {
+                currentlyParsingName = false;
+                parsedName = parsedName + rxString!.filter { $0 != "\"" };
+                //Device.connectedDevice?.requestedName = false;
+                Device.connectedDevice?.receivedName = true;
+            }
                 // if the first letter is "L", we're getting the current mode, lower-, and upper-mode count limits.
-            if (rxString?.prefix(1) == "L") //[(rxString?.startIndex)!] == "L")
+            else if (rxString?.prefix(1) == "L") //[(rxString?.startIndex)!] == "L")
             {
                 print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
                 //print(Int(rxValue[1]));
@@ -320,8 +375,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // if it's a bitmap mode, we should create one and add it to the Device's list
                 if (usesBitmap)
                 {
-                    print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
-                    let bitmapIndex = Int(rxValue[2]);
+                    //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
+                    print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                        // clamping to min/max
+                    let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
                     Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil])!];
                 }
                 else
@@ -357,14 +414,6 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     currentlyParsingName = true;
                     parsedName = rxString!.filter { $0 != "\"" };
                 }
-            }
-                // if the last letter is a quote, we're getting the second part of a name of a mode
-            else if (currentlyParsingName && rxString?.suffix(1) == "\"")
-            {
-                currentlyParsingName = false;
-                parsedName = parsedName + rxString!.filter { $0 != "\"" };
-                //Device.connectedDevice?.requestedName = false;
-                Device.connectedDevice?.receivedName = true;
             }
                 // if it's a 15-byte value and we've requested the thumbnail, it's probably the thumbnail
             else if ((Device.connectedDevice?.requestedThumbnail)! && rxValue.count == 15)
@@ -903,6 +952,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         return -1
         
+    }
+    
+        // loads stored Devices from storage, so that we can circumvent having to load
+    private func loadDevices() -> [Device]?
+    {
+        return NSKeyedUnarchiver.unarchiveObject(withFile: Device.ArchiveURL.path) as? [Device];
     }
     
         // making fake devices to showcase the UI (no longer necessary since we can connect to real devices)

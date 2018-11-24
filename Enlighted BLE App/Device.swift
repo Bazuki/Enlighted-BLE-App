@@ -8,17 +8,35 @@
 
 import UIKit;
 import CoreBluetooth;
+import os.log;
 
-class Device
+class Device: NSObject, NSCoding
 {
-    // MARK: Properties
+    
+    
+    // MARK: - Properties
+    
+        // data persistance/caching from https://developer.apple.com/library/archive/referencelibrary/GettingStarted/DevelopiOSAppsSwift/PersistData.html
+    
+        // key for keeping track of the cache's key Strings
+    struct PropertyKey
+    {
+        static let modes = "modes";
+        static let thumbnails = "thumbnails";
+        static let name = "name";
+    }
+    
+    // MARK: Archiving Paths
+    
+    static let DocumentsDirectory = FileManager().urls(for: .documentDirectory, in: .userDomainMask).first!
+    static let ArchiveURL = DocumentsDirectory.appendingPathComponent("devices")
     
     var name: String;
     var RSSI: Int;
     var batteryPercentage: Int = -1;
         // the current mode
     var currentModeIndex: Int;
-    var mode = Mode();
+    var mode = Mode(default: true);
     
         // a list of all the modes this device has, from Get Mode;
     var modes = [Mode]();
@@ -57,7 +75,8 @@ class Device
     
     // MARK: Singleton
     
-    static var connectedDevice = Device();
+        // initializing as nil
+    static var connectedDevice = Device(isFakeDevice: true, equalsNil: true);
     
     // MARK: Initialization
     
@@ -102,8 +121,28 @@ class Device
         hasDiscoveredCharacteristics = false;
     }
     
+    init(name: String, modes: [Mode], thumbnails: [UIImage])
+    {
+        self.name = name;
+        self.RSSI = -1;
+        self.peripheral = nil;
+        
+        self.modes = modes;
+        self.thumbnails = thumbnails;
+        
+        // will also need to be read and set with the new protocol
+        currentModeIndex = -1;
+        maxNumModes = 4;
+        maxBitmaps = 20;
+        brightness = -1;
+        
+        isConnected = false;
+        isConnecting = false;
+        hasDiscoveredCharacteristics = false;
+    }
+    
     // for setting an empty reference for the current device
-    init?()
+    init?(isFakeDevice: Bool, equalsNil: Bool)
     {
         isConnected = false;
         isConnecting = false;
@@ -134,7 +173,7 @@ class Device
         
     }
     
-    // MARK: Actions
+    // MARK: - Actions
     
     func setBrightness(value:Int)
     {
@@ -159,6 +198,41 @@ class Device
     public static func setConnectedDevice(newDevice: Device)
     {
         connectedDevice = newDevice;
+    }
+    
+    // MARK: - NSCoding
+    
+    func encode(with aCoder: NSCoder)
+    {
+            // encoding name (in order to recognize it) and modes and thumbnails (because of their size)
+        aCoder.encode(name, forKey: PropertyKey.name);
+        aCoder.encode(modes, forKey: PropertyKey.modes);
+        print("Just encoded \(modes.count) modes");
+        aCoder.encode(thumbnails, forKey: PropertyKey.thumbnails);
+    }
+    
+    required convenience init?(coder aDecoder: NSCoder)
+    {
+        guard let modes = aDecoder.decodeObject(forKey: PropertyKey.modes) as? [Mode] else
+        {
+            os_log("Unable to decode the modes for the Device.", log: OSLog.default, type: .debug)
+            return nil;
+        }
+        
+        guard let thumbnails = aDecoder.decodeObject(forKey: PropertyKey.thumbnails) as? [UIImage] else
+        {
+            os_log("Unable to decode the thumbnails for the Device.", log: OSLog.default, type: .debug)
+            return nil;
+        }
+        
+        guard let name = aDecoder.decodeObject(forKey: PropertyKey.name) as? String else
+        {
+            os_log("Unable to decode the name for the Device.", log: OSLog.default, type: .debug)
+            return nil;
+        }
+        
+            // must call designated initializer.
+        self.init(name: name, modes: modes, thumbnails: thumbnails);
     }
 }
 

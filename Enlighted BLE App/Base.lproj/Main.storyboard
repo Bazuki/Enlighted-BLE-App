@@ -212,7 +212,7 @@
                                 <color key="textColor" name="Subtitle"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 0.0.11 Build 9" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 0.0.11 Build 10" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
                                 <rect key="frame" x="16" y="470" width="344" height="24"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                 <color key="textColor" name="Title"/>
@@ -350,7 +350,6 @@
                                             </constraints>
                                             <state key="normal" image="EditIcon"/>
                                             <connections>
-                                                <action selector="chooseModeAndEdit:" destination="huJ-ER-jN3" eventType="touchUpInside" id="eTr-n8-mU3"/>
                                                 <segue destination="NRi-c0-1SY" kind="show" id="Dy4-he-SHc"/>
                                             </connections>
                                         </button>
@@ -565,9 +564,13 @@
                                         <color key="textColor" red="0.83741801979999997" green="0.83743780850000005" blue="0.83742713930000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="QNu-2c-Cce" userLabel="Hue Slider">
+                                    <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" minValue="0.0" maxValue="360" translatesAutoresizingMaskIntoConstraints="NO" id="QNu-2c-Cce" userLabel="Hue Slider">
                                         <rect key="frame" x="-2" y="62" width="304" height="30"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <connections>
+                                            <action selector="changedColor:" destination="NRi-c0-1SY" eventType="valueChanged" id="YoK-ja-Nxi"/>
+                                            <action selector="createdNewColor:" destination="NRi-c0-1SY" eventType="touchUpInside" id="rgv-d4-Czi"/>
+                                        </connections>
                                     </slider>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Saturation" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="IOZ-vD-lYc" userLabel="Saturation Label">
                                         <rect key="frame" x="0.0" y="106" width="300" height="21"/>
@@ -576,9 +579,13 @@
                                         <color key="textColor" red="0.83741801979999997" green="0.83743780850000005" blue="0.83742713930000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="2kv-2p-ZSk" userLabel="Saturation Slider">
+                                    <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" minValue="0.0" maxValue="100" translatesAutoresizingMaskIntoConstraints="NO" id="2kv-2p-ZSk" userLabel="Saturation Slider">
                                         <rect key="frame" x="-2" y="135" width="304" height="30"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <connections>
+                                            <action selector="changedColor:" destination="NRi-c0-1SY" eventType="valueChanged" id="fDp-ev-ecG"/>
+                                            <action selector="createdNewColor:" destination="NRi-c0-1SY" eventType="touchUpInside" id="e8T-ju-Bly"/>
+                                        </connections>
                                     </slider>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Brightness" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Jf3-6h-FoO" userLabel="Brightness Label">
                                         <rect key="frame" x="0.0" y="182" width="300" height="21"/>
@@ -587,9 +594,13 @@
                                         <color key="textColor" red="0.83741801979999997" green="0.83743780850000005" blue="0.83742713930000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="MVi-Wu-IBE" userLabel="Brightness Slider">
+                                    <slider opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" minValue="0.0" maxValue="100" translatesAutoresizingMaskIntoConstraints="NO" id="MVi-Wu-IBE" userLabel="Brightness Slider">
                                         <rect key="frame" x="-2" y="211" width="304" height="30"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <connections>
+                                            <action selector="changedColor:" destination="NRi-c0-1SY" eventType="valueChanged" id="XJ5-hY-nRu"/>
+                                            <action selector="createdNewColor:" destination="NRi-c0-1SY" eventType="touchUpInside" id="4IT-e2-4du"/>
+                                        </connections>
                                     </slider>
                                 </subviews>
                             </view>
@@ -617,6 +628,7 @@
                         <outlet property="bitmapRevertButton" destination="mIl-kL-Z5a" id="huL-fV-sLZ"/>
                         <outlet property="bitmapUIImage" destination="Mfu-Ww-fCp" id="tRW-Eb-KxS"/>
                         <outlet property="bitmapUndoButton" destination="ZWF-BK-XBP" id="I6f-2Z-nyf"/>
+                        <outlet property="brightnessSlider" destination="MVi-Wu-IBE" id="A7u-kQ-wG1"/>
                         <outlet property="color1Label" destination="1yd-zp-1cc" id="DTt-HL-aPA"/>
                         <outlet property="color1RGB" destination="fRc-RS-uRC" id="IeO-76-nra"/>
                         <outlet property="color1Selector" destination="qwd-8M-oS7" id="g0U-hj-Xky"/>
@@ -626,10 +638,11 @@
                         <outlet property="colorPickerWrapper" destination="076-Kd-qtA" id="Rmw-mt-EDu"/>
                         <outlet property="colorRevertButton" destination="x6E-nF-aKy" id="Zby-ky-yWL"/>
                         <outlet property="colorUndoButton" destination="dAW-iB-6AU" id="dCH-sB-IID"/>
-                        <outlet property="intensitySliderPlaceholder" destination="MVi-Wu-IBE" id="zRt-ai-DMt"/>
+                        <outlet property="hueSlider" destination="QNu-2c-Cce" id="6aQ-IX-yWU"/>
                         <outlet property="modeLabel" destination="fIb-aO-SVd" id="fJE-ff-hj1"/>
                         <outlet property="modeNumberLabel" destination="8dk-lt-wpR" id="YOR-Yx-fr9"/>
                         <outlet property="saturationLabel" destination="Jf3-6h-FoO" id="Y47-Pu-jpM"/>
+                        <outlet property="saturationSlider" destination="2kv-2p-ZSk" id="cQG-bb-3Bx"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Y4X-ZQ-SVo" userLabel="First Responder" sceneMemberID="firstResponder"/>

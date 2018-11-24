@@ -23,7 +23,7 @@ class ModeTableViewCell: UITableViewCell
     @IBOutlet weak var editModeButton: UIButton!
     
     
-    var mode = Mode();
+    var mode = Mode(default: true);
 
     override func awakeFromNib()
     {
@@ -62,11 +62,11 @@ class ModeTableViewCell: UITableViewCell
     }
 
     
-    @IBAction func chooseModeAndEdit(_ sender: UIButton)
-    {
-        Device.connectedDevice?.currentModeIndex = (mode?.index)!;
-        Device.connectedDevice?.mode = self.mode;
-    }
+//    @IBAction func chooseModeAndEdit(_ sender: UIButton)
+//    {
+//        Device.connectedDevice?.currentModeIndex = (mode?.index)!;
+//        Device.connectedDevice?.mode = self.mode;
+//    }
     
     
     
@@ -84,7 +84,10 @@ class ModeTableViewCell: UITableViewCell
         {
             colorPreviewWrapper.isHidden = true;
             modeBitmap.isHidden = false;
-            if ((Device.connectedDevice?.thumbnails.count)! >= (mode?.bitmapIndex)!)
+            
+            let thumbnailCount = (Device.connectedDevice?.thumbnails.count)!
+            
+            if (thumbnailCount >= (mode?.bitmapIndex)!)
             {
                 modeBitmap.image = Device.connectedDevice?.thumbnails[(mode?.bitmapIndex)! - 1]
             }

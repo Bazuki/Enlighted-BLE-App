@@ -7,10 +7,21 @@
 //
 
 import UIKit;
+import os.log;
 
-class Mode
+class Mode: NSObject, NSCoding
 {
+    
     // MARK: Properties
+    
+    struct PropertyKey
+    {
+        static let name = "name";
+        static let usesBitmap = "usesBitmap";
+        static let bitmapIndex = "bitmapIndex";
+        static let index = "index";
+        static let colors = "colors";
+    }
     
     
     // the name of the mode
@@ -93,7 +104,7 @@ class Mode
     }
     
         //  Default initialization
-    init?()
+    init?(default: Bool)
     {
         self.name = "Default";
         self.index = 1;
@@ -101,6 +112,52 @@ class Mode
         self.bitmapIndex = 1;
         color1 = UIColor.red
         color2 = UIColor.blue;
+
+    }
+    
+    // MARK: NSCoding
+    
+        // encoding data
+    func encode(with aCoder: NSCoder)
+    {
+        aCoder.encode(name, forKey: PropertyKey.name);
+        aCoder.encode(usesBitmap, forKey: PropertyKey.usesBitmap);
+        aCoder.encode(index, forKey: PropertyKey.index);
+        if (usesBitmap)
+        {
+            let encodableBitmapIndex: Int = bitmapIndex!
+            aCoder.encode(encodableBitmapIndex, forKey: PropertyKey.bitmapIndex);
+        }
+        else
+        {
+            aCoder.encode([color1!, color2!], forKey: PropertyKey.colors);
+        }
+    }
+    
+    required convenience init?(coder aDecoder: NSCoder)
+    {
+        guard let name = aDecoder.decodeObject(forKey: PropertyKey.name) as? String else {
+            os_log("Unable to decode the name for the Mode object.", log: OSLog.default, type: .debug)
+            return nil
+        }
+        
+        let usesBitmap = aDecoder.decodeBool(forKey: PropertyKey.usesBitmap);
+        
+        let index = aDecoder.decodeInteger(forKey: PropertyKey.index);
+        
+        if (usesBitmap)
+        {
+            let bitmapIndex = aDecoder.decodeInteger(forKey: PropertyKey.bitmapIndex) ;
+                // creating a Bitmap mode
+            self.init(name: name, index: index, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil]);
+        }
+        else
+        {
+            let colors = aDecoder.decodeObject(forKey: PropertyKey.colors) as? [UIColor];
+            // creating a Bitmap mode
+            self.init(name: name, index: index, usesBitmap: usesBitmap, bitmapIndex: nil, colors: colors!);
+        }
+        
         
     }
     

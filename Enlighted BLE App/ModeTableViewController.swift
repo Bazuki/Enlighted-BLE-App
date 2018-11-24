@@ -8,6 +8,7 @@
 
 import UIKit;
 import CoreBluetooth;
+import os.log;
 
 class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegate
 {
@@ -99,10 +100,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // if it's ready to show modes, do so
         if ((Device.connectedDevice?.readyToShowModes)!)
         {
-                // even after we display modes the first time, we want to keep updating them as we get more info
+                // once loading of modes/thumbnails is done, save that Device
+            saveDevice();
+            
             timer.invalidate();
             print("Showing modes");
-            
+            loadingProgressView.setProgress(1, animated: true)
             loadingProgressView.isHidden = true;
             
             //loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
@@ -295,7 +298,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
         // MARK: - BLE TX Methods
     
-        // TODO:
     func updateModeOnHardware()
     {
         if (!(Device.connectedDevice?.isConnected)!)
@@ -358,6 +360,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         {
             setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
         }
+        else
+        {
+            setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!)
+        }
     }
     
         // needs to be done on selection so that it can match the phone
@@ -406,6 +412,86 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
     }
     
+    func setColors(color1: UIColor, color2: UIColor)
+    {
+        // checking for disconnection before using a BLE command
+        if (!(Device.connectedDevice?.isConnected)!)
+        {
+            print("Device is not connected");
+            return;
+        }
+        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        {
+            print("Disconnected");
+            
+            // error popup
+            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                print("Should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
+            })
+            
+            dialogMessage.addAction(ok);
+            
+            self.present(dialogMessage, animated: true, completion: nil);
+            // shows the Connection page (hopefully/eventually)
+            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+            //self.show(newViewController, sender: self);
+            return;
+        }
+        
+        // creating variables for RGB values of color
+        var red: CGFloat = 0;
+        var green: CGFloat = 0;
+        var blue: CGFloat = 0;
+        var alpha: CGFloat = 0;
+        
+        // getting color1's RGB values (from 0 to 1.0)
+        color1.getRed(&red, green: &green, blue: &blue, alpha: &alpha);
+        
+        // scaling up to 255
+        red *= 255;
+        green *= 255;
+        blue *= 255;
+        
+        // removing decimal places, removing signs, and making them UInt8s
+        let red1 = convertToLegalUInt8(Int(red));
+        let green1 = convertToLegalUInt8(Int(green));
+        let blue1 = convertToLegalUInt8(Int(blue));
+        
+        // getting color2's RGB values
+        color2.getRed(&red, green: &green, blue: &blue, alpha: &alpha);
+        
+        // scaling up to 255
+        red *= 255;
+        green *= 255;
+        blue *= 255;
+        
+        // removing decimal places, removing signs, and making them UInt8s
+        let red2 = convertToLegalUInt8(Int(red));
+        let green2 = convertToLegalUInt8(Int(green));
+        let blue2 = convertToLegalUInt8(Int(blue));
+        
+        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_COLOR;
+        
+        let stringArray: [UInt8] = Array(valueString.utf8);
+        var valueArray = stringArray;
+        valueArray += [red1];
+        valueArray += [green1];
+        valueArray += [blue1];
+        valueArray += [red2];
+        valueArray += [green2];
+        valueArray += [blue2];
+        // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
+        let valueData = NSData(bytes: valueArray, length: 9)
+        
+        print("sending: " + valueString, valueArray);
+        
+        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+        // "active request" flag
+        Device.connectedDevice?.requestWithoutResponse = true;
+    }
     
 //    // old "initial selection" code
 //    func tableView(_tableView: UITableView, willDisplayCell: ModeTableViewCell, forRowAtIndexPath: IndexPath)
@@ -465,6 +551,17 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 //
     
     // MARK: Private Methods
+    
+        // takes an Int and makes sure it will fit in an unsigned Int8 (including calling abs())
+    private func convertToLegalUInt8(_ value: Int) -> UInt8
+    {
+            // absolute value
+        var output = abs(value);
+        
+        output = min(Int(UInt8.max), max(value, Int(UInt8.min)));
+        
+        return UInt8(output);
+    }
     
         // sends get commands to the hardware, using the protocol as the inputString (and an optional int or two at the end, for certain getters)
     private func getValue(_ inputString: String, inputInt: Int = -1, secondInputInt: Int = -1)
@@ -535,7 +632,56 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         Device.connectedDevice!.requestWithoutResponse = true;
     }
     
-        // loads placeholder modes, up till the max mode count from getLimits
+        // saves the Device after loading
+    private func saveDevice()
+    {
+        if !(Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps)
+        {
+            print("Not a full cache, not caching");
+            return;
+        }
+        var cachedDevices: [Device] = loadDevices() ?? [Device]();
+            // if there aren't any saved devices, save them now
+        //TODO: overwrite old saves that have the same name
+        
+            // if there's an old save with the same name, override it
+        if let indexOfDevice = cachedDevices.firstIndex(where: {$0.name == Device.connectedDevice?.name})
+        {
+            cachedDevices[indexOfDevice] = Device.connectedDevice!
+                // clearing out duplicates
+//            var j = (cachedDevices.count - 1);
+//
+//            for i in indexOfDevice...(cachedDevices.count - 1)
+//            {
+//                if (cachedDevices[j].name == Device.connectedDevice?.name)
+//                {
+//                    cachedDevices.remove(at: j);
+//                }
+//
+//                j -= 1;
+//            }
+        }
+            // otherwise add it
+        else
+        {
+            cachedDevices += [Device.connectedDevice!];
+            print("Caching a completely new device");
+        }
+        
+        let isSuccessfulSave = NSKeyedArchiver.archiveRootObject(cachedDevices, toFile: Device.ArchiveURL.path);
+        if isSuccessfulSave {
+            os_log("Devices successfully saved.", log: OSLog.default, type: .debug)
+        } else {
+            os_log("Failed to save devices...", log: OSLog.default, type: .error)
+        }
+    }
+    
+    private func loadDevices() -> [Device]?
+    {
+        return NSKeyedUnarchiver.unarchiveObject(withFile: Device.ArchiveURL.path) as? [Device];
+    }
+    
+        // loads placeholder modes, up till the max mode count from getLimits (no longer necessary with "Get Mode")
     private func loadSampleModes(_ numberOfModes: Int)
     {
         // colors for certain modes
