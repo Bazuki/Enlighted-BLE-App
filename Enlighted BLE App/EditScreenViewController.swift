@@ -30,7 +30,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     @IBOutlet weak var bitmapPicker: UICollectionView!
     
-    @IBOutlet weak var colorUndoButton: UIButton!
+    @IBOutlet weak var color1UndoButton: UIButton!
+    @IBOutlet weak var color2UndoButton: UIButton!
     @IBOutlet weak var colorRevertButton: UIButton!
     @IBOutlet weak var bitmapUndoButton: UIButton!
     @IBOutlet weak var bitmapRevertButton: UIButton!
@@ -125,7 +126,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             colorPickerWrapper.isHidden = true;
             //intensitySliderPlaceholder.isHidden = true;
             
-            colorUndoButton.isHidden = true;
+            color1UndoButton.isHidden = true;
+            color2UndoButton.isHidden = true;
             colorRevertButton.isHidden = true;
             bitmapUndoButton.isHidden = false;
             bitmapRevertButton.isHidden = false;
@@ -149,7 +151,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             colorPickerWrapper.isHidden = false;
             //intensitySliderPlaceholder.isHidden = false;
             
-            colorUndoButton.isHidden = false;
+            color1UndoButton.isHidden = false;
+            color2UndoButton.isHidden = false;
             colorRevertButton.isHidden = false;
             bitmapUndoButton.isHidden = true;
             bitmapRevertButton.isHidden = true;
@@ -493,33 +496,45 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
     }
     
+    func setColorSelectorAsActive(isColor1: Bool)
+    {
+        if (isColor1)
+        {
+            currentColor = color1Selector.myColor;
+            currentColorIndex = 1;
+            updateColorPicker(currentColor, fromPicker: false);
+            color1Selector.setHighlighted(true);
+            color1Label.textColor = UIColor(named: "SelectedText");
+            color1RGB.textColor = UIColor(named: "SelectedText");
+            color2Selector.setHighlighted(false);
+            color2Label.textColor = UIColor(named: "NonSelectedText");
+            color2RGB.textColor = UIColor(named: "NonSelectedText");
+        }
+        else
+        {
+            currentColor = color2Selector.myColor;
+            currentColorIndex = 2;
+            updateColorPicker(currentColor, fromPicker: false);
+            color2Selector.setHighlighted(true);
+            color2Label.textColor = UIColor(named: "SelectedText");
+            color2RGB.textColor = UIColor(named: "SelectedText");
+            color1Selector.setHighlighted(false);
+            color1Label.textColor = UIColor(named: "NonSelectedText");
+            color1RGB.textColor = UIColor(named: "NonSelectedText");
+        }
+    }
+    
     // MARK: Actions
     
     // marking a color as edit-able by the color wheel
     @IBAction func selectAndEditColor1(_ sender: UITapGestureRecognizer)
     {
-        currentColor = color1Selector.myColor;
-        currentColorIndex = 1;
-        updateColorPicker(currentColor, fromPicker: false);
-        color1Selector.setHighlighted(true);
-        color1Label.textColor = UIColor(named: "SelectedText");
-        color1RGB.textColor = UIColor(named: "SelectedText");
-        color2Selector.setHighlighted(false);
-        color2Label.textColor = UIColor(named: "NonSelectedText");
-        color2RGB.textColor = UIColor(named: "NonSelectedText");
+        setColorSelectorAsActive(isColor1: true);
     }
     
     @IBAction func selectAndEditColor2(_ sender: UITapGestureRecognizer)
     {
-        currentColor = color2Selector.myColor;
-        currentColorIndex = 2;
-        updateColorPicker(currentColor, fromPicker: false);
-        color2Selector.setHighlighted(true);
-        color2Label.textColor = UIColor(named: "SelectedText");
-        color2RGB.textColor = UIColor(named: "SelectedText");
-        color1Selector.setHighlighted(false);
-        color1Label.textColor = UIColor(named: "NonSelectedText");
-        color1RGB.textColor = UIColor(named: "NonSelectedText");
+        setColorSelectorAsActive(isColor1: false);
     }
     
         // undoing bitmap selections
@@ -545,6 +560,60 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
     }
     
+    @IBAction func pressedColorUndo(_ sender: UIButton)
+    {
+            // whether it's color 1 or color 2's undo button
+        if (sender == color1UndoButton)
+        {
+            if (color1History.count > 1)
+            {
+                // setting color 1 as the active color selector
+                setColorSelectorAsActive(isColor1: true)
+                
+                    // going back in history
+                Device.connectedDevice?.mode?.color1 = color1History[color1History.count - 2];
+                    // removing history
+                color1History.removeLast();
+                    // updating colors on the hardware
+                setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
+                
+                    // have to do both, because it isn't coming from the picker or the preview
+                updateColorPicker((Device.connectedDevice?.mode?.color1)!, fromPicker: false);
+                updateColorPicker((Device.connectedDevice?.mode?.color1)!, fromPicker: true);
+                
+            }
+            else
+            {
+                print("No more history to undo");
+                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+            }
+        }
+        else
+        {
+            if (color2History.count > 1)
+            {
+                // setting color 1 as the active color selector
+                setColorSelectorAsActive(isColor1: false)
+                
+                // going back in history
+                Device.connectedDevice?.mode?.color2 = color2History[color2History.count - 2];
+                // removing history
+                color2History.removeLast();
+                // updating colors on the hardware
+                setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
+                
+                // have to do both, because it isn't coming from the picker or the preview
+                updateColorPicker((Device.connectedDevice?.mode?.color2)!, fromPicker: false);
+                updateColorPicker((Device.connectedDevice?.mode?.color2)!, fromPicker: true);
+                
+            }
+            else
+            {
+                print("No more history to undo");
+                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+            }
+        }
+    }
     
     @IBAction func changedColor(_ sender: UISlider)
     {
@@ -562,6 +631,16 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
         brightnessSlider.minimumTrackTintColor = newColor;
         brightnessSlider.maximumTrackTintColor = newColor;
+        
+        if (currentColorIndex == 1)
+        {
+            color1Selector.setBackgroundColor(newColor: newColor);
+        }
+        else
+        {
+            color2Selector.setBackgroundColor(newColor: newColor);
+        }
+        
     }
     
     @IBAction func createdNewColor(_ sender: UISlider)
@@ -572,6 +651,15 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
         
         //print("new HSB: \(newHue), \(newSaturation), \(newBrightness)");
+        
+        if (currentColorIndex == 1)
+        {
+            color1History += [newColor];
+        }
+        else
+        {
+            color2History += [newColor];
+        }
         
         updateColorPicker(newColor, fromPicker: true);
     }

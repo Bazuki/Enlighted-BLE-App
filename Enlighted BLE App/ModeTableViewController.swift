@@ -114,7 +114,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // enabling the settings button when showing modes
             self.navigationItem.rightBarButtonItem?.isEnabled = true;
             
-            timer.invalidate();
+            self.timer.invalidate();
             print("Showing modes");
             loadingProgressView.setProgress(1, animated: true)
             loadingProgressView.isHidden = true;
