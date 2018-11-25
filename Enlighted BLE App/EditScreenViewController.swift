@@ -62,6 +62,9 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     var currentColor: UIColor = UIColor.clear;
     var currentColorIndex: Int = 1;
     
+        // don't let the user spam revert if the mode is already reverted
+    //var hasReverted = false;
+    
     override func viewDidLoad()
     {
         super.viewDidLoad()
@@ -101,7 +104,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             }
         }
         
-        //TODO:
+        NotificationCenter.default.addObserver(self, selector: #selector(finishRevertingMode), name: Notification.Name(rawValue: "revertedMode"), object: nil)
+        
             //allow for the selection of bitmaps
         bitmapPicker.allowsSelection = true;
         
@@ -183,6 +187,9 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
             // clearing history upon entry to the view screen
         bitmapHistory = [Int]();
+        
+            // we're going to assume the user hasn't reverted (or has unique settings) upon entering the screen
+        //hasReverted = false;
         
             // clearing history upon entry
         color1History = [UIColor]();
@@ -663,7 +670,82 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
         updateColorPicker(newColor, fromPicker: true);
     }
+    
+    @IBAction func revertMode(_ sender: UIButton)
+    {
+        print("Reverting mode");
+            // disabling the revert button until the action is done
+        sender.isEnabled = false;
+        
+        if ((Device.connectedDevice?.mode?.usesBitmap)!)
+        {
+            bitmapUndoButton.isEnabled = false;
+            bitmapPicker.allowsSelection = false;
+        }
+        else
+        {
+            color1UndoButton.isEnabled = false;
+            color2UndoButton.isEnabled = false;
+            
+            hueSlider.isEnabled = false;
+            saturationSlider.isEnabled = false;
+            brightnessSlider.isEnabled = false;
+            
+        }
+        
+            // setting flag to revert
+        Device.connectedDevice?.currentlyRevertingMode = true;
+            // calling "Get Mode" on this specific mode, with the special flag above set
+        getValue(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInt: (Device.connectedDevice?.mode?.index)!);
+    }
+    
+    
     // MARK: - Private Methods
+    
+        // basically viewWillAppear (after getting the "new" values from reverting)
+    @objc private func finishRevertingMode()
+    {
+        print("Finished reverting mode, updating screen");
+        if ((Device.connectedDevice?.mode?.usesBitmap)!)
+        {
+            bitmapUIImage.image = Device.connectedDevice?.thumbnails[(Device.connectedDevice?.mode?.bitmapIndex)! - 1];
+            
+            bitmapRevertButton.isEnabled = true;
+            bitmapUndoButton.isEnabled = true;
+            bitmapPicker.allowsSelection = true;
+            
+            let indexPath = IndexPath(row: (Device.connectedDevice?.mode?.bitmapIndex)! - 1, section: 0);
+            bitmapPicker.selectItem(at: indexPath, animated: true, scrollPosition: UICollectionViewScrollPosition(rawValue: 0));
+            // adding the first value to the history
+            bitmapHistory += [indexPath.row + 1];
+            // on loading in, enforce the stored bitmap
+            setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
+        }
+        else
+        {
+            color1Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.color1)!);
+            color2Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.color2)!);
+            
+            color1RGB.text = getRGBStringFromUIColor(color1Selector.myColor);
+            color2RGB.text = getRGBStringFromUIColor(color2Selector.myColor);
+            
+            colorRevertButton.isEnabled = true;
+            color1UndoButton.isEnabled = true;
+            color2UndoButton.isEnabled = true;
+            
+            hueSlider.isEnabled = true;
+            saturationSlider.isEnabled = true;
+            brightnessSlider.isEnabled = true;
+            
+                // re-activating the sliders for the current color
+            setColorSelectorAsActive(isColor1: (currentColorIndex == 1))
+            
+            
+            // adding initial values
+            color1History += [color1Selector.myColor];
+            color2History += [color2Selector.myColor];
+        }
+    }
     
         // takes an Int and makes sure it will fit in an unsigned Int8 (including calling abs())
     private func convertToLegalUInt8(_ value: Int) -> UInt8
@@ -674,6 +756,73 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         output = min(Int(UInt8.max), max(value, Int(UInt8.min)));
         
         return UInt8(output);
+    }
+    
+    // sends get commands to the hardware, using the protocol as the inputString (and an optional int or two at the end, for certain getters)
+    private func getValue(_ inputString: String, inputInt: Int = -1, secondInputInt: Int = -1)
+    {
+        if (!(Device.connectedDevice?.isConnected)!)
+        {
+            print("Device is not connected");
+            return;
+        }
+        
+        if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        {
+            print("Disconnected");
+            // error popup
+            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                print("Should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
+            })
+            
+            dialogMessage.addAction(ok);
+            
+            self.present(dialogMessage, animated: true, completion: nil);
+            // shows the Connection page (hopefully/eventually)
+            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+            //self.show(newViewController, sender: self);
+            return;
+        }
+        
+        
+        
+        // if an input value was specified, especially for the getName/getMode commands, add it to the package
+        if (inputInt != -1)
+        {
+            if (secondInputInt != -1)
+            {
+                let uInputInt: UInt8 = UInt8(inputInt);
+                let secondUInputInt: UInt8 = UInt8(secondInputInt);
+                let stringArray: [UInt8] = Array(inputString.utf8);
+                let outputArray = stringArray + [uInputInt] + [secondUInputInt];
+                let outputData = NSData(bytes: outputArray, length: 5)
+                print("Sending: " + inputString, inputInt, secondInputInt, outputArray);
+                Device.connectedDevice!.peripheral.writeValue(outputData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            }
+            else
+            {
+                let uInputInt: UInt8 = UInt8(inputInt);
+                let stringArray: [UInt8] = Array(inputString.utf8);
+                let outputArray = stringArray + [uInputInt];
+                let outputData = NSData(bytes: outputArray, length: 4)
+                print("Sending: " + inputString, inputInt, outputArray);
+                Device.connectedDevice!.peripheral.writeValue(outputData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            }
+        }
+        else
+        {
+            let inputNSString = (inputString as NSString).data(using: String.Encoding.ascii.rawValue);
+            // https://stackoverflow.com/questions/40088253/how-can-i-print-the-content-of-a-variable-of-type-data-using-swift for printing NSString
+            print("Sending: " + inputString, inputNSString! as NSData);
+            Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+        }
+        
+        
+        // "active request" flag
+        Device.connectedDevice!.requestWithoutResponse = true;
     }
     
     /*

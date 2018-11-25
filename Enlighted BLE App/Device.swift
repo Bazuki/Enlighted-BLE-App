@@ -60,9 +60,12 @@ class Device: NSObject, NSCoding
     var rxCharacteristic: CBCharacteristic?;
     var UUID: NSUUID!;
     
+        // flags for connecting
     var isConnected: Bool = false;
     var isConnecting: Bool = false;
     var hasDiscoveredCharacteristics: Bool = false;
+    
+        // flags for parsing individual packets
     var requestedLimits = false;
     var requestedBrightness = false;
     var requestedBattery = false;
@@ -73,8 +76,10 @@ class Device: NSObject, NSCoding
     var requestedModeChange = false;
     var requestWithoutResponse = false;
     
+        // flags for parsing multiple packets / unusual cases
     var currentlyParsingName = false;
     var currentlyBuildingThumbnails = false;
+    var currentlyRevertingMode = false;
     
     var readyToShowModes = false;
     

@@ -455,23 +455,52 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 
                 let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
                 
+                if (currentIndex <= (Device.connectedDevice?.maxNumModes)!)
+                {
                 // if it's a bitmap mode, we should create one and add it to the Device's list
-                if (usesBitmap)
-                {
-                    //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
-                    print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
-                        // clamping to min/max
-                    let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
-                    Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil])!];
+                    if (usesBitmap)
+                    {
+                        //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
+                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                            // clamping to min/max
+                        let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
+                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil])!];
+                    }
+                    else
+                    {
+                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                        
+                        let color1 = UIColor(displayP3Red: CGFloat(Float(rxValue[2]) / 255), green: CGFloat(Float(rxValue[3]) / 255), blue: CGFloat(Float(rxValue[4]) / 255), alpha: 1)
+                        let color2 = UIColor(displayP3Red: CGFloat(Float(rxValue[5]) / 255), green: CGFloat(Float(rxValue[6]) / 255), blue: CGFloat(Float(rxValue[7]) / 255), alpha: 1)
+                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [color1, color2])!];
+                        
+                    }
                 }
-                else
+                    // if we're currently reverting the mode
+                else if ((Device.connectedDevice?.currentlyRevertingMode)!)
                 {
-                    print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                    Device.connectedDevice?.mode?.usesBitmap = usesBitmap;
                     
-                    let color1 = UIColor(displayP3Red: CGFloat(Float(rxValue[2]) / 255), green: CGFloat(Float(rxValue[3]) / 255), blue: CGFloat(Float(rxValue[4]) / 255), alpha: 1)
-                    let color2 = UIColor(displayP3Red: CGFloat(Float(rxValue[5]) / 255), green: CGFloat(Float(rxValue[6]) / 255), blue: CGFloat(Float(rxValue[7]) / 255), alpha: 1)
-                    Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [color1, color2])!];
-                    
+                    if (usesBitmap)
+                    {
+                        //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
+                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                        // clamping to min/max
+                        let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
+                        Device.connectedDevice?.mode?.bitmapIndex = bitmapIndex;
+                    }
+                    else
+                    {
+                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                        
+                        let color1 = UIColor(displayP3Red: CGFloat(Float(rxValue[2]) / 255), green: CGFloat(Float(rxValue[3]) / 255), blue: CGFloat(Float(rxValue[4]) / 255), alpha: 1)
+                        let color2 = UIColor(displayP3Red: CGFloat(Float(rxValue[5]) / 255), green: CGFloat(Float(rxValue[6]) / 255), blue: CGFloat(Float(rxValue[7]) / 255), alpha: 1)
+                        Device.connectedDevice?.mode?.color1 = color1;
+                        Device.connectedDevice?.mode?.color2 = color2;
+                        
+                    }
+                    Device.connectedDevice?.currentlyRevertingMode = false;
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: "revertedMode"), object: nil);
                 }
                 Device.connectedDevice?.requestedName = false;
                 Device.connectedDevice?.requestedMode = false;
