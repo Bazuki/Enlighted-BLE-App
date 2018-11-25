@@ -237,7 +237,6 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         deviceIndex += 1;
                     }
                 }
-                deviceTableView.reloadData();
             }
             
             // we removed peripherals we have devices for already, so there should only be "new" peripherals in this array now
@@ -285,11 +284,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         visibleDevices.append(Device(name: peripheralNames[i], RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
                     }
                 }
+                
+                // if the device hasn't connected, keep scanning
+                startScan(0.5);
             }
-            
-            
-            // if the device hasn't connected, keep scanning
-            startScan(0.5);
         }
         
             // reload table
@@ -337,15 +335,30 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             }
             
                 // check for the end of a name first, because the first letter could be "L" or "M", etc.
-            if ((Device.connectedDevice?.currentlyParsingName)! && rxString?.suffix(1) == "\"")
+            if ((Device.connectedDevice?.currentlyParsingName)!)
             {
-                Device.connectedDevice?.currentlyParsingName = false;
-                parsedName = parsedName + rxString!.filter { $0 != "\"" };
+                if (rxString?.suffix(1) == "\"")
+                {
+                    
+                    Device.connectedDevice?.currentlyParsingName = false;
+                    parsedName = parsedName + rxString!.filter { $0 != "\"" };
                 //Device.connectedDevice?.requestedName = false;
-                Device.connectedDevice?.receivedName = true;
+                    
+                    print("Received complete name: " + parsedName);
+                    Device.connectedDevice?.receivedName = true;
+                    return;
+                }
+                else
+                    // if the response after the first half of a name isn't a name, something's wrong, and we should clear everythin
+                {
+                    print("Caught a name error: \(parsedName)");
+                    Device.connectedDevice?.currentlyParsingName = false;
+                    parsedName = "";
+                }
             }
+                
                 // if it's a 15-byte value and we've requested the thumbnail, it's probably the thumbnail
-            else if ((Device.connectedDevice?.requestedThumbnail)! && rxValue.count == 15)
+            if ((Device.connectedDevice?.requestedThumbnail)! && rxValue.count == 15)
             {
                 // debug message, but super slow to print every time
                 //print("Value Received: \(rxValue[0], rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7], rxValue[8], rxValue[9], rxValue[10], rxValue[11], rxValue[12], rxValue[13], rxValue[14])");
@@ -470,6 +483,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         // taking off quotes
                     parsedName = receivedName.filter { $0 != "\"" }
                     //Device.connectedDevice?.requestedName = false;
+                    print("Received complete name: " + parsedName);
                     Device.connectedDevice?.receivedName = true;
                     
                 }
@@ -612,6 +626,32 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         //peripheral.discoverServices([BLEBatteryService_UUID]);
     }
     
+    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?)
+    {
+        guard (peripheral.identifier as NSUUID != Device.connectedDevice?.UUID) else
+        {
+            print("This was our connected peripheral");
+            
+            // error popup
+            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                print("Should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
+            })
+            
+            dialogMessage.addAction(ok);
+            
+            self.present(dialogMessage, animated: true, completion: nil);
+            
+            return;
+        }
+        
+        print("Disconnected from " + peripheral.name!);
+        
+        
+    }
+    
         // handling the discovery of services of a peripheral
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?)
     {
@@ -695,7 +735,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             peripheral.discoverDescriptors(for: characteristic);
             
         }
+            // set flag
         Device.connectedDevice?.hasDiscoveredCharacteristics = true;
+            // notify connection button that it can be enabled
+        NotificationCenter.default.post(name: Notification.Name(rawValue: "didDiscoverPeripheralCharacteristics"), object: nil);
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
@@ -769,6 +812,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
 //            print("The device in the list doesn't exist yet");
 //            return;
 //        }
+        
+        
         
             // if the current connectedDevice doesn't exist, then select the one at IndexPath
         guard Device.connectedDevice != nil && Device.connectedDevice?.name != "emptyDevice" else

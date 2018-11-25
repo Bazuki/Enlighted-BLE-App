@@ -40,15 +40,14 @@ class BLEConnectionTableViewCell: UITableViewCell
         connectionImage.image = connectionImage.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
             //recoloring doesn't allow for enabling/disabling graphics
         //connectButton.imageView?.image = connectButton.imageView?.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
+        NotificationCenter.default.addObserver(self, selector: #selector(enableButton), name: Notification.Name(rawValue: "didDiscoverPeripheralCharacteristics"), object: nil)
     }
 
     override func setSelected(_ selected: Bool, animated: Bool)
     {
         super.setSelected(selected, animated: animated)
         
-            // can only be selected if it isn't already
-        
-        
+        //print("setSelected(\(selected)) called");
         
         
         
@@ -56,8 +55,9 @@ class BLEConnectionTableViewCell: UITableViewCell
         //print("Is the device connected? \(Device.connectedDevice?.isConnected ?? true)");
         if (selected && !wasSelected)// && Device.connectedDevice?.isConnecting ?? false)
         {
+            
             connectButton.isEnabled = false;
-            timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: true);
+            //timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: true);
         }
         
         connectButton.isHidden = !selected;
@@ -94,7 +94,7 @@ class BLEConnectionTableViewCell: UITableViewCell
             //timer.invalidate();
             connectButton.isEnabled = true;
             print("Enabling button");
-            timer.invalidate();
+            //timer.invalidate();
         }
         else
         {

@@ -68,6 +68,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // if we didn't completely get the mode list (i.e. aren't totally ready to show modes)
         if (!(Device.connectedDevice?.readyToShowModes)!)
         {
+                // disabling the settings button when getting info
+            self.navigationItem.rightBarButtonItem?.isEnabled = false;
+            
+                // clearing table data
             print("Wasn't ready to show modes, restarting getting data");
             modes = [Mode]();
             modeTableView.reloadData();
@@ -106,6 +110,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         {
                 // once loading of modes/thumbnails is done, save that Device
             saveDevice();
+            
+                // enabling the settings button when showing modes
+            self.navigationItem.rightBarButtonItem?.isEnabled = true;
             
             timer.invalidate();
             print("Showing modes");
@@ -222,10 +229,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 Device.connectedDevice?.readyToShowModes = true;
             }
         }
-        else
-        {
-            print("We're mid-parse of something, so don't request anything else;  requestedThumbnail?: \(Device.connectedDevice?.requestedThumbnail) currentlyParsingName?: \(Device.connectedDevice?.currentlyParsingName) requestWithoutResponse?: \(Device.connectedDevice?.requestWithoutResponse) ");
-        }
+//        else
+//        {
+//            //print("We're mid-parse of something, so don't request anything else;  requestedThumbnail?: \(Device.connectedDevice?.requestedThumbnail) currentlyParsingName?: \(Device.connectedDevice?.currentlyParsingName) requestWithoutResponse?: \(Device.connectedDevice?.requestWithoutResponse) ");
+//        }
         
     }
     
