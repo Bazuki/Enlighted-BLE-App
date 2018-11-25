@@ -51,8 +51,12 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         // a list of the selectable bitmaps
     var bitmaps = [UIImage?]();
     
-        // a history of bitmaps, so that we can use "undo"
+        // a history of bitmap (indices), so that we can use "undo"
     var bitmapHistory = [Int]();
+    
+        // the histories for each color, so that they can be undone as well
+    var color1History = [UIColor]();
+    var color2History = [UIColor]();
     
     var currentColor: UIColor = UIColor.clear;
     var currentColorIndex: Int = 1;
@@ -177,6 +181,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             // clearing history upon entry to the view screen
         bitmapHistory = [Int]();
         
+            // clearing history upon entry
+        color1History = [UIColor]();
+        color2History = [UIColor]();
+        
             // should automatically pre-select the correct bitmap
         if ((Device.connectedDevice?.mode?.usesBitmap)!)
         {
@@ -193,6 +201,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             hueSlider.isEnabled = false;
             saturationSlider.isEnabled = false;
             brightnessSlider.isEnabled = false;
+            
+                // adding initial values
+            color1History += [color1Selector.myColor];
+            color2History += [color2Selector.myColor];
         }
     }
     

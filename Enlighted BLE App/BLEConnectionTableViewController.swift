@@ -219,6 +219,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         // update device RSSIs of devices we know
                     if let foundPeripheralIndex = peripherals.firstIndex(of: visibleDevices[deviceIndex].peripheral)
                     {
+                        print("Found a new RSSI for \(visibleDevices[deviceIndex].name)");
                         visibleDevices[deviceIndex].RSSI = RSSIs[foundPeripheralIndex].intValue;
                             // since we already have a Device for this peripheral, we can remove it (and its corresponding RSSI value and name)
                         peripherals.remove(at: foundPeripheralIndex);
@@ -263,6 +264,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                                 let newDevice = cachedDevices[backwardsIndex - j];
                                 newDevice.peripheral = peripherals[i];
                                 newDevice.RSSI = RSSIs[i].intValue;
+                                    // because we may have cached an old name, overwriting it here
+                                newDevice.name = peripheralNames[i];
                                 visibleDevices.append(newDevice);
                                 foundCachedDevice = true;
                                 print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total), adding \(peripheralNames[i]) to visible device list");
@@ -284,14 +287,16 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         visibleDevices.append(Device(name: peripheralNames[i], RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
                     }
                 }
-                
-                // if the device hasn't connected, keep scanning
-                startScan(0.5);
             }
+            // if the device hasn't connected, keep scanning
+            startScan(0.5);
         }
         
-            // reload table
-        deviceTableView.reloadData();
+        if (Device.connectedDevice == nil || Device.connectedDevice?.name == "emptyDevice")
+        {
+                // reload table
+            deviceTableView.reloadData();
+        }
         
     }
     
@@ -871,7 +876,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
 
         // Fetches the appropriate device for that row
         let device = visibleDevices[indexPath.row];
-        
+        //print("Creating a cell with name: \(device.name)");
         cell.deviceNameLabel.text = device.name;
         cell.RSSIValue.text = String(device.RSSI);
         cell.device = device;
