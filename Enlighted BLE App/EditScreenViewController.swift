@@ -215,6 +215,22 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 // adding initial values
             color1History += [color1Selector.myColor];
             color2History += [color2Selector.myColor];
+            
+            
+        }
+    }
+    
+    override func viewDidAppear(_ animated: Bool)
+    {
+        super.viewDidAppear(animated);
+        if ((Device.connectedDevice?.mode?.usesBitmap)!)
+        {
+            
+        }
+        else
+        {
+                // activate color 1 by default
+            setColorSelectorAsActive(isColor1: true);
         }
     }
     
@@ -477,9 +493,9 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             saturationSlider.isEnabled = true;
             brightnessSlider.isEnabled = true;
             
-            hueSlider.value = Float(hueInt);
-            saturationSlider.value = Float(saturationInt);
-            brightnessSlider.value = Float(brightnessInt);
+            hueSlider.setValue(Float(hueInt), animated: true);
+            saturationSlider.setValue(Float(saturationInt), animated: true);
+            brightnessSlider.setValue(Float(brightnessInt), animated: true);
         }
         
         
@@ -507,6 +523,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     {
         if (isColor1)
         {
+            //print("Setting color 1 as active");
             currentColor = color1Selector.myColor;
             currentColorIndex = 1;
             updateColorPicker(currentColor, fromPicker: false);
@@ -519,6 +536,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
         else
         {
+            //print("Setting color 2 as active");
             currentColor = color2Selector.myColor;
             currentColorIndex = 2;
             updateColorPicker(currentColor, fromPicker: false);
@@ -718,7 +736,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             bitmapPicker.selectItem(at: indexPath, animated: true, scrollPosition: UICollectionViewScrollPosition(rawValue: 0));
             // adding the first value to the history
             bitmapHistory += [indexPath.row + 1];
-            // on loading in, enforce the stored bitmap
+                // on loading in, enforce the stored bitmap
             setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
         }
         else
@@ -740,8 +758,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 // re-activating the sliders for the current color
             setColorSelectorAsActive(isColor1: (currentColorIndex == 1))
             
+                // setting it on the hardware
+            setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!)
             
-            // adding initial values
+                // adding initial values
             color1History += [color1Selector.myColor];
             color2History += [color2Selector.myColor];
         }

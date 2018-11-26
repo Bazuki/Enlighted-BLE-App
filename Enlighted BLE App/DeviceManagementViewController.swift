@@ -131,10 +131,10 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     @IBAction func RevertToOriginalSettings(_ sender: UIButton)
     {
         // creating the dialog message
-        let dialogMessage = UIAlertController(title:"Confirm", message: "Are you sure you want to revert settings?  Your changes will be lost.", preferredStyle: .alert);
+        let dialogMessage = UIAlertController(title:"Confirm", message: "Are you sure you want to reload hardware settings?  Your changes will be lost.", preferredStyle: .alert);
         
         // defining the confirm / revert button
-        let revert = UIAlertAction(title: "Revert", style: .default, handler:
+        let revert = UIAlertAction(title: "Reload", style: .default, handler:
         {(action) -> Void in
                 // clear mode list
             Device.connectedDevice?.modes = [Mode]();
