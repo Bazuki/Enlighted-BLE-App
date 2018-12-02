@@ -35,10 +35,10 @@ class Constants
     static let SCAN_DURATION = 0.5;
     
         // the time (in seconds) before the device decides to scrap and re-send a row of thumbnail pixels
-    static let THUMBNAIL_ROW_TIMEOUT_TIME = 0.3;
+    static let THUMBNAIL_ROW_TIMEOUT_TIME = 0.2;
     
         // the default brightness to set the hardware to if it's at STANDBY_BRIGHTNESS
-    static let DEFAULT_BRIGHTNESS = 128;
+    static let DEFAULT_BRIGHTNESS = 127;
     
         // the brightness setting (0-255) that the hardware goes into while in standby mode
     static let STANDBY_BRIGHTNESS = 50;
@@ -48,6 +48,4 @@ class Constants
     
         // relatedly, but independently to the above, whether to dim the brightness to STANDBY_BRIGHTNESS when loading modes.
     static let USE_STANDBY_BRIGHTNESS = true;
-    
-    
 }
