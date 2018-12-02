@@ -25,6 +25,8 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         // the peripheral manager
     var peripheralManager: CBPeripheralManager?;
     
+    var batteryIcons = [UIImage]();
+    
     override func viewDidLoad()
     {
         super.viewDidLoad()
@@ -32,7 +34,12 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
             // setting the device name
         deviceNameLabel.text = Device.connectedDevice?.name;
         
-        
+            // creating references to the battery images
+        batteryIcons.append(UIImage(named: "BatteryEmpty")!);
+        batteryIcons.append(UIImage(named: "Battery1")!);
+        batteryIcons.append(UIImage(named: "Battery2")!);
+        batteryIcons.append(UIImage(named: "Battery3")!);
+        batteryIcons.append(UIImage(named: "Battery4")!);
         
         
             // formatting the battery image to allow it to be tinted
@@ -43,6 +50,10 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         
             // updating the battery percentage to display the percentage (temporarily).  200 means the battery value isn't readable
         batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
+        
+            // updating the battery image to match the percentage
+        let batteryInt = (Device.connectedDevice?.batteryPercentage)!;
+        batteryStatusImage.image = getBatteryImageForPercentage(batteryInt);
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateBrightnessValue), name: Notification.Name(rawValue: "gotBrightness"), object: nil)
         
@@ -192,6 +203,9 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     @objc private func updateBatteryPercentage()
     {
         batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
+            // updating the battery image to match the percentage
+        let batteryInt = (Device.connectedDevice?.batteryPercentage)!;
+        batteryStatusImage.image = getBatteryImageForPercentage(batteryInt);
     }
     
         // updating the brightness slider based on new values from hardware
@@ -237,6 +251,37 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         
     }
     
+    private func getBatteryImageForPercentage(_ batteryInt: Int) -> UIImage
+    {
+        var batteryImage: UIImage;
+        
+        if (batteryInt <= 20)
+        {
+            batteryImage = batteryIcons[0];
+        }
+        else if (batteryInt <= 40)
+        {
+            batteryImage = batteryIcons[1];
+        }
+        else if (batteryInt <= 60)
+        {
+            batteryImage = batteryIcons[2];
+        }
+        else if (batteryInt <= 80)
+        {
+            batteryImage = batteryIcons[3];
+        }
+        else //(batteryInt <= 100)
+        {
+            batteryImage = batteryIcons[4];
+        }
+        
+            // allowing the image to be recolored
+        batteryImage = batteryImage.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
+        
+        return batteryImage;
+    }
+        
     
     /*
     // MARK: - Navigation

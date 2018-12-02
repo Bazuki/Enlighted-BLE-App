@@ -699,7 +699,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         guard (peripheral.identifier as NSUUID != Device.connectedDevice?.UUID) else
         {
-            print("This was our connected peripheral");
+            print("We disconnected from our connected peripheral.");
             
             // error popup
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
@@ -711,7 +711,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             
             dialogMessage.addAction(ok);
             
-            self.present(dialogMessage, animated: true, completion: nil);
+                // presenting this view controller over the current screen, whatever that may be
+            self.navigationController?.topViewController?.present(dialogMessage, animated: true, completion: nil);
             
             return;
         }
@@ -942,7 +943,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         let device = visibleDevices[indexPath.row];
         //print("Creating a cell with name: \(device.name)");
         cell.deviceNameLabel.text = device.name;
-        cell.RSSIValue.text = String(device.RSSI);
+        cell.updateRSSIValue(device.RSSI); 
         cell.device = device;
         
         return cell

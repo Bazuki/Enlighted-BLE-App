@@ -27,12 +27,20 @@ class BLEConnectionTableViewCell: UITableViewCell
     var timer = Timer();
     var connectTime = 1;
     
+    var connectionIcons = [UIImage]();
+    
     var wasSelected = false;
     
     override func awakeFromNib()
     {
         super.awakeFromNib();
         // Initialization code
+        
+        // creating references to the connection images
+        connectionIcons.append(UIImage(named: "Signal0")!);
+        connectionIcons.append(UIImage(named: "Signal1")!);
+        connectionIcons.append(UIImage(named: "Signal2")!);
+        connectionIcons.append(UIImage(named: "Signal3")!);
         
         wasSelected = false;
         
@@ -86,6 +94,22 @@ class BLEConnectionTableViewCell: UITableViewCell
         
     }
     
+    func updateRSSIValue(_ newRSSI: Int)
+    {
+        
+            // 127 is a sort of nil value, and so will be ignored (if the device is truly disconnected, it will be removed within half a second).
+        if (newRSSI == 127)
+        {
+            return;
+        }
+        else
+        {
+            //self.device.RSSI = newRSSI;
+            connectionImage.image = getImageForRSSI(newRSSI);
+            RSSIValue.text = String(newRSSI);
+        }
+    }
+    
     @objc func enableButton()
     {
             // if the device is successfully connected, stop the timer and enable the button
@@ -101,6 +125,33 @@ class BLEConnectionTableViewCell: UITableViewCell
             print("Not connected yet, keeping button disabled");
         }
         
+    }
+    
+        // using the right connection image for the RSSI value (based on my measurement, ranges from about -40 close to -100 far before disconnecting?
+    func getImageForRSSI(_ RSSI: Int) -> UIImage
+    {
+        var RSSIImage: UIImage;
+        
+        if (RSSI > -50)
+        {
+            RSSIImage = connectionIcons[3];
+        }
+        else if (RSSI > -60)
+        {
+            RSSIImage = connectionIcons[2];
+        }
+        else if (RSSI > -70)
+        {
+            RSSIImage = connectionIcons[1];
+        }
+        else
+        {
+            RSSIImage = connectionIcons[0];
+        }
+        
+            // allowing for recoloring
+        RSSIImage = RSSIImage.withRenderingMode(UIImageRenderingMode.alwaysTemplate)
+        return RSSIImage;
     }
     
 }

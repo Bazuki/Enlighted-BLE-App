@@ -185,6 +185,18 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
             }
+            else if (Constants.USE_STANDBY_BRIGHTNESS && !deviceHasModes && !(Device.connectedDevice?.dimmedBrightnessForStandby)!)
+            {
+                if (!(Device.connectedDevice?.requestedBrightnessChange)!)
+                {
+                    // storing away the current brightness, so that we can re-apply it when the standby mode is over
+                    Device.connectedDevice?.storedBrightness = (Device.connectedDevice?.brightness)!;
+                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: Constants.STANDBY_BRIGHTNESS)
+                    Device.connectedDevice?.requestedBrightnessChange = true;
+                }
+                
+                return;
+            }
                 // if the device isn't in standby, but isn't ready to display modes, we need to put it in standby mode to get the modes / thumbnails
             else if (Constants.USE_STANDBY_MODE && !deviceHasModes && !(Device.connectedDevice?.isInStandby)!)
             {
@@ -197,18 +209,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 
                 return;
             }
-            else if (Constants.USE_STANDBY_BRIGHTNESS && !deviceHasModes && !(Device.connectedDevice?.dimmedBrightnessForStandby)!)
-            {
-                if (!(Device.connectedDevice?.requestedBrightnessChange)!)
-                {
-                        // storing away the current brightness, so that we can re-apply it when the standby mode is over
-                    Device.connectedDevice?.storedBrightness = (Device.connectedDevice?.brightness)!;
-                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: Constants.STANDBY_BRIGHTNESS)
-                    Device.connectedDevice?.requestedBrightnessChange = true;
-                }
-                
-                return;
-            }
+            
             else if ((Device.connectedDevice?.batteryPercentage)! < 0)
             {
                 // if we haven't already, getBatteryLevel for this device, so that we'll know it when we change it on the settings screen
@@ -275,15 +276,28 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 return;
             }
                 // if the Device is still dimmed, we want to set it back to its original brightness
-            else if (Constants.USE_STANDBY_BRIGHTNESS && !deviceHasModes && (Device.connectedDevice?.dimmedBrightnessForStandby)!)
+            else if (Constants.USE_STANDBY_BRIGHTNESS && ((Device.connectedDevice?.dimmedBrightnessForStandby)! || Device.connectedDevice?.brightness == Constants.STANDBY_BRIGHTNESS))
             {
                     // we want to make sure we don't have thumbnail remnants if the "Get Thumbnail" process is interrupted
                 Device.connectedDevice?.currentlyBuildingThumbnails = false;
                 
                 if !(Device.connectedDevice?.requestedBrightnessChange)!
                 {
+                    var brightness: Int;
+                        // if we dimmed the brightness for a standby mode, then we have to set it back
+                    if (!deviceHasModes)
+                    {
+                        brightness = (Device.connectedDevice?.storedBrightness)!
+                        deviceHasModes = true;
+                    }
+                    else
+                    {
+                        brightness = Constants.DEFAULT_BRIGHTNESS;
+                    }
+                    
                         // set the brightness back to the initial pre-standby brightness we stored
-                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: (Device.connectedDevice?.storedBrightness)!);
+                    
+                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: brightness);
                     Device.connectedDevice?.storedBrightness = -1;
                     Device.connectedDevice?.requestedBrightnessChange = true;
                 }
@@ -291,7 +305,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 return;
                 
             }
-            else if (Constants.USE_STANDBY_MODE && !deviceHasModes && (Device.connectedDevice?.isInStandby)!)
+            else if (Constants.USE_STANDBY_MODE && (Device.connectedDevice?.isInStandby)!)
             {
                 if !((Device.connectedDevice?.requestedStandbyDeactivated)!)
                 {
