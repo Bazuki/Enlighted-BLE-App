@@ -289,7 +289,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 }
             }
             // if the device hasn't connected, keep scanning
-            startScan(0.5);
+            startScan(Constants.SCAN_DURATION);
         }
         
         if (Device.connectedDevice == nil || Device.connectedDevice?.name == "emptyDevice")
@@ -427,6 +427,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 Device.connectedDevice?.currentModeIndex = Int(rxValue[1]);
                 Device.connectedDevice?.maxNumModes = Int(rxValue[2]);
                 Device.connectedDevice?.maxBitmaps = Int(rxValue[3]);
+                
+                NotificationCenter.default.post(name: Notification.Name(rawValue:"gotLimits"), object: nil);
             }
                 // if the first letter is "G", we're getting the brightness, on a scale from 0-255;
             else if (rxString?.prefix(1) == "G") //[(rxString?.startIndex)!] == "G")
@@ -531,10 +533,43 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             else if (rxInt == 1)
             {
                 print("Command succeeded.");
+                
+                    // we need to know if a "change mode" was just done, so that we can apply user settings
                 if ((Device.connectedDevice?.requestedModeChange)!)
                 {
                     Device.connectedDevice?.requestedModeChange = false;
                     NotificationCenter.default.post(name: Notification.Name(rawValue: "changedMode"), object: nil);
+                }
+                
+                    // we need to know if the standby was set, in order to do other things in the setup loop
+                if ((Device.connectedDevice?.requestedStandbyActivated)!)
+                {
+                    Device.connectedDevice?.requestedStandbyActivated = false;
+                    Device.connectedDevice?.isInStandby = true;
+                }
+                else if ((Device.connectedDevice?.requestedStandbyDeactivated)!)
+                {
+                    Device.connectedDevice?.requestedStandbyDeactivated = false;
+                    Device.connectedDevice?.isInStandby = false;
+                }
+                
+                    // and likewise for the standby brightness change
+                if ((Device.connectedDevice?.requestedBrightnessChange)!)
+                {
+                        // if the stored brightness isn't its default value (i.e. something's been stored because we're in standby mode and so have set it to something else)
+                    if (Device.connectedDevice?.storedBrightness != -1)
+                    {
+                            // set the flag that we're in that standby mode
+                        Device.connectedDevice?.dimmedBrightnessForStandby = true;
+                    }
+                        // otherwise
+                    else
+                    {
+                            // set the flag that we aren't in that mode
+                        Device.connectedDevice?.dimmedBrightnessForStandby = false;
+                    }
+                    
+                    Device.connectedDevice?.requestedBrightnessChange = false;
                 }
             }
             else if (rxInt == 0)

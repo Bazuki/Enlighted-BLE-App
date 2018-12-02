@@ -25,8 +25,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     var timer = Timer();
     var BLETimeoutTimer = Timer();
+    
         // whether or not the currently selected mode has to be initialized
     var initialModeSelected = false;
+    
+        // whether or not the device has the full set of modes and thumbnails (if not, it has to do much more bluetooth, and so should enable the "Standby" mode.
+    var deviceHasModes = false;
     
         // the peripheral manager
     var peripheralManager: CBPeripheralManager?;
@@ -35,12 +39,11 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidLoad();
 
-        // getLimits for this device
-        getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
-        Device.connectedDevice?.requestedLimits = true;
-        progress += 0.04
+        
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: "changedMode"), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(prepareForSetup), name: Notification.Name(rawValue: "gotLimits"), object: nil)
         
             // setting this as the delegate of the table view
         tableView.delegate = self;
@@ -57,46 +60,71 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidAppear(animated);
         
-            // making sure the main timer isn't running
-        timer.invalidate();
-            // if we have all the modes and thumbnails, we're ready to display them
-        Device.connectedDevice?.readyToShowModes = (Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps);
+        // reset progress bar, and show
+        progress = 0;
+        loadingProgressView.setProgress(0, animated: false);
+        loadingProgressView.isHidden = false;
         
-            // configuring the style of the progress bar
+        // getLimits for this device
+        getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
+        Device.connectedDevice?.requestedLimits = true;
+        progress += 0.04
+        
+    }
+    
+//    override func viewDidAppear(_ animated: Bool)
+//    {
+//        super.viewDidAppear(animated);
+//    }
+    
+        // making sure we only setup after we have getLimits done, since that determines whether we need to go into standby mode
+    @objc func prepareForSetup()
+    {
+        
+        // making sure the main timer isn't running
+        self.timer.invalidate();
+        
+        
+        // if we have all the modes and thumbnails, we're ready to display them
+        deviceHasModes = (Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps);
+        
+        
+        
+        // configuring the style of the progress bar
         loadingProgressView.progressViewStyle = UIProgressView.Style.bar;
         
-            // if we didn't completely get the mode list (i.e. aren't totally ready to show modes)
-        if (!(Device.connectedDevice?.readyToShowModes)!)
+        // if we didn't completely get the mode list & thumbnails (i.e. aren't totally ready to show modes)
+        if (!deviceHasModes)
         {
-                // disabling the settings button when getting info
+            // disabling the settings button when getting info
             self.navigationItem.rightBarButtonItem?.isEnabled = false;
-            
-                // clearing table data
-            print("Wasn't ready to show modes, restarting getting data");
-            modes = [Mode]();
-            modeTableView.reloadData();
-            
-                // reset progress bar, and show
-            progress = 0;
-            loadingProgressView.setProgress(0, animated: false);
-            loadingProgressView.isHidden = false;
-            
-                // reset the variables, so we get all of them
-            Device.connectedDevice?.requestedName = false;
-            Device.connectedDevice?.currentlyBuildingThumbnails = false;
-            //Device.connectedDevice?.modes = [Mode]();
-            Device.connectedDevice?.requestedMode = false;
-            Device.connectedDevice?.readyToShowModes = false;
         }
-        else
-        {
-            loadingProgressView.setProgress(1, animated: true);
-            loadingProgressView.isHidden = true;
-        }
-       
+        
+        // clearing table data
+        print("Wasn't ready to show modes, restarting getting data");
+        
+        modes = [Mode]();
+        modeTableView.reloadData();
+        
+        
+        
+            // reset the flags, so we get all items
+        Device.connectedDevice?.requestedName = false;
+        Device.connectedDevice?.currentlyBuildingThumbnails = false;
+        Device.connectedDevice?.requestedStandbyActivated = false;
+        Device.connectedDevice?.requestedStandbyDeactivated = false;
+        Device.connectedDevice?.requestedBrightnessChange = false;
+        Device.connectedDevice?.requestedMode = false;
+        Device.connectedDevice?.readyToShowModes = false;
+        Device.connectedDevice?.requestedBattery = false;
+        Device.connectedDevice?.requestedBrightness = false;
+        
+            // we always want to do some setup, but if we already have modes / thumbnails it should be quick
+        Device.connectedDevice?.readyToShowModes = false;
+        
         print("Setting timer");
-            // Set the timer that governs the setup of the mode table
-        timer = Timer.scheduledTimer(timeInterval: 0.04, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
+        // Set the timer that governs the setup of the mode table
+        self.timer = Timer.scheduledTimer(timeInterval: 0.04, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
         
     }
     
@@ -110,6 +138,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         {
                 // once loading of modes/thumbnails is done, save that Device
             saveDevice();
+            
+            
             
                 // enabling the settings button when showing modes
             self.navigationItem.rightBarButtonItem?.isEnabled = true;
@@ -133,12 +163,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // if getLimits hasn't received a value yet
             if ((Device.connectedDevice?.currentModeIndex)! < 0)
             {
-                    // if we haven't already, getLimits for this device, so that we'll know it when we change it on the settings screen
+                    // if we haven't already, getLimits for this device, so that we'll know it when we change it on the settings screen;  This should already be done, however, in viewDidLoad().  This is just in case that wasn't called somehow.
                 if (!(Device.connectedDevice?.requestedLimits)!)
                 {
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
                     Device.connectedDevice?.requestedLimits = true;
-                    progress += 0.4;
+                    //progress += 0.4;
                 }
                     // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
@@ -153,6 +183,30 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     progress += 0.03;
                 }
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
+                return;
+            }
+                // if the device isn't in standby, but isn't ready to display modes, we need to put it in standby mode to get the modes / thumbnails
+            else if (Constants.USE_STANDBY_MODE && !deviceHasModes && !(Device.connectedDevice?.isInStandby)!)
+            {
+                if (!(Device.connectedDevice?.requestedStandbyActivated)!)
+                {
+                        // turn on the standby mode (any value other than '0' is turning it on)
+                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY, inputInt: 1);
+                    Device.connectedDevice?.requestedStandbyActivated = true;
+                }
+                
+                return;
+            }
+            else if (Constants.USE_STANDBY_BRIGHTNESS && !deviceHasModes && !(Device.connectedDevice?.dimmedBrightnessForStandby)!)
+            {
+                if (!(Device.connectedDevice?.requestedBrightnessChange)!)
+                {
+                        // storing away the current brightness, so that we can re-apply it when the standby mode is over
+                    Device.connectedDevice?.storedBrightness = (Device.connectedDevice?.brightness)!;
+                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: Constants.STANDBY_BRIGHTNESS)
+                    Device.connectedDevice?.requestedBrightnessChange = true;
+                }
+                
                 return;
             }
             else if ((Device.connectedDevice?.batteryPercentage)! < 0)
@@ -216,16 +270,41 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     //print("increasing progress by \(progressValue)");
                     
                     BLETimeoutTimer.invalidate();
-                    BLETimeoutTimer = Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(thumbnailTimeout), userInfo: nil, repeats: false);
+                    BLETimeoutTimer = Timer.scheduledTimer(timeInterval: Constants.THUMBNAIL_ROW_TIMEOUT_TIME, target: self, selector: #selector(thumbnailTimeout), userInfo: nil, repeats: false);
                 }
+                return;
+            }
+                // if the Device is still dimmed, we want to set it back to its original brightness
+            else if (Constants.USE_STANDBY_BRIGHTNESS && !deviceHasModes && (Device.connectedDevice?.dimmedBrightnessForStandby)!)
+            {
+                    // we want to make sure we don't have thumbnail remnants if the "Get Thumbnail" process is interrupted
+                Device.connectedDevice?.currentlyBuildingThumbnails = false;
+                
+                if !(Device.connectedDevice?.requestedBrightnessChange)!
+                {
+                        // set the brightness back to the initial pre-standby brightness we stored
+                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: (Device.connectedDevice?.storedBrightness)!);
+                    Device.connectedDevice?.storedBrightness = -1;
+                    Device.connectedDevice?.requestedBrightnessChange = true;
+                }
+                
+                return;
+                
+            }
+            else if (Constants.USE_STANDBY_MODE && !deviceHasModes && (Device.connectedDevice?.isInStandby)!)
+            {
+                if !((Device.connectedDevice?.requestedStandbyDeactivated)!)
+                {
+                        // deactivating the standby mode
+                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY, inputInt: 0);
+                    Device.connectedDevice?.requestedStandbyDeactivated = true;
+                }
+                
                 return;
             }
                 // once all setup is done, we are ready to show the modes
             else
             {
-                    // we want to make sure we don't have thumbnail remnants if the "Get Thumbnail" process is interrupted
-                Device.connectedDevice?.currentlyBuildingThumbnails = false;
-                
                 Device.connectedDevice?.readyToShowModes = true;
             }
         }

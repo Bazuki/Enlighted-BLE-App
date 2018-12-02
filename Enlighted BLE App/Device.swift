@@ -73,8 +73,16 @@ class Device: NSObject, NSCoding
     var receivedName = false;
     var requestedMode = false;
     var requestedThumbnail = false;
+    var requestedBrightnessChange = false;
+    var requestedStandbyActivated = false;
+    var requestedStandbyDeactivated = false;
     var requestedModeChange = false;
     var requestWithoutResponse = false;
+    
+        // flags / storage for the startup standby mode
+    var isInStandby = false;
+    var dimmedBrightnessForStandby = false;
+    var storedBrightness = -1;
     
         // flags for parsing multiple packets / unusual cases
     var currentlyParsingName = false;
