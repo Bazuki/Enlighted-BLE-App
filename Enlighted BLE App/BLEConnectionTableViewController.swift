@@ -130,7 +130,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         else
         {
             print("Bluetooth disabled, make sure your device is turned on");
-            let alertVC = UIAlertController(title: "Bluetooth is not enabled", message: "Make sure that your bluetooth is turned on", preferredStyle: UIAlertControllerStyle.alert);
+            let alertVC = UIAlertController(title: "Bluetooth is not enabled", message: "Make sure that your bluetooth is turned on.", preferredStyle: UIAlertControllerStyle.alert);
             let action = UIAlertAction(title: "ok", style: UIAlertActionStyle.default, handler: { (action: UIAlertAction) -> Void in
                 self.dismiss(animated: true, completion: nil);
             })
@@ -693,6 +693,26 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // Only look for services that match the transmit UUID
         peripheral.discoverServices([BLEService_UUID]);
         //peripheral.discoverServices([BLEBatteryService_UUID]);
+    }
+    
+    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?)
+    {
+        print("Failed to connect to peripheral, \(error?.localizedDescription)");
+        
+        let alertVC = UIAlertController(title: "Failed to connect to device", message: "Please select that device again, or select a different device.", preferredStyle: UIAlertControllerStyle.alert);
+        let action = UIAlertAction(title: "ok", style: UIAlertActionStyle.default, handler: { (action: UIAlertAction) -> Void in
+            
+                // close the error window
+            self.dismiss(animated: true, completion: nil);
+        })
+        alertVC.addAction(action);
+        self.present(alertVC, animated: true, completion: nil);
+        
+        // reloading the data, removing the selection and removing the device if it isn't there anymore
+        deviceTableView.reloadData();
+        // starting the scan again
+        startScan(Constants.SCAN_DURATION);
+        
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?)
