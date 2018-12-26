@@ -421,6 +421,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         var alpha: CGFloat = 0;
         color.getRed(&red, green: &green, blue: &blue, alpha: &alpha);
         
+        // clamping within 0 and 1
+        red = max(min(red, 1), 0);
+        green = max(min(green, 1), 0);
+        blue = max(min(blue, 1), 0);
         // scaling up to 255
         red *= 255;
         green *= 255;

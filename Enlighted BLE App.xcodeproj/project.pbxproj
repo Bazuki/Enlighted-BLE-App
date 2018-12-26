@@ -21,6 +21,7 @@
 		9E693680215F11AF00B26C9C /* EditScreenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E69367F215F11AF00B26C9C /* EditScreenViewController.swift */; };
 		9E693682215F19BC00B26C9C /* DeviceManagementViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E693681215F19BC00B26C9C /* DeviceManagementViewController.swift */; };
 		9E6936862160430A00B26C9C /* BitmapPickerCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6936852160430A00B26C9C /* BitmapPickerCollectionViewCell.swift */; };
+		9E6D401A21D43141001E816E /* Source in Frameworks */ = {isa = PBXBuildFile; fileRef = 9E83FA7E2184E677003C054A /* Source */; };
 		9E83FA7F2184E678003C054A /* Source in Resources */ = {isa = PBXBuildFile; fileRef = 9E83FA7E2184E677003C054A /* Source */; };
 		9EA2B8E82159E3EA00C7D71A /* BLEConnectionTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA2B8E72159E3E900C7D71A /* BLEConnectionTableViewCell.swift */; };
 		9EA2B8EA2159EB1600C7D71A /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA2B8E92159EB1600C7D71A /* Device.swift */; };
@@ -70,6 +71,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9E6D401A21D43141001E816E /* Source in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,6 +91,7 @@
 				9E604EF421535D1200734E4E /* Enlighted BLE App */,
 				9E604F0921535D1900734E4E /* Enlighted BLE AppTests */,
 				9E604EF321535D1200734E4E /* Products */,
+				9E6D401921D43141001E816E /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -135,6 +138,13 @@
 				9E604F0C21535D1900734E4E /* Info.plist */,
 			);
 			path = "Enlighted BLE AppTests";
+			sourceTree = "<group>";
+		};
+		9E6D401921D43141001E816E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

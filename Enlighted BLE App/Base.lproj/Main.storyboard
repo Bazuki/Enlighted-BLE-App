@@ -216,7 +216,7 @@
                                 <color key="textColor" name="Subtitle"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 0.0.11 Build 20" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 0.0.11 Build 21" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
                                 <rect key="frame" x="16" y="578" width="344" height="24"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="24" id="hlc-bh-K4w"/>
@@ -299,7 +299,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" name="Background"/>
                         <color key="sectionIndexBackgroundColor" name="Background"/>
-                        <progressView key="tableHeaderView" opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="750" progress="0.5" id="tjd-4Y-KKI">
+                        <progressView key="tableHeaderView" opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" verticalHuggingPriority="750" progress="0.5" id="tjd-4Y-KKI">
                             <rect key="frame" x="0.0" y="0.0" width="375" height="2"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         </progressView>
@@ -769,7 +769,7 @@
         </namedColor>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="R1l-rV-sgR"/>
+        <segue reference="aBj-pM-CgY"/>
     </inferredMetricsTieBreakers>
     <color key="tintColor" name="Button"/>
 </document>

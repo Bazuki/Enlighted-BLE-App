@@ -35,6 +35,8 @@ class Constants
     static let SCAN_DURATION = 0.5;
     
         // the time (in seconds) before the device decides to scrap and re-send a row of thumbnail pixels
+            // The watchdog timer on the hardware is set to 0.3 seconds, but going too low causes it to time out far too often.
+            // 0.2 seconds was a good middle ground to avoid both issues.
     static let THUMBNAIL_ROW_TIMEOUT_TIME = 0.2;
     
         // the default brightness to set the hardware to if it's at STANDBY_BRIGHTNESS

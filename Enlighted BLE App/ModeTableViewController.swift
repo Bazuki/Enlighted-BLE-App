@@ -53,7 +53,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         //Device.connectedDevice!.peripheral.delegate = self as! CBPeripheralDelegate;
         
             // Uncomment the following line to preserve selection between presentations
-        self.clearsSelectionOnViewWillAppear = false
+        self.clearsSelectionOnViewWillAppear = false;
     }
 
     override func viewWillAppear(_ animated: Bool)
@@ -69,6 +69,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
         Device.connectedDevice?.requestedLimits = true;
         progress += 0.04
+        
+        
         
     }
     
@@ -122,6 +124,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // we always want to do some setup, but if we already have modes / thumbnails it should be quick
         Device.connectedDevice?.readyToShowModes = false;
         
+            // disabling sleeping until loading is complete
+        UIApplication.shared.isIdleTimerDisabled = true;
+        
+            // disabling user interaction with the empty TableView until loading is complete
+        modeTableView.isUserInteractionEnabled = false;
+        
         print("Setting timer");
         // Set the timer that governs the setup of the mode table
         self.timer = Timer.scheduledTimer(timeInterval: 0.04, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
@@ -156,6 +164,13 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             
             modeTableView.reloadData();
             self.tableView.selectRow(at: indexPath, animated: true, scrollPosition: UITableViewScrollPosition(rawValue: 0)!)
+            
+                // re-enabling user interaction with the TableView since loading is complete
+            modeTableView.isUserInteractionEnabled = true;
+            
+                // re-enabling sleeping since loading is complete
+            UIApplication.shared.isIdleTimerDisabled = false;
+            
         }
             // otherwise do preparatory steps, as long as a multi-message response isn't currently happening
         else if (Device.connectedDevice?.requestedThumbnail == false && Device.connectedDevice?.currentlyParsingName == false && Device.connectedDevice?.requestWithoutResponse == false)

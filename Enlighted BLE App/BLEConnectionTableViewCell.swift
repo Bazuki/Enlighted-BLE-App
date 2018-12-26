@@ -68,6 +68,8 @@ class BLEConnectionTableViewCell: UITableViewCell
             //timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: true);
         }
         
+        wasSelected = selected;
+        
         connectButton.isHidden = !selected;
         
         
@@ -90,7 +92,7 @@ class BLEConnectionTableViewCell: UITableViewCell
             RSSIValue.textColor = UIColor(named: "NonSelectedText");
         }
         
-        wasSelected = selected;
+        
         
     }
     
