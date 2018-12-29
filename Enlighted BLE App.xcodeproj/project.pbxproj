@@ -21,7 +21,9 @@
 		9E693680215F11AF00B26C9C /* EditScreenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E69367F215F11AF00B26C9C /* EditScreenViewController.swift */; };
 		9E693682215F19BC00B26C9C /* DeviceManagementViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E693681215F19BC00B26C9C /* DeviceManagementViewController.swift */; };
 		9E6936862160430A00B26C9C /* BitmapPickerCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6936852160430A00B26C9C /* BitmapPickerCollectionViewCell.swift */; };
-		9E6D401A21D43141001E816E /* Source in Frameworks */ = {isa = PBXBuildFile; fileRef = 9E83FA7E2184E677003C054A /* Source */; };
+		9E6D402321D44347001E816E /* ISColorWheel.m in Sources */ = {isa = PBXBuildFile; fileRef = 9E6D402121D44347001E816E /* ISColorWheel.m */; };
+		9E6D402521D44703001E816E /* ColorWheel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6D402421D44703001E816E /* ColorWheel.swift */; };
+		9E6D402721D45194001E816E /* ColorKnob.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6D402621D45194001E816E /* ColorKnob.swift */; };
 		9E83FA7F2184E678003C054A /* Source in Resources */ = {isa = PBXBuildFile; fileRef = 9E83FA7E2184E677003C054A /* Source */; };
 		9EA2B8E82159E3EA00C7D71A /* BLEConnectionTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA2B8E72159E3E900C7D71A /* BLEConnectionTableViewCell.swift */; };
 		9EA2B8EA2159EB1600C7D71A /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA2B8E92159EB1600C7D71A /* Device.swift */; };
@@ -58,6 +60,10 @@
 		9E69367F215F11AF00B26C9C /* EditScreenViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditScreenViewController.swift; sourceTree = "<group>"; };
 		9E693681215F19BC00B26C9C /* DeviceManagementViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceManagementViewController.swift; sourceTree = "<group>"; };
 		9E6936852160430A00B26C9C /* BitmapPickerCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapPickerCollectionViewCell.swift; sourceTree = "<group>"; };
+		9E6D402121D44347001E816E /* ISColorWheel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ISColorWheel.m; sourceTree = "<group>"; };
+		9E6D402221D44347001E816E /* ISColorWheel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ISColorWheel.h; sourceTree = "<group>"; };
+		9E6D402421D44703001E816E /* ColorWheel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorWheel.swift; sourceTree = "<group>"; };
+		9E6D402621D45194001E816E /* ColorKnob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorKnob.swift; sourceTree = "<group>"; };
 		9E83FA7E2184E677003C054A /* Source */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Source; sourceTree = "<group>"; };
 		9E83FA802184FB17003C054A /* Enlighted-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Enlighted-Bridging-Header.h"; sourceTree = "<group>"; };
 		9EA2B8E72159E3E900C7D71A /* BLEConnectionTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEConnectionTableViewCell.swift; sourceTree = "<group>"; };
@@ -71,7 +77,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9E6D401A21D43141001E816E /* Source in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -107,9 +112,13 @@
 		9E604EF421535D1200734E4E /* Enlighted BLE App */ = {
 			isa = PBXGroup;
 			children = (
+				9E6D402221D44347001E816E /* ISColorWheel.h */,
+				9E6D402121D44347001E816E /* ISColorWheel.m */,
 				9E83FA802184FB17003C054A /* Enlighted-Bridging-Header.h */,
 				9EA2B8E92159EB1600C7D71A /* Device.swift */,
 				9E693679215EC1F200B26C9C /* Mode.swift */,
+				9E6D402421D44703001E816E /* ColorWheel.swift */,
+				9E6D402621D45194001E816E /* ColorKnob.swift */,
 				9E69367D215EE6C800B26C9C /* ColorPreview.swift */,
 				9E604EF521535D1200734E4E /* AppDelegate.swift */,
 				9E604EF721535D1200734E4E /* ViewController.swift */,
@@ -267,7 +276,10 @@
 				9EA2B8EA2159EB1600C7D71A /* Device.swift in Sources */,
 				9E693676215DA3A500B26C9C /* ModeTableViewCell.swift in Sources */,
 				9E693682215F19BC00B26C9C /* DeviceManagementViewController.swift in Sources */,
+				9E6D402721D45194001E816E /* ColorKnob.swift in Sources */,
+				9E6D402321D44347001E816E /* ISColorWheel.m in Sources */,
 				9EA2B8EC2159EEBA00C7D71A /* BLEConnectionTableViewController.swift in Sources */,
+				9E6D402521D44703001E816E /* ColorWheel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -440,7 +452,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Enlighted BLE App/Enlighted-Bridging-Header.h";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 4.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -461,7 +473,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Enlighted BLE App/Enlighted-Bridging-Header.h";
 				SWIFT_SWIFT3_OBJC_INFERENCE = Default;
 				SWIFT_VERSION = 4.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
