@@ -107,7 +107,7 @@ class Mode: NSObject, NSCoding
     init?(default: Bool)
     {
         self.name = "Default";
-        self.index = 1;
+        self.index = -1;
         self.usesBitmap = false;
         self.bitmapIndex = 1;
         color1 = UIColor.red

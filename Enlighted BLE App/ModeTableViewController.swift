@@ -157,9 +157,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             loadingProgressView.setProgress(1, animated: true)
             loadingProgressView.isHidden = true;
             
+            
+            
             //loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
                 // load up the modes stored on the device object
             modes = (Device.connectedDevice?.modes)!;
+            
+            // setting the inital mode of the Device
+            Device.connectedDevice?.mode = modes[(Device.connectedDevice?.currentModeIndex)! - 1];
+            
             let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
             
             modeTableView.reloadData();

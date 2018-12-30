@@ -29,6 +29,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBOutlet weak var brightnessSlider: UISlider!
     
     @IBOutlet weak var bitmapPicker: UICollectionView!
+    @IBOutlet weak var ColorWheel: ColorWheel!
     
     @IBOutlet weak var color1UndoButton: UIButton!
     @IBOutlet weak var color2UndoButton: UIButton!
@@ -56,11 +57,14 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     var bitmapHistory = [Int]();
     
         // the histories for each color, so that they can be undone as well
-    var color1History = [UIColor]();
-    var color2History = [UIColor]();
+    public var color1History = [UIColor]();
+    public var color2History = [UIColor]();
     
     var currentColor: UIColor = UIColor.clear;
     var currentColorIndex: Int = 1;
+    
+        // brightness of slider
+    public var brightness: CGFloat = 1;
     
         // don't let the user spam revert if the mode is already reverted
     //var hasReverted = false;
@@ -136,7 +140,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             bitmapUndoButton.isHidden = false;
             bitmapRevertButton.isHidden = false;
             
-            saturationLabel.isHidden = true
+            //saturationLabel.isHidden = true
             
             color1Label.isHidden = true;
             color2Label.isHidden = true;
@@ -167,7 +171,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             color1RGB.text = getRGBStringFromUIColor(color1Selector.myColor);
             color2RGB.text = getRGBStringFromUIColor(color2Selector.myColor);
             
-            saturationLabel.isHidden = false;
+            //saturationLabel.isHidden = false;
             
             color1Label.isHidden = false;
             color2Label.isHidden = false;
@@ -216,7 +220,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             color1History += [color1Selector.myColor];
             color2History += [color2Selector.myColor];
             
-            
+            ColorWheel.initializeColorWheel(radius: Float(ColorWheel.frame.width / 2), color: color1Selector.myColor, owner: self, knobRadius: 15)
         }
     }
     
@@ -443,23 +447,23 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     }
     
         // credit to https://stackoverflow.com/questions/10071756/is-there-function-to-convert-uicolor-to-hue-saturation-brightness for the conversion to HSV/HSB
-    func updateColorPicker(_ newColor: UIColor, fromPicker: Bool)
+    public func updateColorPicker(_ newColor: UIColor, fromPicker: Bool)
     {
         var hue: CGFloat = 0;
         var saturation: CGFloat = 0;
-        var brightness: CGFloat = 0;
+        var newBrightness: CGFloat = 0;
         var alpha: CGFloat = 0;
-        let _ = newColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha);
+        let _ = newColor.getHue(&hue, saturation: &saturation, brightness: &newBrightness, alpha: &alpha);
        
         // scaling up for respective ranges
         hue *= 360;
         saturation *= 100;
-        brightness *= 100;
+        //newBrightness *= 100;
         
         // converting to Ints
-        let hueInt = Int(hue);
-        let saturationInt = Int(saturation);
-        let brightnessInt = Int(brightness);
+        //let hueInt = Int(hue);
+        //let saturationInt = Int(saturation);
+        let sliderBrightness = Float(newBrightness * 100);
         
             // if this new color is from setting sliders, we want to set the currently selected Color that way
         if (fromPicker)
@@ -484,22 +488,26 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         else
         {
             // updating slider background with new values, for some instant feedback
-            hueSlider.minimumTrackTintColor = newColor;
-            hueSlider.maximumTrackTintColor = newColor;
-            
-            saturationSlider.minimumTrackTintColor = newColor;
-            saturationSlider.maximumTrackTintColor = newColor;
+//            hueSlider.minimumTrackTintColor = newColor;
+//            hueSlider.maximumTrackTintColor = newColor;
+//
+//            saturationSlider.minimumTrackTintColor = newColor;
+//            saturationSlider.maximumTrackTintColor = newColor;
             
             brightnessSlider.minimumTrackTintColor = newColor;
             brightnessSlider.maximumTrackTintColor = newColor;
             
-            hueSlider.isEnabled = true;
-            saturationSlider.isEnabled = true;
+//            hueSlider.isEnabled = true;
+//            saturationSlider.isEnabled = true;
             brightnessSlider.isEnabled = true;
             
-            hueSlider.setValue(Float(hueInt), animated: true);
-            saturationSlider.setValue(Float(saturationInt), animated: true);
-            brightnessSlider.setValue(Float(brightnessInt), animated: true);
+//            hueSlider.setValue(Float(hueInt), animated: true);
+//            saturationSlider.setValue(Float(saturationInt), animated: true);
+            brightnessSlider.setValue(sliderBrightness, animated: true);
+            brightness = newBrightness;
+            ColorWheel.updateBrightness();
+            
+            ColorWheel.setColor(newColor: newColor);
         }
         
         
@@ -646,20 +654,24 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     @IBAction func changedColor(_ sender: UISlider)
     {
-        let newHue: CGFloat = CGFloat(hueSlider.value / hueSlider.maximumValue);
-        let newSaturation: CGFloat = CGFloat(saturationSlider.value / saturationSlider.maximumValue);
+        let newHue: CGFloat = ColorWheel.hue;
+        let newSaturation: CGFloat = ColorWheel.saturation;
         let newBrightness: CGFloat = CGFloat(brightnessSlider.value / brightnessSlider.maximumValue);
         let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
-        
-            // updating slider background with new values, for some instant feedback
-        hueSlider.minimumTrackTintColor = newColor;
-        hueSlider.maximumTrackTintColor = newColor;
-        
-        saturationSlider.minimumTrackTintColor = newColor;
-        saturationSlider.maximumTrackTintColor = newColor;
+//
+//            // updating slider background with new values, for some instant feedback
+//        hueSlider.minimumTrackTintColor = newColor;
+//        hueSlider.maximumTrackTintColor = newColor;
+//
+//        saturationSlider.minimumTrackTintColor = newColor;
+//        saturationSlider.maximumTrackTintColor = newColor;
         
         brightnessSlider.minimumTrackTintColor = newColor;
         brightnessSlider.maximumTrackTintColor = newColor;
+        
+        brightness = CGFloat(brightnessSlider.value / brightnessSlider.maximumValue);
+        
+        ColorWheel.updateBrightness();
         
         if (currentColorIndex == 1)
         {
@@ -674,13 +686,13 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     @IBAction func createdNewColor(_ sender: UISlider)
     {
-        let newHue: CGFloat = CGFloat(hueSlider.value / hueSlider.maximumValue);
-        let newSaturation: CGFloat = CGFloat(saturationSlider.value / saturationSlider.maximumValue);
+        let newHue: CGFloat = ColorWheel.hue;
+        let newSaturation: CGFloat = ColorWheel.saturation;
         let newBrightness: CGFloat = CGFloat(brightnessSlider.value / brightnessSlider.maximumValue);
         let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
-        
+
         //print("new HSB: \(newHue), \(newSaturation), \(newBrightness)");
-        
+
         if (currentColorIndex == 1)
         {
             color1History += [newColor];
@@ -689,6 +701,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         {
             color2History += [newColor];
         }
+
+        ColorWheel.updateBrightness();
         
         updateColorPicker(newColor, fromPicker: true);
     }
@@ -858,5 +872,12 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         // Pass the selected object to the new view controller.
     }
     */
+    
+    // MARK: - Public Methods
+    
+    public func getCurrentColorIndex() -> Int
+    {
+        return currentColorIndex;
+    }
 
 }
