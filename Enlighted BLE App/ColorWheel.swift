@@ -56,6 +56,35 @@ class ColorWheel: UIView
         switch(recognizer.state)
         {
             
+        case UIGestureRecognizerState.began:
+            let newPosition = recognizer.location(in: self);
+            let xDist = centerPoint.x - newPosition.x;
+            let yDist = centerPoint.y - newPosition.y;
+            let distance = sqrt(xDist * xDist + yDist * yDist);
+            
+            // if the tap was within the wheel (+ the knob's radius as buffer)
+            if (distance < (CGFloat(radius + knobRadius)))
+            {
+                // move the knob there
+                knobPosition = newPosition;
+                moveKnob(goal: knobPosition);
+                
+                let newColor = getColor();
+                
+                if (viewController?.getCurrentColorIndex() == 1)
+                {
+                    viewController?.color1Selector.setBackgroundColor(newColor: newColor);
+                }
+                else
+                {
+                    viewController?.color2Selector.setBackgroundColor(newColor: newColor);
+                }
+                
+                viewController?.brightnessSlider.minimumTrackTintColor = newColor;
+                viewController?.brightnessSlider.maximumTrackTintColor = newColor;
+            }
+            break
+            
         case UIGestureRecognizerState.changed:
             let knobPosition = recognizer.location(in: self);
             moveKnob(goal: knobPosition);
@@ -104,12 +133,37 @@ class ColorWheel: UIView
         let yDist = centerPoint.y - newPosition.y;
         let distance = sqrt(xDist * xDist + yDist * yDist);
         
-            // if the tap was within the wheel
-        if (distance < CGFloat(radius))
+            // if the tap was within the wheel (+ the knob's radius as buffer)
+        if (distance < (CGFloat(radius + knobRadius)))
         {
             // move the knob there
             knobPosition = newPosition;
             moveKnob(goal: knobPosition);
+            
+            let newColor = getColor();
+            
+            if (viewController?.getCurrentColorIndex() == 1)
+            {
+                viewController?.color1Selector.setBackgroundColor(newColor: newColor);
+            }
+            else
+            {
+                viewController?.color2Selector.setBackgroundColor(newColor: newColor);
+            }
+            
+            viewController?.brightnessSlider.minimumTrackTintColor = newColor;
+            viewController?.brightnessSlider.maximumTrackTintColor = newColor;
+            
+            // updating the view controller upon release
+            if (viewController?.getCurrentColorIndex() == 1)
+            {
+                viewController?.color1History += [getColor()];
+            }
+            else
+            {
+                viewController?.color2History += [getColor()];
+            }
+            viewController?.updateColorPicker(getColor(), fromPicker: true);
         }
         
     }

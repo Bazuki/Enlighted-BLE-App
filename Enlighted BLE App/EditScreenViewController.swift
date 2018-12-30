@@ -220,7 +220,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             color1History += [color1Selector.myColor];
             color2History += [color2Selector.myColor];
             
-            ColorWheel.initializeColorWheel(radius: Float(ColorWheel.frame.width / 2), color: color1Selector.myColor, owner: self, knobRadius: 15)
+            ColorWheel.initializeColorWheel(radius: 120, color: color1Selector.myColor, owner: self, knobRadius: 15)
         }
     }
     

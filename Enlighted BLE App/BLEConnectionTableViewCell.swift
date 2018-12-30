@@ -64,7 +64,7 @@ class BLEConnectionTableViewCell: UITableViewCell
         if (selected && !wasSelected)// && Device.connectedDevice?.isConnecting ?? false)
         {
             
-            connectButton.isEnabled = false;
+            connectButton.isEnabled = Device.connectedDevice?.isConnected ?? false;
             //timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: true);
         }
         
