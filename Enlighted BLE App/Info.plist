@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleDisplayName</key>
 	<string>Enlighted BLE App</string>
 	<key>CFBundleExecutable</key>
@@ -19,7 +21,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.0</string>
 	<key>CFBundleVersion</key>
-	<string>4</string>
+	<string>5</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSBluetoothPeripheralUsageDescription</key>

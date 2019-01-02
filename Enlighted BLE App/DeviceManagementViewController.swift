@@ -277,18 +277,21 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     {
         var batteryImage: UIImage;
         
-        if (batteryInt <= 20)
+        if (batteryInt <= 10)
         {
             batteryImage = batteryIcons[0];
         }
-        else if (batteryInt <= 40)
+            // the icon shows 25%, + 5% buffer
+        else if (batteryInt <= 30)
         {
             batteryImage = batteryIcons[1];
         }
-        else if (batteryInt <= 60)
+            // the icon shows 50%, + 5% buffer
+        else if (batteryInt <= 55)
         {
             batteryImage = batteryIcons[2];
         }
+            // the icon shows 75%, + 5% buffer
         else if (batteryInt <= 80)
         {
             batteryImage = batteryIcons[3];

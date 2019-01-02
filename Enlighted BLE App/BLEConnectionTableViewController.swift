@@ -129,6 +129,15 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         }
         else
         {
+                // if there is an active device, disconnect from it
+            disconnectFromDevice();
+                // clearing table data
+            peripherals = [CBPeripheral]();
+            peripheralNames = [String]();
+            RSSIs = [NSNumber]();
+            visibleDevices = [Device]();
+            deviceTableView.reloadData();
+            
             print("Bluetooth disabled, make sure your device is turned on");
             let alertVC = UIAlertController(title: "Bluetooth is not enabled", message: "Make sure that your bluetooth is turned on.", preferredStyle: UIAlertControllerStyle.alert);
             let action = UIAlertAction(title: "ok", style: UIAlertActionStyle.default, handler: { (action: UIAlertAction) -> Void in
@@ -142,9 +151,20 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber)
     {
-        self.peripherals.append(peripheral);
-        self.peripheralNames.append(advertisementData[CBAdvertisementDataLocalNameKey] as! String);
-        self.RSSIs.append(RSSI);
+            // the true (non-cached) advertised name of the device
+        let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as! String;
+        
+        if (advertisedName.prefix(3) == "ENL")
+        {
+            self.peripherals.append(peripheral);
+            self.peripheralNames.append(advertisementData[CBAdvertisementDataLocalNameKey] as! String);
+            self.RSSIs.append(RSSI);
+        }
+        else
+        {
+            print("Found a new device \(advertisedName), but it doesn't look like it's an Enlighted device, so it will be excluded from the list");
+            return;
+        }
         
             // handled in cancelScan()
 //        if let devicesIndex = self.visibleDevices.firstIndex(where: { (device: Device) -> Bool in
@@ -942,7 +962,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         return 1;
     }
 
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
+    {
         // #warning Incomplete implementation, return the number of rows
         return visibleDevices.count;
     }
@@ -966,7 +987,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         cell.updateRSSIValue(device.RSSI); 
         cell.device = device;
         
-        return cell
+        return cell;
     }
     
 
