@@ -27,6 +27,8 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     
     var batteryIcons = [UIImage]();
     
+    var batteryRefreshTimer = Timer();
+    
     override func viewDidLoad()
     {
         super.viewDidLoad()
@@ -70,11 +72,21 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
         batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
         
+            // creating a timer to scan and update battery level
+        batteryRefreshTimer = Timer.scheduledTimer(timeInterval: Constants.BATTERY_SCAN_INTERVAL, target: self, selector: #selector(requestBatteryPercentage), userInfo: nil, repeats: true);
+        
     }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
+    }
+    
+    override func viewWillDisappear(_ animated: Bool)
+    {
+            // stop the timer before we leave this screen
+        self.batteryRefreshTimer.invalidate();
+        super.viewWillDisappear(animated);
     }
     
     @IBAction func dismissPopup(_ sender: UIButton)
@@ -84,7 +96,6 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     
     @IBAction func changeBrightness(_ sender: UISlider)
     {
-        
         if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
@@ -199,7 +210,13 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     
     //Mark: Private Methods
     
-        // updating the battery percentage to what we read from summer
+        // getting the battery value from the hardware
+    @objc private func requestBatteryPercentage()
+    {
+        getValue(EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL);
+    }
+    
+        // updating the battery percentage to what we read from hardware
     @objc private func updateBatteryPercentage()
     {
         batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
@@ -217,7 +234,12 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         // sends get commands to the hardware, using the protocol as the inputString
     private func getValue(_ inputString: String)
     {
-        if (!(Device.connectedDevice?.isConnected)!)
+        if (Device.connectedDevice?.requestWithoutResponse ?? false)
+        {
+            print("Currently pending request, delaying new request");
+            return;
+        }
+        else if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
             return;

@@ -354,7 +354,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     return;
                 }
                 else
-                    // if the response after the first half of a name isn't a name, something's wrong, and we should clear everythin
+                    // if the response after the first half of a name isn't a name, something's wrong, and we should clear everything
                 {
                     print("Caught a name error: \(parsedName)");
                     Device.connectedDevice?.currentlyParsingName = false;

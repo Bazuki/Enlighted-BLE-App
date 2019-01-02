@@ -34,6 +34,9 @@ class Constants
         // the time (in seconds) the device scans before analyzing what it found (and then scanning again)
     static let SCAN_DURATION = 0.5;
     
+        // the time (in seconds) between scans of the battery level on the settings screen
+    static let BATTERY_SCAN_INTERVAL = 0.33;
+    
         // the time (in seconds) before the device decides to scrap and re-send a row of thumbnail pixels
             // The watchdog timer on the hardware is set to 0.3 seconds, but going too low causes it to time out far too often.
             // 0.2 seconds was a good middle ground to avoid both issues.
