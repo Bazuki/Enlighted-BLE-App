@@ -439,7 +439,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     Device.connectedDevice?.thumbnailRowIndex = 0;
                 }
             }
-                // if the first letter is "L", we're getting the current mode, lower-, and upper-mode count limits.
+                // if the first letter is "L", we're getting the current mode, max number of modes, and max number of bitmaps.
             else if (rxString?.prefix(1) == "L") //[(rxString?.startIndex)!] == "L")
             {
                 print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
@@ -447,6 +447,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 Device.connectedDevice?.currentModeIndex = Int(rxValue[1]);
                 Device.connectedDevice?.maxNumModes = Int(rxValue[2]);
                 Device.connectedDevice?.maxBitmaps = Int(rxValue[3]);
+                
+                    // making sure that the current mode isn't above the max (which can sometimes happen in a sort of "demo" mode)
+                if ((Device.connectedDevice?.currentModeIndex)! > (Device.connectedDevice?.maxNumModes)!)
+                {
+                        // if it is, default to mode 1 on the app
+                    Device.connectedDevice?.currentModeIndex = 1;
+                }
                 
                 NotificationCenter.default.post(name: Notification.Name(rawValue:"gotLimits"), object: nil);
             }
