@@ -31,6 +31,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
         // The bluetooth CentralManager object controlling the connection to peripherals
     var centralManager : CBCentralManager!;
+    
         // A timer object to help in searching
     var timer = Timer();
     var scanTimer = Timer();
