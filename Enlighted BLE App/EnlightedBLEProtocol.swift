@@ -34,6 +34,15 @@ class Constants
         // the time (in seconds) the device scans before analyzing what it found (and then scanning again)
     static let SCAN_DURATION = 0.5;
     
+        // the time (in seconds) after which, if no Enlighted BLE devices are found, a "demo mode" device pops up
+    static let SCAN_TIMEOUT_TIME = 1;
+    
+        // the filepath in the default app data to take to find the demo device's data
+    static let DEMO_DEVICE_PATH = FileManager().urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("baseDevice");
+    
+        // the name of the demo device
+    static let DEMO_DEVICE_NAME = "Sample Device";
+    
         // the time (in seconds) between scans of the battery level on the settings screen (as of 1.0.2, no longer used)
     //static let BATTERY_SCAN_INTERVAL = 0.33;
     
@@ -53,4 +62,6 @@ class Constants
     
         // relatedly, but independently to the above, whether to dim the brightness to STANDBY_BRIGHTNESS when loading modes.
     static let USE_STANDBY_BRIGHTNESS = true;
+    
+    
 }

@@ -39,6 +39,9 @@ class Device: NSObject, NSCoding
     var currentModeIndex: Int;
     var mode = Mode(default: true);
     
+        // whether or not this is a "demo", non-BLE enabled digital device
+    var isDemoDevice = false;
+    
         // a list of all the modes this device has, from Get Mode;
     var modes = [Mode]();
     
@@ -98,28 +101,6 @@ class Device: NSObject, NSCoding
     
     // MARK: Initialization
     
-    // creating a new "device" for purposes of flow, with useless parameters.  In actual implementation, these would be read from the device.
-//    init(name:String)
-//    {
-//        self.name = name;
-//
-//        // just for this demo, choosing a random int between 1 and 100 as the "RSSI value"
-//        RSSI = Int(arc4random_uniform(100) + 1);
-//
-//        // starting at mode -1; in the real app, would read current mode from device
-//        currentModeIndex = -1;
-//        maxNumModes = 4;
-//        maxBitmaps = 10;
-//
-//        // initial value;
-//        brightness = -1;
-//
-//            // mock declaration without a peripheral, so not connected
-//        isConnected = false;
-//        isConnecting = false;
-//        hasDiscoveredCharacteristics = false;
-//    }
-    
     init(name: String, RSSI: Int, peripheral: CBPeripheral)
     {
         self.name = name;
@@ -161,7 +142,7 @@ class Device: NSObject, NSCoding
         hasDiscoveredCharacteristics = false;
     }
     
-    // for setting an empty reference for the current device
+        // for setting an empty reference for the current device
     init?(isFakeDevice: Bool, equalsNil: Bool)
     {
         isConnected = false;
@@ -170,6 +151,30 @@ class Device: NSObject, NSCoding
         return nil;
     }
     
+    
+    init(demoDeviceName: String)
+    {
+        self.name = demoDeviceName;
+        
+        isDemoDevice = true;
+        // just for this demo, choosing a random int between 1 and 100 as the "RSSI value"
+        RSSI = -1;
+        
+        // starting at mode -1; in the real app, would read current mode from device
+        currentModeIndex = -1;
+        maxNumModes = -1;
+        maxBitmaps = -1;
+        
+        // initial value;
+        brightness = -1;
+        
+        // mock declaration without a peripheral, so not connected
+        isConnected = false;
+        isConnecting = false;
+        hasDiscoveredCharacteristics = false;
+    }
+    
+        // as a placeholder when disconnecting from a device.
     init(_ emptyDevice: Bool)
     {
         

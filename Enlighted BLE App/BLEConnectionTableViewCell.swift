@@ -24,6 +24,8 @@ class BLEConnectionTableViewCell: UITableViewCell
     
     var cellIsSelected = false;
     
+    var isDemoDevice = false;
+    
     var timer = Timer();
     var connectTime = 1;
     
@@ -41,6 +43,11 @@ class BLEConnectionTableViewCell: UITableViewCell
         connectionIcons.append(UIImage(named: "Signal1")!);
         connectionIcons.append(UIImage(named: "Signal2")!);
         connectionIcons.append(UIImage(named: "Signal3")!);
+        connectionIcons.append(UIImage(named: "NoSignal")!);
+        
+            // allowing it to be recolored
+        connectionIcons[4] = connectionIcons[4].withRenderingMode(UIImageRenderingMode.alwaysTemplate);
+        
         
         wasSelected = false;
         
@@ -58,15 +65,18 @@ class BLEConnectionTableViewCell: UITableViewCell
         //print("setSelected(\(selected)) called");
         
         
-        
+        if (isDemoDevice)
+        {
+            connectButton.isEnabled = true;
+        }
             // button is disabled by default until the device is connected
-        //print("Is the device connected? \(Device.connectedDevice?.isConnected ?? true)");
-        if (selected && !wasSelected)// && Device.connectedDevice?.isConnecting ?? false)
+        else if (selected && !wasSelected)// && Device.connectedDevice?.isConnecting ?? false)
         {
             
             connectButton.isEnabled = Device.connectedDevice?.isConnected ?? false;
             //timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: true);
         }
+        
         
         wasSelected = selected;
         
@@ -107,14 +117,24 @@ class BLEConnectionTableViewCell: UITableViewCell
         else
         {
             //self.device.RSSI = newRSSI;
-            connectionImage.image = getImageForRSSI(newRSSI);
-            RSSIValue.text = String(newRSSI);
+                // if it's a demo device, there obviously isn't a real RSSI, so show a descriptive message instead
+            if (isDemoDevice)
+            {
+                connectionImage.image = connectionIcons[4];
+                RSSIValue.text = "No Enlighted hardware found";
+            }
+            else
+            {
+                connectionImage.image = getImageForRSSI(newRSSI);
+                RSSIValue.text = String(newRSSI);
+            }
+            
         }
     }
     
     @objc func enableButton()
     {
-            // if the device is successfully connected, stop the timer and enable the button
+            // if the device is successfully connected, enable the button
         if ((Device.connectedDevice?.hasDiscoveredCharacteristics)! && (Device.connectedDevice?.isConnected)!)
         {
             //timer.invalidate();

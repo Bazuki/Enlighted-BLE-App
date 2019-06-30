@@ -216,7 +216,7 @@
                                 <color key="textColor" name="Subtitle"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 1.0.3" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 1.0.4" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
                                 <rect key="frame" x="16" y="578" width="344" height="24"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="24" id="hlc-bh-K4w"/>
@@ -284,6 +284,7 @@
                         <outlet property="batteryStatusImage" destination="HID-vS-zhV" id="PjK-8e-FFB"/>
                         <outlet property="brightnessSlider" destination="oOd-f8-Sd2" id="nhf-ny-vOh"/>
                         <outlet property="deviceNameLabel" destination="Lnq-db-K9d" id="4fF-w4-S7b"/>
+                        <outlet property="revertSettingsButton" destination="KiC-bX-rXI" id="euW-lZ-FHy"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ETQ-Rp-dLQ" userLabel="First Responder" sceneMemberID="firstResponder"/>

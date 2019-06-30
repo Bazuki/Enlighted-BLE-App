@@ -22,7 +22,9 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     
     @IBOutlet weak var brightnessSlider: UISlider!
     
-        // the peripheral manager
+    @IBOutlet weak var revertSettingsButton: UIButton!
+    
+    // the peripheral manager
     var peripheralManager: CBPeripheralManager?;
     
     var batteryIcons = [UIImage]();
@@ -72,6 +74,9 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
         batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
         
+            // revert settings button is hidden if it's a demo device, since it would be tricky and useless to implement separately
+        revertSettingsButton.isHidden = Device.connectedDevice!.isDemoDevice;
+        
             // creating a timer to scan and update battery level (as of 1.0.2, we don't do this anymore)
         //batteryRefreshTimer = Timer.scheduledTimer(timeInterval: Constants.BATTERY_SCAN_INTERVAL, target: self, selector: #selector(requestBatteryPercentage), userInfo: nil, repeats: true);
         
@@ -96,7 +101,12 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     
     @IBAction func changeBrightness(_ sender: UISlider)
     {
-        if (!(Device.connectedDevice?.isConnected)!)
+            // don't send a BLE request if it's a demo device
+        if (Device.connectedDevice!.isDemoDevice)
+        {
+            return;
+        }
+        else if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
             return;
@@ -236,7 +246,12 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         // sends get commands to the hardware, using the protocol as the inputString
     private func getValue(_ inputString: String)
     {
-        if (Device.connectedDevice?.requestWithoutResponse ?? false)
+            // don't use BLE commands if it's a demo device
+        if (Device.connectedDevice!.isDemoDevice)
+        {
+            return;
+        }
+        else if (Device.connectedDevice?.requestWithoutResponse ?? false)
         {
             print("Currently pending request, delaying new request");
             return;

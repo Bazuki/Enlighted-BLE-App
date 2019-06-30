@@ -26,6 +26,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // The devices that show up on the connection screen.
     var visibleDevices = [Device]();
     
+        // the demo device, initialized in ViewWillAppear()
+    var demoDevice = Device(true);
+    
         // the devices we have stored in memory, which we will recognize by name
     var cachedDevices = [Device]();
     
@@ -34,9 +37,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
         // A timer object to help in searching
     var timer = Timer();
-    var scanTimer = Timer();
     
-    var scanTimeInterval: Double = 20;
+        // A timer object to know when to prompt the "Demo" device
+    var deviceTimeoutTimer = Timer();
+    
+        // Whether or not the demo device can show up (if there are no "real" devices)
+    var canShowDemoDevice = false;
     
         // list of peripherals, and their associated RSSI values
     var peripherals: [CBPeripheral] = [];
@@ -101,6 +107,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
             // shorter scan on entry so that devices will be culled quickly
         startScan(0.2);
+        
+            // initializing the demo device, with cached modes/bitmaps/etc.
+        demoDevice = createDemoDevice();
+        
+        canShowDemoDevice = false;
+            // starting the timer that restricts the demo mode device from showing up
+        deviceTimeoutTimer.invalidate();
+            // when it fires, the demo device can be shown (if there are no "real" devices found)
+        deviceTimeoutTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(Constants.SCAN_TIMEOUT_TIME), repeats: false, block:
+            { (deviceTimeoutTimer) in
+                self.canShowDemoDevice = true;
+        })
     }
     
         // start scan on appearance of viewController
@@ -218,7 +236,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print("Now scanning...");
         self.timer.invalidate();
         centralManager?.scanForPeripherals(withServices: [BLEService_UUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey:false])
-        Timer.scheduledTimer(timeInterval: scanTime, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false);
+        self.timer = Timer.scheduledTimer(timeInterval: scanTime, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false);
     }
     
         // cancelling the scan for peripherals
@@ -309,6 +327,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     }
                 }
             }
+                // if there aren't any visible devices and no peripherals, we should add the "demo device":
+//            else
+//            {
+//                visibleDevices.
+//            }
             // if the device hasn't connected, keep scanning
             startScan(Constants.SCAN_DURATION);
         }
@@ -907,6 +930,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             Device.connectedDevice? = Device(true);
                 // setting the connectedDevice to the "emptyDevice" placeholder
         }
+                // if it's a demo device, it also has to be "disconnected"
+        else if (Device.connectedDevice?.isDemoDevice ?? false)
+        {
+            Device.connectedDevice!.isConnected = false;
+            Device.connectedDevice!.hasDiscoveredCharacteristics = false;
+            Device.connectedDevice? = Device(true);
+        }
     }
     
     
@@ -931,35 +961,53 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
 //            return;
 //        }
         
-        
-        
-            // if the current connectedDevice doesn't exist, then select the one at IndexPath
-        guard Device.connectedDevice != nil && Device.connectedDevice?.name != "emptyDevice" else
+            // if there are "real" devices to select
+        if (visibleDevices.count > 0 )
         {
-            print("Selected new device");
-            //disconnectFromDevice();  // no need to disconnect if there isn't a connected device
-            Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
-            Device.connectedDevice?.isConnected = false;
-            Device.connectedDevice?.isConnecting = true;
-            connectToDevice();
-            return;
+            
+                // if the current connectedDevice doesn't exist, then select the one at IndexPath
+            guard Device.connectedDevice != nil && Device.connectedDevice?.name != "emptyDevice" else
+            {
+                print("Selected new device");
+                
+                //disconnectFromDevice();  // no need to disconnect if there isn't a connected device
+                Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
+                Device.connectedDevice?.isConnected = false;
+                Device.connectedDevice?.isConnecting = true;
+                connectToDevice();
+                return;
+            }
+            
+            
+            
+                // if the current connectedDevice does exist, only select it if it isn't already connected
+            if (Device.connectedDevice!.peripheral != visibleDevices[indexPath.row].peripheral)
+            {
+                    // disconnect from old devices, if any
+                disconnectFromDevice();
+                Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
+                Device.connectedDevice?.isConnected = false;
+                Device.connectedDevice?.isConnecting = true;
+                connectToDevice();
+            }
+            else
+            {
+                print("Selected the same device");
+            }
+            
         }
-        
-        
-        
-            // if the current connectedDevice does exist, only select it if it isn't already connected
-        if (Device.connectedDevice!.peripheral != visibleDevices[indexPath.row].peripheral)
-        {
-                // disconnect from old devices, if any
-            disconnectFromDevice();
-            Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
-            Device.connectedDevice?.isConnected = false;
-            Device.connectedDevice?.isConnecting = true;
-            connectToDevice();
-        }
+            // otherwise we're selecting the demo device
         else
         {
-            print("Selected the same device");
+            // disconnect from old devices, if any
+            disconnectFromDevice();
+            Device.setConnectedDevice(newDevice: demoDevice);
+                // pretend it already connected
+            Device.connectedDevice?.isConnected = true;
+                // and that it's no longer "connecting"
+            Device.connectedDevice?.isConnecting = false;
+            
+            print ("Selected the demo device");
         }
         
         
@@ -972,8 +1020,16 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
-        // #warning Incomplete implementation, return the number of rows
-        return visibleDevices.count;
+            // if there are actual devices to show, or we can't yet show the demo device, show the real devices (even if it's zero)
+        if (visibleDevices.count > 0 ) || (canShowDemoDevice == false)
+        {
+            return visibleDevices.count;
+        }
+            // otherwise add 1 for the demo device
+        else
+        {
+            return 1;
+        }
     }
 
     
@@ -988,12 +1044,29 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             fatalError("The dequeued cell is not an instance of BLEConnectionTableViewCell.");
         }
 
-        // Fetches the appropriate device for that row
-        let device = visibleDevices[indexPath.row];
-        //print("Creating a cell with name: \(device.name)");
-        cell.deviceNameLabel.text = device.name;
-        cell.updateRSSIValue(device.RSSI); 
+        var device: Device;
+        
+            // if there are actual devices
+        if (visibleDevices.count > 0)
+        {
+            // Fetches the appropriate device for that row
+            device = visibleDevices[indexPath.row];
+            cell.isDemoDevice = false;
+            //print("Creating a cell with name: \(device.name)");
+        }
+        else if (canShowDemoDevice)
+        {
+            device = demoDevice;
+            cell.isDemoDevice = true;
+        }
+        else
+        {
+            fatalError("There is no device to fill this cell.");
+        }
+        
         cell.device = device;
+        cell.deviceNameLabel.text = device.name;
+        cell.updateRSSIValue(device.RSSI);
         
         return cell;
     }
@@ -1112,14 +1185,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             return nil;
         }
         
-            // returning a UIImage from that CGImage
-        return UIImage(cgImage: image);
+            // getting a UIImage from that CGImage
+        let uiImage = UIImage(cgImage: image);
+        
+            // for creating the demo mode, save that image to camera roll (to be sent to computer, credit to https://stackoverflow.com/a/11131077 ):
+        //UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil);
+        
+        return uiImage;
     }
     
     private func createSampleDeviceWithName(_ name: String) -> Mode
     {
         let bitmap2 = UIImage(named: "Bitmap2");
-        
         
             // adding a blank mode with just the correct name (hopefully)
         return Mode(name: name, index: -1, usesBitmap: true, bitmap: bitmap2, colors: [nil])!;
@@ -1155,6 +1232,16 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     private func loadDevices() -> [Device]?
     {
         return NSKeyedUnarchiver.unarchiveObject(withFile: Device.ArchiveURL.path) as? [Device];
+    }
+    
+    private func createDemoDevice() -> Device
+    {
+        var devices = NSKeyedUnarchiver.unarchiveObject(withFile: Constants.DEMO_DEVICE_PATH.path) as? [Device];
+        var output = devices![0];
+        output.isDemoDevice = true;
+        output.name = Constants.DEMO_DEVICE_NAME;
+        
+        return output;
     }
     
 //        // making fake devices to showcase the UI (no longer necessary since we can connect to real devices)

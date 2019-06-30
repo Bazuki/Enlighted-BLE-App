@@ -60,18 +60,27 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidAppear(animated);
         
-        // reset progress bar, and show
+            // reset progress bar, and show
         progress = 0;
         loadingProgressView.setProgress(0, animated: false);
         loadingProgressView.isHidden = false;
         
-        // getLimits for this device
-        getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
-        Device.connectedDevice?.requestedLimits = true;
+            // getLimits for this device, though not if it's a demo device
+        if !(Device.connectedDevice!.isDemoDevice)
+        {
+            getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
+            Device.connectedDevice?.requestedLimits = true;
+        }
+        else
+        {
+                // we have to fake getLimits if it's a demo device, based on the application saved data
+            Device.connectedDevice?.maxNumModes = 20;
+            Device.connectedDevice?.maxBitmaps = 20;
+            Device.connectedDevice?.currentModeIndex = 1;
+            
+            NotificationCenter.default.post(name: Notification.Name(rawValue:"gotLimits"), object: nil);
+        }
         progress += 0.04
-        
-        
-        
     }
     
 //    override func viewDidAppear(_ animated: Bool)
@@ -109,20 +118,32 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         modeTableView.reloadData();
         
         
-        
+        if (Device.connectedDevice!.isDemoDevice)
+        {
+                // since it's a demo device, we have to fake getBattery and getBrightness, and skip all of those "get" steps
+            Device.connectedDevice?.batteryPercentage = 100;
+            Device.connectedDevice?.brightness = Constants.DEFAULT_BRIGHTNESS;
+            
+            Device.connectedDevice?.readyToShowModes = true;
+        }
+        else
+        {
             // reset the flags, so we get all items
-        Device.connectedDevice?.requestedName = false;
-        Device.connectedDevice?.currentlyBuildingThumbnails = false;
-        Device.connectedDevice?.requestedStandbyActivated = false;
-        Device.connectedDevice?.requestedStandbyDeactivated = false;
-        Device.connectedDevice?.requestedBrightnessChange = false;
-        Device.connectedDevice?.requestedMode = false;
-        Device.connectedDevice?.readyToShowModes = false;
-        Device.connectedDevice?.requestedBattery = false;
-        Device.connectedDevice?.requestedBrightness = false;
-        
+            Device.connectedDevice?.requestedName = false;
+            Device.connectedDevice?.currentlyBuildingThumbnails = false;
+            Device.connectedDevice?.requestedStandbyActivated = false;
+            Device.connectedDevice?.requestedStandbyDeactivated = false;
+            Device.connectedDevice?.requestedBrightnessChange = false;
+            Device.connectedDevice?.requestedMode = false;
+            //Device.connectedDevice?.readyToShowModes = false;
+            Device.connectedDevice?.requestedBattery = false;
+            Device.connectedDevice?.requestedBrightness = false;
+            
             // we always want to do some setup, but if we already have modes / thumbnails it should be quick
-        Device.connectedDevice?.readyToShowModes = false;
+            Device.connectedDevice?.readyToShowModes = false;
+        }
+        
+        
         
             // disabling sleeping until loading is complete
         UIApplication.shared.isIdleTimerDisabled = true;
@@ -146,8 +167,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         {
                 // once loading of modes/thumbnails is done, save that Device
             saveDevice();
-            
-            
             
                 // enabling the settings button when showing modes
             self.navigationItem.rightBarButtonItem?.isEnabled = true;
@@ -426,7 +445,13 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // set the device's mode to that mode and update the index.
         Device.connectedDevice?.mode = modes[indexPath.row];
         Device.connectedDevice?.currentModeIndex = (Device.connectedDevice?.mode?.index)!;
-        updateModeOnHardware();
+        
+            // don't set it on the physical peripheral if it's a demo device
+        if !(Device.connectedDevice!.isDemoDevice)
+        {
+            updateModeOnHardware();
+        }
+        
     }
     
         // MARK: - BLE TX Methods
@@ -768,6 +793,13 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // saves the Device after loading
     private func saveDevice()
     {
+            // never save the demo device
+        if (Device.connectedDevice!.isDemoDevice)
+        {
+            print("Demo device, not caching");
+            return;
+        }
+        
         if !(Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps)
         {
             print("Not a full cache, not caching");
@@ -775,7 +807,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         }
         var cachedDevices: [Device] = loadDevices() ?? [Device]();
             // if there aren't any saved devices, save them now
-        //TODO: overwrite old saves that have the same name
         
             // if there's an old save with the same NSUUID, override it
         if let indexOfDevice = cachedDevices.firstIndex(where: {$0.UUID == Device.connectedDevice?.peripheral.identifier as NSUUID?})
@@ -813,6 +844,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         return NSKeyedUnarchiver.unarchiveObject(withFile: Device.ArchiveURL.path) as? [Device];
     }
+    
     
         // loads placeholder modes, up till the max mode count from getLimits (no longer necessary with "Get Mode")
     private func loadSampleModes(_ numberOfModes: Int)

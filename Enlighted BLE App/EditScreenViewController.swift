@@ -292,7 +292,12 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     func setBitmap(_ bitmapIndex: Int)
     {
-        if (!(Device.connectedDevice?.isConnected)!)
+            // don't send anything BLE if it's a demo device
+        if (Device.connectedDevice!.isDemoDevice)
+        {
+            return;
+        }
+        else if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
             return;
@@ -337,12 +342,18 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     func setColors(color1: UIColor, color2: UIColor)
     {
-            // checking for disconnection before using a BLE command
-        if (!(Device.connectedDevice?.isConnected)!)
+        
+            // don't send anything BLE if it's a demo device
+        if (Device.connectedDevice!.isDemoDevice)
+        {
+            return;
+        }
+        else if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
             return;
         }
+            // checking for disconnection before using a BLE command
         else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
         {
             print("Disconnected");
@@ -713,26 +724,53 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             // disabling the revert button until the action is done
         sender.isEnabled = false;
         
-        if ((Device.connectedDevice?.mode?.usesBitmap)!)
+            // if it's a demo device, we have to fake reverting the mode, by going to the earliest history stored (and then clearing the history)
+        if (Device.connectedDevice!.isDemoDevice)
         {
-            bitmapUndoButton.isEnabled = false;
-            bitmapPicker.allowsSelection = false;
+            
+            if ((Device.connectedDevice?.mode?.usesBitmap)!)
+            {
+                Device.connectedDevice?.mode?.bitmapIndex = bitmapHistory[0];
+                
+                    // clearing the history
+                bitmapHistory = [Int]();
+            }
+            else
+            {
+                Device.connectedDevice?.mode?.color1 = color1History[0];
+                Device.connectedDevice?.mode?.color2 = color2History[0];
+                
+                    // clearing the history
+                color1History = [UIColor]();
+                color2History = [UIColor]();
+            }
+            
+            NotificationCenter.default.post(name: Notification.Name(rawValue: "revertedMode"), object: nil);
         }
         else
         {
-            color1UndoButton.isEnabled = false;
-            color2UndoButton.isEnabled = false;
+            if ((Device.connectedDevice?.mode?.usesBitmap)!)
+            {
+                bitmapUndoButton.isEnabled = false;
+                bitmapPicker.allowsSelection = false;
+            }
+            else
+            {
+                color1UndoButton.isEnabled = false;
+                color2UndoButton.isEnabled = false;
+                
+                hueSlider.isEnabled = false;
+                saturationSlider.isEnabled = false;
+                brightnessSlider.isEnabled = false;
+                
+            }
             
-            hueSlider.isEnabled = false;
-            saturationSlider.isEnabled = false;
-            brightnessSlider.isEnabled = false;
-            
+            // setting flag to revert
+            Device.connectedDevice?.currentlyRevertingMode = true;
+            // calling "Get Mode" on this specific mode, with the special flag above set
+            getValue(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInt: (Device.connectedDevice?.mode?.index)!);
         }
         
-            // setting flag to revert
-        Device.connectedDevice?.currentlyRevertingMode = true;
-            // calling "Get Mode" on this specific mode, with the special flag above set
-        getValue(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInt: (Device.connectedDevice?.mode?.index)!);
     }
     
     
@@ -799,7 +837,12 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     // sends get commands to the hardware, using the protocol as the inputString (and an optional int or two at the end, for certain getters)
     private func getValue(_ inputString: String, inputInt: Int = -1, secondInputInt: Int = -1)
     {
-        if (!(Device.connectedDevice?.isConnected)!)
+            // don't do BLE commands if it's a demo device
+        if (Device.connectedDevice!.isDemoDevice)
+        {
+            return;
+        }
+        else if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
             return;
