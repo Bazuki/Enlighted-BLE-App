@@ -72,8 +72,8 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
         batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
         
-            // creating a timer to scan and update battery level
-        batteryRefreshTimer = Timer.scheduledTimer(timeInterval: Constants.BATTERY_SCAN_INTERVAL, target: self, selector: #selector(requestBatteryPercentage), userInfo: nil, repeats: true);
+            // creating a timer to scan and update battery level (as of 1.0.2, we don't do this anymore)
+        //batteryRefreshTimer = Timer.scheduledTimer(timeInterval: Constants.BATTERY_SCAN_INTERVAL, target: self, selector: #selector(requestBatteryPercentage), userInfo: nil, repeats: true);
         
     }
     
