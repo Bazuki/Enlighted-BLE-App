@@ -66,7 +66,7 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     override func viewWillAppear(_ animated: Bool)
     {
         super.viewWillAppear(animated);
-        getValue(EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL);
+        requestBatteryPercentage();
         
         // getting and updating the slider with the device's brightness
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
@@ -229,6 +229,8 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     @objc private func updateBrightnessValue()
     {
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
+        
+        requestBatteryPercentage();
     }
     
         // sends get commands to the hardware, using the protocol as the inputString
