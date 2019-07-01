@@ -109,16 +109,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         startScan(0.2);
         
             // initializing the demo device, with cached modes/bitmaps/etc.
-        demoDevice = createDemoDevice();
+        demoDevice = Device.createDemoDevice();
         
         canShowDemoDevice = false;
-            // starting the timer that restricts the demo mode device from showing up
         deviceTimeoutTimer.invalidate();
-            // when it fires, the demo device can be shown (if there are no "real" devices found)
-        deviceTimeoutTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(Constants.SCAN_TIMEOUT_TIME), repeats: false, block:
-            { (deviceTimeoutTimer) in
-                self.canShowDemoDevice = true;
-        })
+        
     }
     
         // start scan on appearance of viewController
@@ -252,6 +247,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // going through devices
             if (visibleDevices.count > 0)
             {
+                // if there are real devices, we don't want to be immediately showing the demo device afterward
+                canShowDemoDevice = false;
+                if (deviceTimeoutTimer.isValid)
+                {
+                    deviceTimeoutTimer.invalidate();
+                }
+                
+                
                 var deviceIndex = 0;
                 while (deviceIndex < visibleDevices.count)
                 {
@@ -327,11 +330,19 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     }
                 }
             }
-                // if there aren't any visible devices and no peripherals, we should add the "demo device":
-//            else
-//            {
-//                visibleDevices.
-//            }
+                // if there aren't any visible devices and no peripherals, we should start the countdown to show the "demo device":
+            else
+            {
+                    // as long as we are not already counting down
+                if !(deviceTimeoutTimer.isValid)
+                {
+                        // create a new timer and when it fires, the demo device can be shown (if there are no "real" devices found)
+                    deviceTimeoutTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(Constants.SCAN_TIMEOUT_TIME), repeats: false, block:
+                        { (deviceTimeoutTimer) in
+                            self.canShowDemoDevice = true;
+                    })
+                }
+            }
             // if the device hasn't connected, keep scanning
             startScan(Constants.SCAN_DURATION);
         }
@@ -1234,15 +1245,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         return NSKeyedUnarchiver.unarchiveObject(withFile: Device.ArchiveURL.path) as? [Device];
     }
     
-    private func createDemoDevice() -> Device
-    {
-        var devices = NSKeyedUnarchiver.unarchiveObject(withFile: Constants.DEMO_DEVICE_PATH.path) as? [Device];
-        var output = devices![0];
-        output.isDemoDevice = true;
-        output.name = Constants.DEMO_DEVICE_NAME;
-        
-        return output;
-    }
+    
     
 //        // making fake devices to showcase the UI (no longer necessary since we can connect to real devices)
 //    private func loadSampleDevices()

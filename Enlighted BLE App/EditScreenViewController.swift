@@ -724,25 +724,27 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             // disabling the revert button until the action is done
         sender.isEnabled = false;
         
-            // if it's a demo device, we have to fake reverting the mode, by going to the earliest history stored (and then clearing the history)
+            // if it's a demo device, we can just create a new, unchanged demo device and read the mode values from there
         if (Device.connectedDevice!.isDemoDevice)
         {
+                // creating a reference to the mode in its unchanged state
+            let baseMode = Device.createDemoDevice().modes[Device.connectedDevice!.currentModeIndex - 1];
             
             if ((Device.connectedDevice?.mode?.usesBitmap)!)
             {
-                Device.connectedDevice?.mode?.bitmapIndex = bitmapHistory[0];
+                Device.connectedDevice?.mode?.bitmapIndex = baseMode.bitmapIndex;
                 
                     // clearing the history
-                bitmapHistory = [Int]();
+                //bitmapHistory = [Int]();
             }
             else
             {
-                Device.connectedDevice?.mode?.color1 = color1History[0];
-                Device.connectedDevice?.mode?.color2 = color2History[0];
+                Device.connectedDevice?.mode?.color1 = baseMode.color1;
+                Device.connectedDevice?.mode?.color2 = baseMode.color2;
                 
                     // clearing the history
-                color1History = [UIColor]();
-                color2History = [UIColor]();
+                //color1History = [UIColor]();
+                //color2History = [UIColor]();
             }
             
             NotificationCenter.default.post(name: Notification.Name(rawValue: "revertedMode"), object: nil);

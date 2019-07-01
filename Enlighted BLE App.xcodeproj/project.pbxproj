@@ -23,7 +23,6 @@
 		9E6936862160430A00B26C9C /* BitmapPickerCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6936852160430A00B26C9C /* BitmapPickerCollectionViewCell.swift */; };
 		9E6D402521D44703001E816E /* ColorWheel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6D402421D44703001E816E /* ColorWheel.swift */; };
 		9E6D402721D45194001E816E /* ColorKnob.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6D402621D45194001E816E /* ColorKnob.swift */; };
-		9E831FC122C957BA001F01A6 /* com.rightbrainelectronics.enlightedble defaultdata.xcappdata in Resources */ = {isa = PBXBuildFile; fileRef = 9E831FC022C957BA001F01A6 /* com.rightbrainelectronics.enlightedble defaultdata.xcappdata */; };
 		9E83FA7F2184E678003C054A /* Source in Resources */ = {isa = PBXBuildFile; fileRef = 9E83FA7E2184E677003C054A /* Source */; };
 		9EA2B8E82159E3EA00C7D71A /* BLEConnectionTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA2B8E72159E3E900C7D71A /* BLEConnectionTableViewCell.swift */; };
 		9EA2B8EA2159EB1600C7D71A /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA2B8E92159EB1600C7D71A /* Device.swift */; };
@@ -62,7 +61,6 @@
 		9E6936852160430A00B26C9C /* BitmapPickerCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapPickerCollectionViewCell.swift; sourceTree = "<group>"; };
 		9E6D402421D44703001E816E /* ColorWheel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorWheel.swift; sourceTree = "<group>"; };
 		9E6D402621D45194001E816E /* ColorKnob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorKnob.swift; sourceTree = "<group>"; };
-		9E831FC022C957BA001F01A6 /* com.rightbrainelectronics.enlightedble defaultdata.xcappdata */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "com.rightbrainelectronics.enlightedble defaultdata.xcappdata"; sourceTree = "<group>"; };
 		9E83FA7E2184E677003C054A /* Source */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Source; sourceTree = "<group>"; };
 		9EA2B8E72159E3E900C7D71A /* BLEConnectionTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEConnectionTableViewCell.swift; sourceTree = "<group>"; };
 		9EA2B8E92159EB1600C7D71A /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
@@ -119,7 +117,6 @@
 				9E604EF721535D1200734E4E /* ViewController.swift */,
 				9EA2B8E72159E3E900C7D71A /* BLEConnectionTableViewCell.swift */,
 				9EA2B8EB2159EEBA00C7D71A /* BLEConnectionTableViewController.swift */,
-				9E831FC022C957BA001F01A6 /* com.rightbrainelectronics.enlightedble defaultdata.xcappdata */,
 				9E693675215DA3A500B26C9C /* ModeTableViewCell.swift */,
 				9E693677215EC11100B26C9C /* ModeTableViewController.swift */,
 				9E693681215F19BC00B26C9C /* DeviceManagementViewController.swift */,
@@ -238,7 +235,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9E831FC122C957BA001F01A6 /* com.rightbrainelectronics.enlightedble defaultdata.xcappdata in Resources */,
 				9E604F0021535D1900734E4E /* LaunchScreen.storyboard in Resources */,
 				9E604EFD21535D1900734E4E /* Assets.xcassets in Resources */,
 				9E604EFB21535D1200734E4E /* Main.storyboard in Resources */,

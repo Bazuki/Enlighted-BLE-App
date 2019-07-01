@@ -74,8 +74,8 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
         batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
         
-            // revert settings button is hidden if it's a demo device, since it would be tricky and useless to implement separately
-        revertSettingsButton.isHidden = Device.connectedDevice!.isDemoDevice;
+            // revert settings button is hidden if it's a demo device, since it would be tricky and useless to implement separately (No longer in 1.0.5)
+        //revertSettingsButton.isHidden = Device.connectedDevice!.isDemoDevice;
         
             // creating a timer to scan and update battery level (as of 1.0.2, we don't do this anymore)
         //batteryRefreshTimer = Timer.scheduledTimer(timeInterval: Constants.BATTERY_SCAN_INTERVAL, target: self, selector: #selector(requestBatteryPercentage), userInfo: nil, repeats: true);
@@ -168,13 +168,24 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         // defining the confirm / revert button
         let revert = UIAlertAction(title: "Reload", style: .default, handler:
         {(action) -> Void in
-                // clear mode list
-            Device.connectedDevice?.modes = [Mode]();
-                // clear thumbnail list
-            Device.connectedDevice?.thumbnails = [UIImage]();
-                // clear current thumbnail row
-            NotificationCenter.default.post(name: Notification.Name(rawValue: "resendRow"), object: nil);
             
+                // if it's the demo mode, we don't want to be messing with caches
+            if (Device.connectedDevice!.isDemoDevice)
+            {
+                    // basically, creating a new demo device without any user changes
+                Device.setConnectedDevice(newDevice: Device.createDemoDevice());
+            }
+                // otherwise, clear everything and let the app get it all back from the hardware
+            else
+            {
+                // clear mode list
+                Device.connectedDevice?.modes = [Mode]();
+                // clear thumbnail list
+                Device.connectedDevice?.thumbnails = [UIImage]();
+                // clear current thumbnail row
+                NotificationCenter.default.post(name: Notification.Name(rawValue: "resendRow"), object: nil);
+                
+            }
                 // credit to https://stackoverflow.com/questions/28190070/swift-poptoviewcontroller for navigating to a specific viewController
             
                 // finding the index of the "Choose Mode" screen on the navigation stack
