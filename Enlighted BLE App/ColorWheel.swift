@@ -257,7 +257,7 @@ class ColorWheel: UIView
         // multiplying for the radius
         saturationCG *= CGFloat(radius);
         
-        print("angle: \(Int(hueCG * (180 / CGFloat.pi)))" + " distance: \(Int(saturationCG))");
+        //print("angle: \(Int(hueCG * (180 / CGFloat.pi)))" + " distance: \(Int(saturationCG))");
         
         knobPosition = CGPoint(x: centerPoint.x + (CGFloat(cosf(Float(hueCG)) * Float(saturationCG))), y: centerPoint.y - (CGFloat(sinf(Float(hueCG)) * Float(saturationCG))));
         
@@ -299,7 +299,7 @@ class ColorWheel: UIView
                     (centerPoint.x - (knob?.frame.midX)!), 2)
         )) / radius;
         
-        print("angle: \(Int(angle * (180 / Float.pi)))" + " distance: \(newSaturation * radius)");
+        //print("angle: \(Int(angle * (180 / Float.pi)))" + " distance: \(newSaturation * radius)");
         
             // brightness is from the view controller's brightness slider
         let newBrightness = viewController?.brightness;

@@ -41,7 +41,7 @@ class Constants
     //static let DEMO_DEVICE_PATH = FileManager().urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("baseDevice");
     
         // the name of the demo device
-    static let DEMO_DEVICE_NAME = "Sample Device";
+    static let DEMO_DEVICE_NAME = "Software Demo";
     
         // the time (in seconds) between scans of the battery level on the settings screen (as of 1.0.2, no longer used)
     //static let BATTERY_SCAN_INTERVAL = 0.33;

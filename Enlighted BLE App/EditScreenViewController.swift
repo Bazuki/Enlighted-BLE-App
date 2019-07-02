@@ -17,6 +17,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
 
     @IBOutlet weak var modeLabel: UILabel!
     @IBOutlet weak var modeNumberLabel: UILabel!
+    
+    @IBOutlet weak var colorModeObjects: UIView!
+    @IBOutlet weak var bitmapModeObjects: UIView!
+    
     @IBOutlet weak var bitmapUIImage: UIImageView!
     
     @IBOutlet weak var color1Selector: ColorPreview!
@@ -131,12 +135,18 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             
             bitmapPicker.isHidden = false;
             
+            bitmapModeObjects.isHidden = false;
+            
+            colorModeObjects.isHidden = true;
+            
             colorPickerWrapper.isHidden = true;
+            
             //intensitySliderPlaceholder.isHidden = true;
             
             color1UndoButton.isHidden = true;
             color2UndoButton.isHidden = true;
             colorRevertButton.isHidden = true;
+            
             bitmapUndoButton.isHidden = false;
             bitmapRevertButton.isHidden = false;
             
@@ -156,12 +166,17 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             
             bitmapPicker.isHidden = true;
             
+            bitmapModeObjects.isHidden = true;
+            
+            colorModeObjects.isHidden = false;
+            
             colorPickerWrapper.isHidden = false;
             //intensitySliderPlaceholder.isHidden = false;
             
             color1UndoButton.isHidden = false;
             color2UndoButton.isHidden = false;
             colorRevertButton.isHidden = false;
+            
             bitmapUndoButton.isHidden = true;
             bitmapRevertButton.isHidden = true;
             

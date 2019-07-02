@@ -155,10 +155,29 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             print("Bluetooth disabled, make sure your device is turned on");
             let alertVC = UIAlertController(title: "Bluetooth is not enabled", message: "Make sure that your bluetooth is turned on.", preferredStyle: UIAlertControllerStyle.alert);
             let action = UIAlertAction(title: "ok", style: UIAlertActionStyle.default, handler: { (action: UIAlertAction) -> Void in
+                
+                // even if we're disconnected, we can still show the demo device (also allows us to see it in the simulator, which has no bluetooth capability)
+                if !(self.deviceTimeoutTimer.isValid)
+                {
+                    // create a new timer and when it fires, the demo device can be shown (if there are no "real" devices found)
+                    self.deviceTimeoutTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(Constants.SCAN_TIMEOUT_TIME), repeats: false, block:
+                        { (deviceTimeoutTimer) in
+                            self.canShowDemoDevice = true;
+                            if (Device.connectedDevice == nil || Device.connectedDevice?.name == "emptyDevice")
+                            {
+                                // reload table
+                                self.deviceTableView.reloadData();
+                            }
+                    })
+                }
+                
+                    // close the popup
                 self.dismiss(animated: true, completion: nil);
             })
             alertVC.addAction(action);
             self.present(alertVC, animated: true, completion: nil);
+            
+           
         }
     }
     

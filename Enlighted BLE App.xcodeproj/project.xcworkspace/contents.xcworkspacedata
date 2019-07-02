@@ -2,9 +2,6 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:com.rightbrainelectronics.enlightedble defaultdata.xcappdata">
-   </FileRef>
-   <FileRef
       location = "self:">
    </FileRef>
 </Workspace>
