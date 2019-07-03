@@ -24,6 +24,7 @@ class Device: NSObject, NSCoding
         static let modes = "modes";
         static let thumbnails = "thumbnails";
         static let name = "name";
+        static let nickname = "nickname";
         static let NSUUID = "nsuuid";
     }
     
@@ -33,6 +34,7 @@ class Device: NSObject, NSCoding
     static let ArchiveURL = DocumentsDirectory.appendingPathComponent("devices")
     
     var name: String;
+    var nickname = "";
     var RSSI: Int;
     var batteryPercentage: Int = -1;
         // the current mode
@@ -121,9 +123,10 @@ class Device: NSObject, NSCoding
         hasDiscoveredCharacteristics = false;
     }
     
-    init(name: String, modes: [Mode], thumbnails: [UIImage], UUID: NSUUID)
+    init(name: String, nickname: String, modes: [Mode], thumbnails: [UIImage], UUID: NSUUID)
     {
         self.name = name;
+        self.nickname = nickname;
         self.RSSI = -1;
         self.peripheral = nil;
         self.UUID = UUID;
@@ -242,6 +245,7 @@ class Device: NSObject, NSCoding
     {
             // encoding name (in order to recognize it) and modes and thumbnails (because of their size)
         aCoder.encode(name, forKey: PropertyKey.name);
+        aCoder.encode(nickname, forKey: PropertyKey.nickname);
         aCoder.encode(modes, forKey: PropertyKey.modes);
         aCoder.encode(UUID, forKey: PropertyKey.NSUUID)
         //print("Just encoded \(modes.count) modes");
@@ -268,6 +272,12 @@ class Device: NSObject, NSCoding
             return nil;
         }
         
+        guard let nickname = aDecoder.decodeObject(forKey: PropertyKey.nickname) as? String else
+        {
+            os_log("Unable to decode the nickname for the Device.", log: OSLog.default, type: .debug);
+            return nil;
+        }
+        
         guard let UUID = aDecoder.decodeObject(forKey: PropertyKey.NSUUID) as? NSUUID else
         {
             os_log("Unable to decode the CBPeripheral for the Device.", log: OSLog.default, type: .debug);
@@ -275,7 +285,7 @@ class Device: NSObject, NSCoding
         }
         
             // must call designated initializer.
-        self.init(name: name, modes: modes, thumbnails: thumbnails, UUID: UUID);
+        self.init(name: name, nickname: nickname, modes: modes, thumbnails: thumbnails, UUID: UUID);
     }
 }
 

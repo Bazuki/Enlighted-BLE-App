@@ -9,12 +9,13 @@
 import UIKit
 import CoreBluetooth
 
-class DeviceManagementViewController: UIViewController, CBPeripheralManagerDelegate
+class DeviceManagementViewController: UIViewController, CBPeripheralManagerDelegate, UITextFieldDelegate
 {
     
     //MARK: Properties
 
     @IBOutlet weak var deviceNameLabel: UILabel!
+    @IBOutlet weak var nicknameField: UITextField!
     
     @IBOutlet weak var batteryStatusImage: UIImageView!
     @IBOutlet weak var batteryPercentageLabel: UILabel!
@@ -37,6 +38,9 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         
             // setting the device name
         deviceNameLabel.text = Device.connectedDevice?.name;
+        
+            // setting the nickname editor delegate
+        nicknameField.delegate = self;
         
             // creating references to the battery images
         batteryIcons.append(UIImage(named: "BatteryEmpty")!);
@@ -69,6 +73,8 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     {
         super.viewWillAppear(animated);
         requestBatteryPercentage();
+        
+        nicknameField.text = Device.connectedDevice?.nickname;
         
         // getting and updating the slider with the device's brightness
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
@@ -159,6 +165,18 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     
     
     // MARK: Actions
+    
+        // hide the keyboard when the "done" key is pressed
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool
+    {
+        nicknameField.resignFirstResponder();
+        return true;
+    }
+    
+    @IBAction func changedDeviceNickname(_ sender: UITextField)
+    {
+        Device.connectedDevice?.nickname = sender.text ?? "";
+    }
     
     @IBAction func RevertToOriginalSettings(_ sender: UIButton)
     {
