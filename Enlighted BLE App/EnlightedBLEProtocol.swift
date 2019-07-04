@@ -63,5 +63,16 @@ class Constants
         // relatedly, but independently to the above, whether to dim the brightness to STANDBY_BRIGHTNESS when loading modes.
     static let USE_STANDBY_BRIGHTNESS = true;
     
+//        // the text to show while loading modes
+//    static let LOADING_MODES_TEXT = "Reading modes from hardware – ";
+//
+//        // the text to show while loading bitmaps/thumbnails
+//    static let LOADING_BITMAPS_TEXT = "Reading bitmaps from hardware – ";
+    
+        // the number of packets that must be received before a mode is fully retrieved from hardware (1 for GetMode, 2 for GetName)
+    static let BLE_PACKETS_PER_MODE = 3;
+    
+        // the number of packets that must be received before a bitmap/thumbnail is fully retrieved from hardware (4 per row, 20 rows)
+    static let BLE_PACKETS_PER_BITMAP = 80;
     
 }

@@ -17,19 +17,31 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
         // the loading bar
     @IBOutlet weak var loadingProgressView: UIProgressView!
+        // and its corresponding message
+    @IBOutlet weak var loadingLabel: UILabel!
+        // a UIView holding all the loading items, which should be shrunk down when complete
+    @IBOutlet weak var loadingItems: UIView!
+    
+    
+    var totalPacketsForSetup = 0;
+    
+    var initialLoadingItemsHeight: CGFloat = 0;
     
     var progress: Float = 0;
     
-        // sample list of modes, since they can't be retrieved from the hardware right now
+        // list of modes
     var modes = [Mode]();
     
+        // timer to set up mode table
     var timer = Timer();
+    
+        // timer to check BLE timeout, especially when fetching bitmaps
     var BLETimeoutTimer = Timer();
     
         // whether or not the currently selected mode has to be initialized
     var initialModeSelected = false;
     
-        // whether or not the device has the full set of modes and thumbnails (if not, it has to do much more bluetooth, and so should enable the "Standby" mode.
+        // whether or not the device has the full set of modes and thumbnails (if not, it has to do much more bluetooth, and so should enable the "Standby" mode.)
     var deviceHasModes = false;
     
         // the peripheral manager
@@ -39,7 +51,13 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidLoad();
 
+            // storing the height of the loading label, so we can restore it to this height if we have to re-load
+        initialLoadingItemsHeight = loadingItems.frame.size.height;
         
+            // and then hiding it
+        var newFrame = loadingItems.frame;
+        newFrame.size.height = 0;
+        loadingItems.frame = newFrame;
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: "changedMode"), object: nil)
         
@@ -58,12 +76,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 
     override func viewWillAppear(_ animated: Bool)
     {
-        super.viewDidAppear(animated);
+        super.viewWillAppear(animated);
         
-            // reset progress bar, and show
-        progress = 0;
-        loadingProgressView.setProgress(0, animated: false);
-        loadingProgressView.isHidden = false;
+        
         
             // getLimits for this device, though not if it's a demo device
         if !(Device.connectedDevice!.isDemoDevice)
@@ -80,7 +95,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             
             NotificationCenter.default.post(name: Notification.Name(rawValue:"gotLimits"), object: nil);
         }
-        progress += 0.04
+        //progress += 0.04
     }
     
 //    override func viewDidAppear(_ animated: Bool)
@@ -91,6 +106,20 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // making sure we only setup after we have getLimits done, since that determines whether we need to go into standby mode
     @objc func prepareForSetup()
     {
+            // reset progress bar, and show
+        progress = 0;
+        loadingProgressView.setProgress(0, animated: false);
+            // configuring the style of the progress bar
+        loadingProgressView.progressViewStyle = UIProgressView.Style.bar;
+        loadingProgressView.isHidden = false;
+        
+        loadingLabel.text = "";
+        loadingLabel.isHidden = false;
+        
+        
+            // the total number of packets that must be received to fully load the mode table
+        totalPacketsForSetup = 0;
+        
         
         // making sure the main timer isn't running
         self.timer.invalidate();
@@ -101,15 +130,47 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         
         
-        // configuring the style of the progress bar
-        loadingProgressView.progressViewStyle = UIProgressView.Style.bar;
         
-        // if we didn't completely get the mode list & thumbnails (i.e. aren't totally ready to show modes)
+        
+            // if we didn't completely get the mode list & thumbnails (i.e. aren't totally ready to show modes)
         if (!deviceHasModes)
         {
-            // disabling the settings button when getting info
+                // disabling the settings button when getting info
             self.navigationItem.rightBarButtonItem?.isEnabled = false;
+            
+                // if we still need to get bitmaps, we want to add that large number of packets to our total
+            totalPacketsForSetup += Constants.BLE_PACKETS_PER_BITMAP * Device.connectedDevice!.maxBitmaps;
+            
+                // and if we still need to get modes, we also want to add those
+            totalPacketsForSetup += Constants.BLE_PACKETS_PER_MODE * Device.connectedDevice!.maxNumModes;
+            
+                // and if we're using the standby brightness / standby modes, add those packets to our total (one to activate, one to deactivate)
+            if (Constants.USE_STANDBY_MODE)
+            {
+                totalPacketsForSetup += 2;
+            }
+            if (Constants.USE_STANDBY_BRIGHTNESS)
+            {
+                totalPacketsForSetup += 2;
+            }
+            
+                // and showing the loading label
+            var newFrame = loadingItems.frame;
+            newFrame.size.height = initialLoadingItemsHeight;
+            loadingItems.frame = newFrame;
         }
+        
+            // if we haven't yet got the battery or brightness (it's still at its default -1), we need to add those packets too
+        if (Device.connectedDevice!.batteryPercentage < 0)
+        {
+            totalPacketsForSetup += 1;
+        }
+        if (Device.connectedDevice!.brightness < 0)
+        {
+            totalPacketsForSetup += 1;
+        }
+        
+        
         
         // clearing table data
         print("Wasn't ready to show modes, restarting getting data");
@@ -175,6 +236,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             print("Showing modes");
             loadingProgressView.setProgress(1, animated: true)
             loadingProgressView.isHidden = true;
+            loadingLabel.isHidden = true;
+            
+                // if we're done loading, we want to get rid of the loading items (shrink them down)
+            var newFrame = loadingItems.frame;
+            newFrame.size.height = 0;
+            loadingItems.frame = newFrame;
             
             
             
@@ -220,7 +287,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 {
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS);
                     Device.connectedDevice?.requestedBrightness = true;
-                    progress += 0.03;
+                    progress += 1 / Float(totalPacketsForSetup);
                 }
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
@@ -233,6 +300,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     Device.connectedDevice?.storedBrightness = (Device.connectedDevice?.brightness)!;
                     getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: Constants.STANDBY_BRIGHTNESS)
                     Device.connectedDevice?.requestedBrightnessChange = true;
+                    progress += 1 / Float(totalPacketsForSetup);
                 }
                 
                 return;
@@ -245,6 +313,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                         // turn on the standby mode (any value other than '0' is turning it on)
                     getValue(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY, inputInt: 1);
                     Device.connectedDevice?.requestedStandbyActivated = true;
+                    progress += 1 / Float(totalPacketsForSetup);
                 }
                 
                 return;
@@ -257,7 +326,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 {
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL);
                     Device.connectedDevice?.requestedBattery = true;
-                    progress += 0.03;
+                    progress += 1 / Float(totalPacketsForSetup);
                 }
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
@@ -265,14 +334,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     // if we haven't gotten all the modes, keep chugging
             else if ((Device.connectedDevice?.modes.count)! < (Device.connectedDevice?.maxNumModes)!)
             {
-                    // how much progress each Get Name / Get Mode is worth
-                let progressValue: Float = 0.3 / (Float((Device.connectedDevice?.maxNumModes)!) * 2)
+                    // how much progress each Get Name
+                let progressValue: Float = 2 / Float(totalPacketsForSetup);
                 
                     // if we haven't yet, request the name of the first mode we need
                 if (!(Device.connectedDevice?.requestedName)!)
                 {
                         // getting the name of the next Mode
-                    //print("Getting details about mode #\((Device.connectedDevice?.modes.count)! + 1)");
+                    loadingLabel.text = "Reading Mode \((Device.connectedDevice?.modes.count)! + 1) of \(Device.connectedDevice!.maxNumModes) from hardware";
+                    
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInt: (Device.connectedDevice?.modes.count)! + 1);
                     Device.connectedDevice?.requestedName = true;
                     Device.connectedDevice?.receivedName = false;
@@ -285,7 +355,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                         // getting the details about the next Mode
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInt: (Device.connectedDevice?.modes.count)! + 1);
                     Device.connectedDevice?.requestedMode = true;
-                    progress += progressValue;
+                    progress += 1 / Float(totalPacketsForSetup);
                 }
                 
                 return;
@@ -294,7 +364,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             else if ((Device.connectedDevice?.thumbnails.count)! < (Device.connectedDevice?.maxBitmaps)!)
             {
                 Device.connectedDevice?.currentlyBuildingThumbnails = true;
-                let progressValue: Float = 0.6 / (Float((Device.connectedDevice?.maxBitmaps)!) * 20);
+                
+                    // 4 packets per row
+                let progressValue: Float = 4 / Float(totalPacketsForSetup);
+                
                     // if we haven't already
                 if (!(Device.connectedDevice?.requestedThumbnail)!)
                 {
@@ -303,6 +376,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     {
                         Device.connectedDevice?.thumbnailRowIndex = 0;
                     }
+                    
+                    loadingLabel.text = "Reading Bitmap \((Device.connectedDevice?.thumbnails.count)! + 1) of \(Device.connectedDevice!.maxBitmaps) from hardware";
+                    
                         // request the current thumbnail at the current row
                     getValue(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL, inputInt:  (Device.connectedDevice?.thumbnails.count)! + 1, secondInputInt: (Device.connectedDevice?.thumbnailRowIndex)!);
                     Device.connectedDevice?.requestedThumbnail = true;
@@ -340,6 +416,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: brightness);
                     Device.connectedDevice?.storedBrightness = -1;
                     Device.connectedDevice?.requestedBrightnessChange = true;
+                    
+                    progress += 1 / Float(totalPacketsForSetup);
                 }
                 
                 return;
@@ -352,6 +430,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                         // deactivating the standby mode
                     getValue(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY, inputInt: 0);
                     Device.connectedDevice?.requestedStandbyDeactivated = true;
+                    
+                    progress += 1 / Float(totalPacketsForSetup);
                 }
                 
                 return;
@@ -373,14 +453,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         if ((Device.connectedDevice?.requestedThumbnail)!)
         {
-            let progressValue: Float = 0.6 / (Float((Device.connectedDevice?.maxBitmaps)!) * 20);
+            let progressValue: Float = 4 / Float(totalPacketsForSetup);
             progress -= progressValue;
             NotificationCenter.default.post(name: Notification.Name(rawValue: "resendRow"), object: nil);
         }
     }
     
     
-    override func didReceiveMemoryWarning() {
+    override func didReceiveMemoryWarning()
+    {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }

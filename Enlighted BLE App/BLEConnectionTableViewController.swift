@@ -67,12 +67,23 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     var bitmapPixels = [Pixel]();
     var bitmapPixelRow = [Pixel]();
     
+        // a reference to the table view
     @IBOutlet weak var deviceTableView: UITableView!
     
-        // MARK: - UIViewController Methods
+        // a reference to the searching indicator items at the top
+    @IBOutlet weak var searchingIndicator: UIView!
+    @IBOutlet weak var searchingLabel: UILabel!
+    @IBOutlet weak var searchingActivityIndicator: UIActivityIndicatorView!
+    @IBOutlet weak var searchButton: UIButton!
+    
+    var initialSearchingIndicatorHeight: CGFloat = 0;
+    
+    // MARK: - UIViewController Methods
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // storing the height of the searching indicator, so we can restore it to this height if we have to re-load
+        initialSearchingIndicatorHeight = searchingIndicator.frame.size.height;
         
         
         centralManager = CBCentralManager(delegate:self, queue: nil);
@@ -105,13 +116,21 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // we want to clear the visibleDevices() array now that we have cached memory
         visibleDevices = [Device]();
         
+        canShowDemoDevice = false;
+        
+            // and we want to visually clear the list
+        self.deviceTableView.reloadData();
+        
+        searchButton.isHidden = true;
+        searchingIndicator.isHidden = true;
+        
             // shorter scan on entry so that devices will be culled quickly
         startScan(0.2);
+        
         
             // initializing the demo device, with cached modes/bitmaps/etc.
         demoDevice = Device.createDemoDevice();
         
-        canShowDemoDevice = false;
         deviceTimeoutTimer.invalidate();
         
     }
@@ -151,6 +170,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             RSSIs = [NSNumber]();
             visibleDevices = [Device]();
             deviceTableView.reloadData();
+            
+                // since we aren't searching, hide this message
+            searchingIndicator.isHidden = true;
             
             print("Bluetooth disabled, make sure your device is turned on");
             let alertVC = UIAlertController(title: "Bluetooth is not enabled", message: "Make sure that your bluetooth is turned on.", preferredStyle: UIAlertControllerStyle.alert);
@@ -242,6 +264,20 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             print("Bluetooth isn't available right now, make sure it's activated on your phone");
             return;
         }
+        
+            // make sure everything is hidden/shown correctly
+        if (searchingLabel.isHidden)
+        {
+            searchingLabel.isHidden = false;
+            searchingActivityIndicator.isHidden = false;
+            searchButton.isHidden = true;
+        }
+        
+        if (searchingIndicator.isHidden)
+        {
+            searchingIndicator.isHidden = false;
+        }
+        
             // clearing the visibleDevices list when we're scanning again
         //visibleDevices = [Device]();
         peripherals = [CBPeripheral]();
@@ -741,6 +777,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     func connectToDevice()
     {
         centralManager.connect(Device.connectedDevice!.peripheral, options: nil);
+        
+            // making sure the top bar's items are correctly shown/hidden/enabled
+        searchingLabel.isHidden = true;
+        searchingActivityIndicator.isHidden = true;
+        searchButton.isEnabled = false;
+        searchButton.isHidden = false;
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral)
@@ -755,7 +797,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         Device.connectedDevice?.isConnected = true;
         Device.connectedDevice?.isConnecting = false;
         
-            
+            // once we've connected, we can rescan again
+        searchButton.isEnabled = true;
         
             // stop scanning
         centralManager?.stopScan();
@@ -1051,7 +1094,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
             // if there are actual devices to show, or we can't yet show the demo device, show the real devices (even if it's zero)
-        if (visibleDevices.count > 0 ) || (canShowDemoDevice == false)
+        if (visibleDevices.count > 0) || (canShowDemoDevice == false)
         {
             return visibleDevices.count;
         }
@@ -1164,8 +1207,25 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
     }
     
+    // MARK: - Actions
     
-    // MARK: Private Methods
+        // disconnecting from the currently selected peripheral, deselecting the table, and starting to scan again
+    @IBAction func startScanningAgain(_ sender: UIButton)
+    {
+            // disconnect from the device, if any
+        disconnectFromDevice();
+        
+            // deselect the currently selected item
+        if let index = deviceTableView.indexPathForSelectedRow
+        {
+            deviceTableView.deselectRow(at: index, animated: true);
+        }
+        
+            // scanning again, using the shorter scan time to quickly and roughly update the list
+        startScan(0.2);
+    }
+    
+    // MARK: - Private Methods
     
         // if we receive a timeout error after requesting a thumbnail row, we have to
     @objc private func resetThumbnailRow()
@@ -1251,7 +1311,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         var index: Int = 20;
         // going through the key
-        for i in 0...20
+        for _ in 0...20
         {
             
                 // if the voltage is ever greater than or equal to a key value, than the corresponding percentage is returned

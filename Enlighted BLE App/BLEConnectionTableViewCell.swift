@@ -122,11 +122,13 @@ class BLEConnectionTableViewCell: UITableViewCell
             {
                 connectionImage.image = connectionIcons[4];
                 RSSIValue.text = "No Enlighted hardware found";
+                //RSSILabel.isHidden = true;
             }
             else
             {
                 connectionImage.image = getImageForRSSI(newRSSI);
                 RSSIValue.text = String(newRSSI);
+                //RSSILabel.isHidden = false;
             }
             
         }
