@@ -24,15 +24,6 @@
                             <rect key="frame" x="0.0" y="0.0" width="375" height="30"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                             <subviews>
-                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Searching for BLE Devices... " textAlignment="right" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Pdf-BX-yQC">
-                                    <rect key="frame" x="8" y="6.5" width="264.5" height="17"/>
-                                    <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                    <color key="textColor" name="Subtitle"/>
-                                    <nil key="highlightedColor"/>
-                                </label>
-                                <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" animating="YES" style="white" translatesAutoresizingMaskIntoConstraints="NO" id="DB8-hk-XXy">
-                                    <rect key="frame" x="277.5" y="5" width="20" height="20"/>
-                                </activityIndicatorView>
                                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pvw-sB-lel">
                                     <rect key="frame" x="162" y="0.0" width="51" height="30"/>
                                     <state key="normal" title="Rescan"/>
@@ -40,16 +31,16 @@
                                         <action selector="startScanningAgain:" destination="LHe-aM-hOS" eventType="touchUpInside" id="B4f-bg-f8Z"/>
                                     </connections>
                                 </button>
+                                <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" animating="YES" style="white" translatesAutoresizingMaskIntoConstraints="NO" id="DB8-hk-XXy">
+                                    <rect key="frame" x="221" y="5" width="20" height="20"/>
+                                </activityIndicatorView>
                             </subviews>
                             <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             <constraints>
-                                <constraint firstItem="Pdf-BX-yQC" firstAttribute="leading" secondItem="XJJ-fd-G3L" secondAttribute="leading" constant="8" id="0KH-zw-S0G"/>
-                                <constraint firstItem="DB8-hk-XXy" firstAttribute="centerX" secondItem="XJJ-fd-G3L" secondAttribute="centerX" constant="100" id="75W-V3-iag"/>
                                 <constraint firstItem="DB8-hk-XXy" firstAttribute="centerY" secondItem="XJJ-fd-G3L" secondAttribute="centerY" id="D4U-KL-XJA"/>
                                 <constraint firstItem="pvw-sB-lel" firstAttribute="centerX" secondItem="XJJ-fd-G3L" secondAttribute="centerX" id="LIR-DR-AN9"/>
                                 <constraint firstItem="pvw-sB-lel" firstAttribute="centerY" secondItem="XJJ-fd-G3L" secondAttribute="centerY" id="QhF-KT-4W4"/>
-                                <constraint firstItem="DB8-hk-XXy" firstAttribute="leading" secondItem="Pdf-BX-yQC" secondAttribute="trailing" constant="5" id="X6E-2x-DnD"/>
-                                <constraint firstItem="Pdf-BX-yQC" firstAttribute="centerY" secondItem="XJJ-fd-G3L" secondAttribute="centerY" id="toP-kM-Vbw"/>
+                                <constraint firstItem="DB8-hk-XXy" firstAttribute="leading" secondItem="pvw-sB-lel" secondAttribute="trailing" constant="8" id="S7E-f2-D44"/>
                             </constraints>
                         </view>
                         <prototypes>
@@ -154,7 +145,6 @@
                         <outlet property="searchButton" destination="pvw-sB-lel" id="iUO-Aa-REd"/>
                         <outlet property="searchingActivityIndicator" destination="DB8-hk-XXy" id="rTB-0J-3Z6"/>
                         <outlet property="searchingIndicator" destination="XJJ-fd-G3L" id="MEP-Hf-xZa"/>
-                        <outlet property="searchingLabel" destination="Pdf-BX-yQC" id="O2p-KZ-V9h"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="J9z-56-QFR" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -228,7 +218,7 @@
                                     <action selector="RevertToOriginalSettings:" destination="R0A-of-WvX" eventType="touchUpInside" id="wZh-nt-cNe"/>
                                 </connections>
                             </button>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Version 1.0.8" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Version 1.0.9" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
                                 <rect key="frame" x="16" y="622" width="343" height="24"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                 <color key="textColor" name="Subtitle"/>

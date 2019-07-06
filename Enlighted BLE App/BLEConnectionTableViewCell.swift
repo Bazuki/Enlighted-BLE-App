@@ -70,12 +70,12 @@ class BLEConnectionTableViewCell: UITableViewCell
             connectButton.isEnabled = true;
         }
             // button is disabled by default until the device is connected
-        else if (selected && !wasSelected)// && Device.connectedDevice?.isConnecting ?? false)
-        {
-            
-            connectButton.isEnabled = Device.connectedDevice?.isConnected ?? false;
-            //timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: true);
-        }
+//        else if (selected && !wasSelected)// && Device.connectedDevice?.isConnecting ?? false)
+//        {
+//
+//            connectButton.isEnabled = Device.connectedDevice?.isConnected ?? false;
+//            //timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: true);
+//        }
         
         
         wasSelected = selected;
@@ -136,8 +136,8 @@ class BLEConnectionTableViewCell: UITableViewCell
     
     @objc func enableButton()
     {
-            // if the device is successfully connected, enable the button
-        if ((Device.connectedDevice?.hasDiscoveredCharacteristics)! && (Device.connectedDevice?.isConnected)!)
+            // if the device (that this cell is responsible for) is successfully connected, enable the button
+        if ((Device.connectedDevice?.hasDiscoveredCharacteristics)! && (Device.connectedDevice?.isConnected)! && Device.connectedDevice == device)
         {
             //timer.invalidate();
             connectButton.isEnabled = true;
@@ -146,6 +146,7 @@ class BLEConnectionTableViewCell: UITableViewCell
         }
         else
         {
+            connectButton.isEnabled = false;
             print("Not connected yet, keeping button disabled");
         }
         
