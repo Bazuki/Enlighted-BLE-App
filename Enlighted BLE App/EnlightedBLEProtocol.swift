@@ -32,7 +32,7 @@ class EnlightedBLEProtocol
 class Constants
 {
         // the time (in seconds) the device scans before analyzing what it found (and then scanning again)
-    static let SCAN_DURATION = 0.5;
+    static let SCAN_DURATION = 0.75;
     
         // the time (in seconds) after which, if no Enlighted BLE devices are found, a "demo mode" device pops up
     static let SCAN_TIMEOUT_TIME = 2;

@@ -166,6 +166,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         }
         else
         {
+            print("Should go to the Connect Screen at this point");
+            _ = self.navigationController?.popToRootViewController(animated: true);
                 // if there is an active device, disconnect from it
             disconnectFromDevice();
                 // clearing table data
@@ -183,10 +185,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             let action = UIAlertAction(title: "ok", style: UIAlertActionStyle.default, handler: { (action: UIAlertAction) -> Void in
                 
                 // even if we're disconnected, we can still show the demo device (also allows us to see it in the simulator, which has no bluetooth capability)
-                if !(self.deviceTimeoutTimer.isValid)
+                if !(self.canShowDemoDevice)
                 {
-                    // create a new timer and when it fires, the demo device can be shown (if there are no "real" devices found)
-                    self.deviceTimeoutTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(Constants.SCAN_TIMEOUT_TIME), repeats: false, block:
+                    // create a new timer (with much shorter duration) and when it fires, the demo device can be shown (if there are no "real" devices found)
+                    self.deviceTimeoutTimer.invalidate();
+                    self.deviceTimeoutTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(1), repeats: false, block:
                         { (deviceTimeoutTimer) in
                             self.canShowDemoDevice = true;
                             if (Device.connectedDevice == nil || Device.connectedDevice?.name == "emptyDevice")
@@ -261,7 +264,6 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         {
             searchButton.isEnabled = false;
             searchButton.setTitle("Searching for BLE Devices...", for: UIControlState.disabled);
-
         }
         
         if (searchingIndicator.isHidden)
