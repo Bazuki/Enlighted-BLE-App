@@ -91,7 +91,11 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // we have to fake getLimits if it's a demo device, based on the application saved data
             Device.connectedDevice?.maxNumModes = 20;
             Device.connectedDevice?.maxBitmaps = 20;
-            Device.connectedDevice?.currentModeIndex = 1;
+            if (Device.connectedDevice!.currentModeIndex < 1 || Device.connectedDevice!.currentModeIndex > 20)
+            {
+               Device.connectedDevice?.currentModeIndex = 1;
+            }
+            
             
             NotificationCenter.default.post(name: Notification.Name(rawValue:"gotLimits"), object: nil);
         }
@@ -779,7 +783,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 
         // credit to https://stackoverflow.com/questions/28471164/how-to-set-back-button-text-in-swift
     
-    // TODO: before going to connection screen, disconnect from current peripheral
+    // before going to connection screen, disconnect from current peripheral
 //    override func prepare(for segue: UIStoryboardSegue, sender: Any?)
 //    {
 //        if (segue.identifier == "Connect BLE Device")

@@ -227,10 +227,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
         else
         {
-                // disable the color sliders until a color is chosen
-            hueSlider.isEnabled = false;
-            saturationSlider.isEnabled = false;
-            brightnessSlider.isEnabled = false;
+//                // disable the color sliders until a color is chosen
+//            hueSlider.isEnabled = false;
+//            saturationSlider.isEnabled = false;
+//            brightnessSlider.isEnabled = false;
             
                 // adding initial values
             color1History += [color1Selector.myColor];

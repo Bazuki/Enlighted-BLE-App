@@ -215,9 +215,11 @@ class ColorWheel: UIView
         self.viewController = owner;
         self.radius = radius;
         
-        let insetRect = self.frame.insetBy(dx: (self.frame.maxX / 2) - CGFloat(radius), dy: (self.frame.maxY / 2) - CGFloat(radius));
+        setNeedsDisplay();
         
-        centerPoint = CGPoint(x: insetRect.midX, y: insetRect.midY);//CGPoint(x: owner.colorImage.frame.midX, y: owner.colorImage.frame.midY); //self.center; //CGPoint(x: self.bounds.midX, y: self.bounds.midY);
+        //let insetRect = self.frame.insetBy(dx: (self.frame.maxX / 2) - CGFloat(radius), dy: (self.frame.maxY / 2) - CGFloat(radius));
+        
+        //centerPoint = CGPoint(x: insetRect.midX, y: insetRect.midY);//CGPoint(x: owner.colorImage.frame.midX, y: owner.colorImage.frame.midY); //self.center; //CGPoint(x: self.bounds.midX, y: self.bounds.midY);
         //self.knob = knob;
         self.knobRadius = knobRadius;
         knobPosition = centerPoint;
@@ -233,6 +235,8 @@ class ColorWheel: UIView
         let panRecognizer = UIPanGestureRecognizer(target: self, action: #selector(finishedDraggingKnob));
         self.addGestureRecognizer(panRecognizer);
         
+            // starting off as a certain color
+        setColor(newColor: color);
         
         // adding the knob as a subview of this view
         self.addSubview(knob!);
