@@ -32,6 +32,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBOutlet weak var saturationSlider: UISlider!
     @IBOutlet weak var brightnessSlider: UISlider!
     
+    @IBOutlet weak var colorImage: UIImageView!
     @IBOutlet weak var bitmapPicker: UICollectionView!
     @IBOutlet weak var ColorWheel: ColorWheel!
     
@@ -235,7 +236,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             color1History += [color1Selector.myColor];
             color2History += [color2Selector.myColor];
             
-            ColorWheel.initializeColorWheel(radius: 120, color: color1Selector.myColor, owner: self, knobRadius: 15)
+            
         }
     }
     
@@ -250,6 +251,9 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         {
                 // activate color 1 by default
             setColorSelectorAsActive(isColor1: true);
+            
+            // radius is half of the image width
+            ColorWheel.initializeColorWheel(radius: Float(colorImage.frame.width / 2), color: color1Selector.myColor, owner: self, knobRadius: 15)
         }
     }
     
@@ -507,8 +511,9 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 color2RGB.text = getRGBStringFromUIColor(color2Selector.myColor);
             }
             
+            
                 // update the colors on the hardware
-            setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
+            setColors(color1: (Device.connectedDevice?.mode?.color1) ?? UIColor.black, color2: (Device.connectedDevice?.mode?.color2) ?? UIColor.black);
         }
             // otherwise it's from selecting a color, and so we want to enable and set the sliders
         else

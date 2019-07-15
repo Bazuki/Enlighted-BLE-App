@@ -101,9 +101,6 @@ class BLEConnectionTableViewCell: UITableViewCell
             RSSILabel.textColor = UIColor(named: "NonSelectedText");
             RSSIValue.textColor = UIColor(named: "NonSelectedText");
         }
-        
-        
-        
     }
     
     func updateRSSIValue(_ newRSSI: Int)

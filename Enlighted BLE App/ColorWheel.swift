@@ -29,6 +29,12 @@ class ColorWheel: UIView
     
     override func draw(_ rect: CGRect)
     {
+            // updating the centerPoint
+        var newCenter = rect.origin;
+        newCenter.x = newCenter.x + rect.width / 2;
+        newCenter.y = newCenter.y + rect.height / 2;
+        centerPoint = newCenter;
+        
         if (!self.isHidden)
         {
             let insetRect = rect.insetBy(dx: (rect.maxX / 2) - CGFloat(radius), dy: (rect.maxY / 2) - CGFloat(radius));
@@ -208,7 +214,10 @@ class ColorWheel: UIView
     {
         self.viewController = owner;
         self.radius = radius;
-        centerPoint = CGPoint(x: self.bounds.midX, y: self.bounds.midY);
+        
+        let insetRect = self.frame.insetBy(dx: (self.frame.maxX / 2) - CGFloat(radius), dy: (self.frame.maxY / 2) - CGFloat(radius));
+        
+        centerPoint = CGPoint(x: insetRect.midX, y: insetRect.midY);//CGPoint(x: owner.colorImage.frame.midX, y: owner.colorImage.frame.midY); //self.center; //CGPoint(x: self.bounds.midX, y: self.bounds.midY);
         //self.knob = knob;
         self.knobRadius = knobRadius;
         knobPosition = centerPoint;
@@ -299,7 +308,7 @@ class ColorWheel: UIView
                     (centerPoint.x - (knob?.frame.midX)!), 2)
         )) / radius;
         
-        //print("angle: \(Int(angle * (180 / Float.pi)))" + " distance: \(newSaturation * radius)");
+        print("angle: \(Int(angle * (180 / Float.pi)))" + " distance: \(newSaturation * radius)");
         
             // brightness is from the view controller's brightness slider
         let newBrightness = viewController?.brightness;
