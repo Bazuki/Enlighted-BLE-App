@@ -9,6 +9,7 @@
 import UIKit
 
     // credit to http://ashishkakkad.com/2015/12/use-of-constant-define-in-swift-language-ios/
+
 class EnlightedBLEProtocol
 {
     // MARK: - Uart Protocol

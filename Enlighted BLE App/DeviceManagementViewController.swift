@@ -36,6 +36,11 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     {
         super.viewDidLoad()
         
+        // from: https://stackoverflow.com/questions/17209468/how-to-disable-back-swipe-gesture-in-uinavigationcontroller-on-ios-7
+        
+        // disabling the "swipe back" hand control
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+        
             // setting the device name
         deviceNameLabel.text = Device.connectedDevice?.name;
         

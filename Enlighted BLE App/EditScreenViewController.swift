@@ -78,6 +78,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     {
         super.viewDidLoad()
         
+        // from: https://stackoverflow.com/questions/17209468/how-to-disable-back-swipe-gesture-in-uinavigationcontroller-on-ios-7
+        
+        // disabling the "swipe back" hand control
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+        
         peripheralManager = CBPeripheralManager(delegate: self, queue: nil);
         
         if (Device.connectedDevice?.mode?.usesBitmap)!
