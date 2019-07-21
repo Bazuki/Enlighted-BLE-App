@@ -143,6 +143,26 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     override func viewDidAppear(_ animated: Bool)
     {
         super.viewDidAppear(animated);
+        
+            // if bluetooth isn't enabled
+        if (centralManager.state != CBManagerState.poweredOn)
+        {
+                // make it possible to show the demo mode eventually
+            if !(self.canShowDemoDevice)
+            {
+                // create a new timer (with much shorter duration) and when it fires, the demo device can be shown (if there are no "real" devices found)
+                self.deviceTimeoutTimer.invalidate();
+                self.deviceTimeoutTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(1), repeats: false, block:
+                    { (deviceTimeoutTimer) in
+                        self.canShowDemoDevice = true;
+                        if (Device.connectedDevice == nil || Device.connectedDevice?.name == "emptyDevice")
+                        {
+                            // reload table
+                            self.deviceTableView.reloadData();
+                        }
+                })
+            }
+        }
     }
     
     override func didReceiveMemoryWarning()
@@ -619,6 +639,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // if we're currently reverting the mode
                 else if ((Device.connectedDevice?.currentlyRevertingMode)!)
                 {
+                    print("Recieved a mode we want to use for reversion");
+                    
                     Device.connectedDevice?.mode?.usesBitmap = usesBitmap;
                     
                     if (usesBitmap)
@@ -640,8 +662,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         
                     }
                     Device.connectedDevice?.currentlyRevertingMode = false;
+                    print("No longer looking for modes for reversion, ready to send message to EditScreenViewController");
                     NotificationCenter.default.post(name: Notification.Name(rawValue: "revertedMode"), object: nil);
                 }
+                
                 Device.connectedDevice?.requestedName = false;
                 Device.connectedDevice?.requestedMode = false;
                 
@@ -866,7 +890,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         guard (peripheral.identifier as NSUUID != Device.connectedDevice?.UUID) else
         {
             print("We disconnected from our connected peripheral.");
-            
+            print("\(error?.localizedDescription)");
             // error popup
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
             let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
@@ -1258,7 +1282,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         
         // stop scanning
-        centralManager?.stopScan();
+        if (centralManager.state == CBManagerState.poweredOn)
+        {
+            centralManager?.stopScan();
+        }
+        
         print("Scan stopped");
         // stopping the normal scan timer
         timer.invalidate();

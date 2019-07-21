@@ -224,6 +224,12 @@ class ColorWheel: UIView
         self.knobRadius = knobRadius;
         knobPosition = centerPoint;
         
+            // destroying any old knobs
+        if (knob != nil)
+        {
+            self.subviews[0].removeFromSuperview();
+        }
+        
         knob = ColorKnob(frame: CGRect(x: knobPosition.x, y: knobPosition.y, width: CGFloat(knobRadius) * 2, height: CGFloat(knobRadius) * 2));
         knob?.isOpaque = false;
         
@@ -265,7 +271,7 @@ class ColorWheel: UIView
         // converting to radians
         hueCG *= CGFloat.pi * 2;
         
-        print(saturationCG);
+        //print(saturationCG);
         
         // multiplying for the radius
         saturationCG *= CGFloat(radius);
@@ -328,6 +334,15 @@ class ColorWheel: UIView
     public func updateBrightness()
     {
         setNeedsDisplay();
+    }
+    
+    public func destroyKnobs()
+    {
+            // if there are any remaining knobs, destroy them so there aren't any duplicates
+        if (knob != nil)
+        {
+            self.subviews[0].removeFromSuperview();
+        }
     }
     
 }

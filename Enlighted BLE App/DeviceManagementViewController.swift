@@ -101,7 +101,10 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     override func viewWillDisappear(_ animated: Bool)
     {
             // stop the timer before we leave this screen
-        self.batteryRefreshTimer.invalidate();
+        //self.batteryRefreshTimer.invalidate();
+        print("Removing DeviceManagementViewController's observers (in viewWillDisappear)");
+        NotificationCenter.default.removeObserver(self);
+        
         super.viewWillDisappear(animated);
     }
     

@@ -52,6 +52,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         // the peripheral manager
     var peripheralManager: CBPeripheralManager?;
     
+    
     //var delegate =
     //var _colorWheel: ISColorWheel = ISColorWheel();
     
@@ -118,7 +119,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             }
         }
         
-        NotificationCenter.default.addObserver(self, selector: #selector(finishRevertingMode), name: Notification.Name(rawValue: "revertedMode"), object: nil)
+        
         
             //allow for the selection of bitmaps
         bitmapPicker.allowsSelection = true;
@@ -210,6 +211,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     {
         super.viewWillAppear(animated);
         
+        print("\(self.navigationController?.viewControllers)");
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(finishRevertingMode), name: Notification.Name(rawValue: "revertedMode"), object: nil)
+        
             // clearing history upon entry to the view screen
         bitmapHistory = [Int]();
         
@@ -262,10 +267,17 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    override func viewWillDisappear(_ animated: Bool)
+    {
+        super.viewWillDisappear(animated);
+        print("Removing \(modeLabel.text)'s observers (in viewWillDisappear)");
+        NotificationCenter.default.removeObserver(self);
     }
+    
+//    override func didReceiveMemoryWarning() {
+//        super.didReceiveMemoryWarning()
+//        // Dispose of any resources that can be recreated.
+//    }
     
     // MARK: CBPeripheralDelegate functions
     
@@ -321,6 +333,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         {
             return;
         }
+            // if we're still waiting on something else, don't send another message
+        else if (Device.connectedDevice!.requestWithoutResponse)
+        {
+            return;
+        }
         else if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
@@ -369,6 +386,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
             // don't send anything BLE if it's a demo device
         if (Device.connectedDevice!.isDemoDevice)
+        {
+            return;
+        }
+            // if we're still waiting on something else, don't send another message
+        else if (Device.connectedDevice!.requestWithoutResponse)
         {
             return;
         }
@@ -745,7 +767,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     @IBAction func revertMode(_ sender: UIButton)
     {
-        print("Reverting mode");
+        print("Reverting mode, button was just pressed");
             // disabling the revert button until the action is done
         sender.isEnabled = false;
         
@@ -786,8 +808,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 color1UndoButton.isEnabled = false;
                 color2UndoButton.isEnabled = false;
                 
-                hueSlider.isEnabled = false;
-                saturationSlider.isEnabled = false;
+                //hueSlider.isEnabled = false;
+                //saturationSlider.isEnabled = false;
                 brightnessSlider.isEnabled = false;
                 
             }
@@ -806,7 +828,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         // basically viewWillAppear (after getting the "new" values from reverting)
     @objc private func finishRevertingMode()
     {
-        print("Finished reverting mode, updating screen");
+        print("Finished reverting mode \(modeLabel.text), updating screen");
         if ((Device.connectedDevice?.mode?.usesBitmap)!)
         {
             bitmapUIImage.image = Device.connectedDevice?.thumbnails[(Device.connectedDevice?.mode?.bitmapIndex)! - 1];
@@ -834,8 +856,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             color1UndoButton.isEnabled = true;
             color2UndoButton.isEnabled = true;
             
-            hueSlider.isEnabled = true;
-            saturationSlider.isEnabled = true;
+            //hueSlider.isEnabled = true;
+            //saturationSlider.isEnabled = true;
             brightnessSlider.isEnabled = true;
             
                 // re-activating the sliders for the current color
@@ -866,6 +888,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     {
             // don't do BLE commands if it's a demo device
         if (Device.connectedDevice!.isDemoDevice)
+        {
+            return;
+        }
+            // if we're still waiting on something else, don't send another message
+        else if (Device.connectedDevice!.requestWithoutResponse)
         {
             return;
         }
@@ -933,15 +960,18 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         Device.connectedDevice!.requestWithoutResponse = true;
     }
     
-    /*
+    
+    
     // MARK: - Navigation
 
     // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
+//    override func prepare(for segue: UIStoryboardSegue, sender: Any?)
+//    {
+//        print("removing observers");
+//            // remove the notification observer before leaving
+//        NotificationCenter.default.removeObserver(self);
+//    }
+    
     
     // MARK: - Public Methods
     

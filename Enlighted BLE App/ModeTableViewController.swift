@@ -59,9 +59,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         newFrame.size.height = 0;
         loadingItems.frame = newFrame;
         
-        NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: "changedMode"), object: nil)
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(prepareForSetup), name: Notification.Name(rawValue: "gotLimits"), object: nil)
         
             // setting this as the delegate of the table view
         tableView.delegate = self;
@@ -78,7 +75,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewWillAppear(animated);
         
+        NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: "changedMode"), object: nil)
         
+        NotificationCenter.default.addObserver(self, selector: #selector(prepareForSetup), name: Notification.Name(rawValue: "gotLimits"), object: nil)
         
             // getLimits for this device, though not if it's a demo device
         if !(Device.connectedDevice!.isDemoDevice)
@@ -100,6 +99,13 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             NotificationCenter.default.post(name: Notification.Name(rawValue:"gotLimits"), object: nil);
         }
         //progress += 0.04
+    }
+    
+    override func viewWillDisappear(_ animated: Bool)
+    {
+        super.viewWillDisappear(animated);
+        print("Removing ModeTableViewController's observers (in viewWillDisappear)");
+        NotificationCenter.default.removeObserver(self);
     }
     
 //    override func viewDidAppear(_ animated: Bool)
@@ -131,9 +137,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         // if we have all the modes and thumbnails, we're ready to display them
         deviceHasModes = (Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps);
-        
-        
-        
         
         
             // if we didn't completely get the mode list & thumbnails (i.e. aren't totally ready to show modes)
@@ -783,15 +786,13 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 
         // credit to https://stackoverflow.com/questions/28471164/how-to-set-back-button-text-in-swift
     
-    // before going to connection screen, disconnect from current peripheral
+    // before going to connection screen, remove observers
 //    override func prepare(for segue: UIStoryboardSegue, sender: Any?)
 //    {
-//        if (segue.identifier == "Connect BLE Device")
-//        {
-//            BLEConnectionTableViewController.disconnectFromDevice(BLEConnectionTableViewController);
-//        }
+//        print("Removing ModeTableViewController's observers (in prepareForSegue)");
+//        NotificationCenter.default.removeObserver(self);
 //    }
-//
+
     
     // MARK: Private Methods
     
@@ -814,7 +815,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             print("Device is not connected");
             return;
         }
-        
         if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
         {
             print("Disconnected");
