@@ -44,6 +44,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // whether or not the device has the full set of modes and thumbnails (if not, it has to do much more bluetooth, and so should enable the "Standby" mode.)
     var deviceHasModes = false;
     
+        // whether or not the device has a non-empty mimic list
+    var deviceHasMimicList = false;
+    
         // the peripheral manager
     var peripheralManager: CBPeripheralManager?;
     
@@ -138,10 +141,16 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // if we have all the modes and thumbnails, we're ready to display them
         deviceHasModes = (Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps);
         
+            // if we have a pre-existing mimic list, we want to go into a different state
+        deviceHasMimicList = (Device.connectedDevice?.mimicList.count)! > 0;
         
             // if we didn't completely get the mode list & thumbnails (i.e. aren't totally ready to show modes)
         if (!deviceHasModes)
         {
+            
+            BLEConnectionTableViewController.CBCentralState = .READING_FROM_HARDWARE;
+            print(BLEConnectionTableViewController.CBCentralState);
+            
                 // disabling the settings button when getting info
             self.navigationItem.rightBarButtonItem?.isEnabled = false;
             
@@ -165,6 +174,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             var newFrame = loadingItems.frame;
             newFrame.size.height = initialLoadingItemsHeight;
             loadingItems.frame = newFrame;
+        }
+        else
+        {
+            BLEConnectionTableViewController.CBCentralState = .NOT_SCANNING_FOR_MIMICS;
         }
         
             // if we haven't yet got the battery or brightness (it's still at its default -1), we need to add those packets too
@@ -235,6 +248,51 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         {
                 // once loading of modes/thumbnails is done, save that Device
             saveDevice();
+            
+            // if we have a mimic list already, and we haven't asked what the user wants to do with it yet, ask what the user wants to do with it
+            if (deviceHasMimicList && !Device.connectedDevice!.promptedMimicListSettings)
+            {
+                let dialogMessage = UIAlertController(title:"Mimic List Found", message: "A cached list of mimic devices was found.  Do you want to use the same mimic device settings?.", preferredStyle: .alert);
+                
+                // defining the change settings button
+                let changeSettings = UIAlertAction(title: "No, change settings", style: .destructive, handler:
+                {(action) -> Void in
+                    
+                    
+                    // creating a temporary view controller of the mimic settings screen
+                    let mimicSettingsVC = self.storyboard?.instantiateViewController(withIdentifier: "MimicTableViewController") as! MimicTableViewController;
+                    
+                    // pushing that view controller
+                    _ = self.navigationController?.pushViewController(mimicSettingsVC, animated: true);
+                    
+                    print("settings changed");
+                })
+                
+                // defining the keep settings button
+                let keepSettings = UIAlertAction(title: "Yes, keep settings", style: .default)
+                { (action) -> Void in
+                    print("settings kept");
+                    BLEConnectionTableViewController.CBCentralState = .SCANNING_FOR_MIMICS_TO_CONNECT;
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: "startScanning"), object: nil);
+                    print(BLEConnectionTableViewController.CBCentralState);
+                }
+                
+                // add the buttons to the message
+                dialogMessage.addAction(keepSettings);
+                dialogMessage.addAction(changeSettings);
+                
+                self.present(dialogMessage, animated: true, completion: nil);
+                Device.connectedDevice!.promptedMimicListSettings = true;
+            }
+            else
+            {
+                Device.connectedDevice!.promptedMimicListSettings = true;
+                BLEConnectionTableViewController.CBCentralState = .NOT_SCANNING_FOR_MIMICS;
+                print(BLEConnectionTableViewController.CBCentralState);
+            }
+            
+                // update the CBCentralState, depending on the length/status of the mimic list
+            NotificationCenter.default.post(name: Notification.Name(rawValue: "updateCBCentralState"), object: nil);
             
                 // enabling the settings button when showing modes
             self.navigationItem.rightBarButtonItem?.isEnabled = true;

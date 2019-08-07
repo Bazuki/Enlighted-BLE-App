@@ -27,6 +27,9 @@
 		9EA2B8E82159E3EA00C7D71A /* BLEConnectionTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA2B8E72159E3E900C7D71A /* BLEConnectionTableViewCell.swift */; };
 		9EA2B8EA2159EB1600C7D71A /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA2B8E92159EB1600C7D71A /* Device.swift */; };
 		9EA2B8EC2159EEBA00C7D71A /* BLEConnectionTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA2B8EB2159EEBA00C7D71A /* BLEConnectionTableViewController.swift */; };
+		9EDAD64322F7B90E007B3658 /* MimicTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EDAD64122F7B90E007B3658 /* MimicTableViewController.swift */; };
+		9EDAD64422F7B90E007B3658 /* MimicTableViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 9EDAD64222F7B90E007B3658 /* MimicTableViewController.xib */; };
+		9EDAD64622F7F0BF007B3658 /* MimicTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EDAD64522F7F0BF007B3658 /* MimicTableViewCell.swift */; };
 		9EE0BCF0217287E600E1403A /* UUIDKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EE0BCEF217287E500E1403A /* UUIDKey.swift */; };
 /* End PBXBuildFile section */
 
@@ -65,6 +68,9 @@
 		9EA2B8E72159E3E900C7D71A /* BLEConnectionTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEConnectionTableViewCell.swift; sourceTree = "<group>"; };
 		9EA2B8E92159EB1600C7D71A /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		9EA2B8EB2159EEBA00C7D71A /* BLEConnectionTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEConnectionTableViewController.swift; sourceTree = "<group>"; };
+		9EDAD64122F7B90E007B3658 /* MimicTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MimicTableViewController.swift; sourceTree = "<group>"; };
+		9EDAD64222F7B90E007B3658 /* MimicTableViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MimicTableViewController.xib; sourceTree = "<group>"; };
+		9EDAD64522F7F0BF007B3658 /* MimicTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MimicTableViewCell.swift; sourceTree = "<group>"; };
 		9EE0BCEF217287E500E1403A /* UUIDKey.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UUIDKey.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -122,6 +128,9 @@
 				9E693681215F19BC00B26C9C /* DeviceManagementViewController.swift */,
 				9E69367F215F11AF00B26C9C /* EditScreenViewController.swift */,
 				9E6936852160430A00B26C9C /* BitmapPickerCollectionViewCell.swift */,
+				9EDAD64122F7B90E007B3658 /* MimicTableViewController.swift */,
+				9EDAD64522F7F0BF007B3658 /* MimicTableViewCell.swift */,
+				9EDAD64222F7B90E007B3658 /* MimicTableViewController.xib */,
 				9EE0BCEF217287E500E1403A /* UUIDKey.swift */,
 				9E679224217D35AC00FAF765 /* EnlightedBLEProtocol.swift */,
 				9E604EF921535D1200734E4E /* Main.storyboard */,
@@ -239,6 +248,7 @@
 				9E604EFD21535D1900734E4E /* Assets.xcassets in Resources */,
 				9E604EFB21535D1200734E4E /* Main.storyboard in Resources */,
 				9E83FA7F2184E678003C054A /* Source in Resources */,
+				9EDAD64422F7B90E007B3658 /* MimicTableViewController.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,6 +271,7 @@
 				9EA2B8E82159E3EA00C7D71A /* BLEConnectionTableViewCell.swift in Sources */,
 				9EE0BCF0217287E600E1403A /* UUIDKey.swift in Sources */,
 				9E604EF821535D1200734E4E /* ViewController.swift in Sources */,
+				9EDAD64322F7B90E007B3658 /* MimicTableViewController.swift in Sources */,
 				9E69367A215EC1F200B26C9C /* Mode.swift in Sources */,
 				9E679225217D35AC00FAF765 /* EnlightedBLEProtocol.swift in Sources */,
 				9E693678215EC11100B26C9C /* ModeTableViewController.swift in Sources */,
@@ -270,6 +281,7 @@
 				9E693676215DA3A500B26C9C /* ModeTableViewCell.swift in Sources */,
 				9E693682215F19BC00B26C9C /* DeviceManagementViewController.swift in Sources */,
 				9E6D402721D45194001E816E /* ColorKnob.swift in Sources */,
+				9EDAD64622F7F0BF007B3658 /* MimicTableViewCell.swift in Sources */,
 				9EA2B8EC2159EEBA00C7D71A /* BLEConnectionTableViewController.swift in Sources */,
 				9E6D402521D44703001E816E /* ColorWheel.swift in Sources */,
 			);

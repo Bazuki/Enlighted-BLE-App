@@ -76,4 +76,17 @@ class Constants
         // the number of packets that must be received before a bitmap/thumbnail is fully retrieved from hardware (4 per row, 20 rows)
     static let BLE_PACKETS_PER_BITMAP = 80;
     
+        // states of the CB Central Manager
+    // state table: https://docs.google.com/spreadsheets/d/1qkCTjl4jrx4dsB80Km5FRnuynXSmYpfE8jxph5dApZU/edit?usp=sharing
+    // state machine diagram: https://www.lucidchart.com/documents/edit/9a907e3a-a3c4-4a81-a160-65591bbccd76/2?referringApp=google+drive&beaconFlowId=16967e152d3cf772
+    enum CBCM_STATE
+    {
+        case UNCONNECTED_SCANNING_FOR_PRIMARY
+        case READING_FROM_HARDWARE
+        case NOT_SCANNING_FOR_MIMICS
+        case CONNECTED_SCANNING_FOR_PRIMARY
+        case SCANNING_FOR_MIMICS_TO_DISPLAY
+        case SCANNING_FOR_MIMICS_TO_CONNECT
+    }
+    
 }

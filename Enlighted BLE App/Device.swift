@@ -50,6 +50,12 @@ class Device: NSObject, NSCoding
         // a list of all the thumbnails this device has, from Get Thumbnail
     var thumbnails = [UIImage]();
     
+        // a list of all the "mimic devices" that this device should command
+    var mimicList = [NSUUID]();
+    
+        // a list of all the actual mimic devices this device is currently commanding
+    var connectedMimicDevices = [CBPeripheral]();
+    
         // a way to track where Get Thumbnail is in getting a thumbnail
     var thumbnailRowIndex: Int = 0;
     
@@ -83,6 +89,9 @@ class Device: NSObject, NSCoding
     var requestedStandbyDeactivated = false;
     var requestedModeChange = false;
     var requestWithoutResponse = false;
+    
+        // flag to prompt a popup about editting the mimic list when first entering the choose mode screen with a non-empty mimic list
+    var promptedMimicListSettings = false;
     
         // flags / storage for the startup standby mode
     var isInStandby = false;

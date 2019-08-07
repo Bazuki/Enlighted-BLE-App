@@ -23,6 +23,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
 {
         // MARK: Properties
     
+    static var CBCentralState: Constants.CBCM_STATE = .UNCONNECTED_SCANNING_FOR_PRIMARY;
+    
+    static var advertisingPeripherals = [CBPeripheral]();
+    
         // The devices that show up on the connection screen.
     var visibleDevices = [Device]();
     
@@ -78,7 +82,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     var initialSearchingIndicatorHeight: CGFloat = 0;
     
     // MARK: - UIViewController Methods
-    override func viewDidLoad() {
+    override func viewDidLoad()
+    {
         super.viewDidLoad()
         
         // storing the height of the searching indicator, so we can restore it to this height if we have to re-load
@@ -88,6 +93,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         centralManager = CBCentralManager(delegate:self, queue: nil);
         
         NotificationCenter.default.addObserver(self, selector: #selector(resetThumbnailRow), name: Notification.Name(rawValue: "resendRow"), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(updateMimicDevicesAndCentralState), name: Notification.Name(rawValue: "updateCBCentralState"), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(startScan), name: Notification.Name(rawValue: "startScanning"), object: nil)
+
+        
+        
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
         
@@ -110,7 +122,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         //centralManager = CBCentralManager(delegate:self, queue: nil);
         
             // if we're currently connected to a device as we enter this screen, disconnect (because we'll be choosing a new one)
-        disconnectFromDevice();
+        disconnectFromPrimaryDevice();
+        
+        disconnectAllDevices();
+        
+        BLEConnectionTableViewController.CBCentralState = .UNCONNECTED_SCANNING_FOR_PRIMARY;
+        print(BLEConnectionTableViewController.CBCentralState);
         
             // we want to clear the visibleDevices() array now that we have cached memory
         visibleDevices = [Device]();
@@ -129,7 +146,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         searchingIndicator.isHidden = true;
         
             // shorter scan on entry so that devices will be culled quickly
-        startScan(0.1);
+        startScan();
         
         
             // initializing the demo device, with cached modes/bitmaps/etc.
@@ -178,7 +195,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         if central.state == CBManagerState.poweredOn
         {
             print("Bluetooth Enabled")
-            startScan(0.5);
+            startScan();
             
             // should scan multiple times
             
@@ -189,7 +206,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             print("Should go to the Connect Screen at this point");
             _ = self.navigationController?.popToRootViewController(animated: true);
                 // if there is an active device, disconnect from it
-            disconnectFromDevice();
+            disconnectFromPrimaryDevice();
                 // clearing table data
             peripherals = [CBPeripheral]();
             peripheralNames = [String]();
@@ -267,8 +284,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     }
     
         // starting to scan for peripherals that have Bluefruit's unique GATT indicator
-    @objc func startScan(_ scanTime: Double)
+    @objc func startScan()
     {
+        let scanTime = Constants.SCAN_DURATION;
+        
             // don't scan if we can't
         if (centralManager.state != CBManagerState.poweredOn)
         {
@@ -311,8 +330,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print("Scan Stopped")
         print("Number of Peripherals Found: \(peripherals.count)")
         
-        // if we aren't connected to a device, keep trying
-        if (true)//(Device.connectedDevice == nil || Device.connectedDevice?.name == "emptyDevice")
+            // making the peripherals visible from anywhere
+        BLEConnectionTableViewController.advertisingPeripherals = peripherals;
+        
+        // if we're scanning for a primary device, update that list
+        if (BLEConnectionTableViewController.CBCentralState == .UNCONNECTED_SCANNING_FOR_PRIMARY || BLEConnectionTableViewController.CBCentralState == .CONNECTED_SCANNING_FOR_PRIMARY)
+            //(Device.connectedDevice == nil || Device.connectedDevice?.name == "emptyDevice")
         {
                 // going through devices
             if (visibleDevices.count > 0)
@@ -426,7 +449,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 }
             }
             // if the device hasn't connected, keep scanning
-            startScan(Constants.SCAN_DURATION);
+            startScan();
             
             // find the index of the currently selected row, if any
             let indexPath = deviceTableView.indexPathForSelectedRow;
@@ -442,6 +465,34 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 deviceTableView.selectRow(at: indexPath, animated: false, scrollPosition: UITableViewScrollPosition.none);
             }
             
+        }
+                // if we're looking for any BLE peripherals to show
+        else if (BLEConnectionTableViewController.CBCentralState == .SCANNING_FOR_MIMICS_TO_DISPLAY)
+        {
+            print("We are looking for mimic devices to display on the Choose Mimic Device To Display screen");
+            print(peripherals);
+            
+            NotificationCenter.default.post(name: Notification.Name(rawValue: "discoveredNewPeripherals"), object: nil);
+            
+            startScan();
+            
+        }
+        else if (BLEConnectionTableViewController.CBCentralState == .SCANNING_FOR_MIMICS_TO_CONNECT)
+        {
+            if (peripherals.count > 0)
+            {
+                for i in 0...(peripherals.count - 1)
+                {
+                        // if the peripheral's on the mimic list
+                    if (Device.connectedDevice!.mimicList.contains(peripherals[i].identifier as NSUUID))
+                    {
+                            // connect to it (it's added to the "connected mimic devices" list in the callback)
+                        centralManager.connect(peripherals[i], options: nil);
+                    }
+                }
+            }
+            
+            startScan();
         }
         
 //        if (Device.connectedDevice == nil || Device.connectedDevice?.name == "emptyDevice")
@@ -819,7 +870,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     }
     
         // connecting to the peripheral of the connected device in Device
-    func connectToDevice()
+    func connectToPrimaryDevice()
     {
         centralManager.connect(Device.connectedDevice!.peripheral, options: nil);
         
@@ -838,13 +889,30 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print("Connection complete");
         print("Peripheral info: \(peripheral) ");
         
-            // set connected flag on device object
-        
-        Device.connectedDevice?.isConnected = true;
-        Device.connectedDevice?.isConnecting = false;
-        
+            // set connected flag on device object, if we're connecting to the primary
+        if (peripheral.identifier as NSUUID == Device.connectedDevice?.peripheral.identifier as! NSUUID)
+        {
+            // changing state to reflect the central's newly connected status
+            if (BLEConnectionTableViewController.CBCentralState == .UNCONNECTED_SCANNING_FOR_PRIMARY)
+            {
+                BLEConnectionTableViewController.CBCentralState = .CONNECTED_SCANNING_FOR_PRIMARY;
+                print(BLEConnectionTableViewController.CBCentralState);
+            }
+            
+            Device.connectedDevice?.isConnected = true;
+            Device.connectedDevice?.isConnecting = false;
+            
             // once we've connected, we can rescan again
-        searchButton.isEnabled = true;
+            searchButton.isEnabled = true;
+        }
+        else
+        {
+            Device.connectedDevice?.connectedMimicDevices += [peripheral];
+            
+            updateMimicDevicesAndCentralState();
+        }
+        
+        
         
             // stop scanning
         //centralManager?.stopScan();
@@ -881,7 +949,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // reloading the data, removing the selection and removing the device if it isn't there anymore
         deviceTableView.reloadData();
         // starting the scan again
-        startScan(Constants.SCAN_DURATION);
+        startScan();
         
     }
     
@@ -889,8 +957,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         guard (peripheral.identifier as NSUUID != Device.connectedDevice?.UUID) else
         {
-            print("We disconnected from our connected peripheral.");
-            print("\(error?.localizedDescription)");
+            BLEConnectionTableViewController.CBCentralState = .UNCONNECTED_SCANNING_FOR_PRIMARY;
+            print(BLEConnectionTableViewController.CBCentralState);
+            
+            print("We disconnected from our connected primary peripheral.");
+            print("\(error?.localizedDescription ?? "unknown error")");
             // error popup
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
             let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
@@ -899,7 +970,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 _ = self.navigationController?.popToRootViewController(animated: true);
                 
                 // disconnect from the device, if any
-                self.disconnectFromDevice();
+                self.disconnectFromPrimaryDevice();
                 
                 // deselect the currently selected item
                 if let index = self.deviceTableView.indexPathForSelectedRow
@@ -908,7 +979,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 }
                 
                 // scanning again, using the shorter scan time to quickly and roughly update the list
-                self.startScan(0.2);
+                self.startScan();
                 
             })
             
@@ -919,6 +990,24 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             
             return;
         }
+        
+            // if it's not the primary, it still might be one of the mimic devices
+        if (Device.connectedDevice!.connectedMimicDevices.count > 0)
+        {
+            for i in 0...(Device.connectedDevice!.connectedMimicDevices.count - 1)
+            {
+                // and so we have to remove it from the list
+                if (Device.connectedDevice!.connectedMimicDevices[i].identifier as NSUUID == peripheral.identifier as NSUUID)
+                {
+                    Device.connectedDevice!.connectedMimicDevices.remove(at: i);
+                    
+                    updateMimicDevicesAndCentralState();
+                }
+                
+            }
+        }
+        
+        
         
         print("Disconnected from " + peripheral.name!);
         
@@ -967,51 +1056,56 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         print("Found \(characteristics.count) characteristics!");
         
-        for characteristic in characteristics
+        if (peripheral.identifier as NSUUID == Device.connectedDevice!.peripheral.identifier as! NSUUID)
         {
-            
-                // looks for the read characteristic
-            if characteristic.uuid.isEqual(BLE_Characteristic_uuid_Rx)
+        
+            for characteristic in characteristics
             {
-                rxCharacteristic = characteristic;
-                    // set a reference to this characteristic in the device
-                Device.connectedDevice!.setRXCharacteristic(characteristic);
+                    // looks for the read characteristic
+                if characteristic.uuid.isEqual(BLE_Characteristic_uuid_Rx)
+                {
+                    rxCharacteristic = characteristic;
+                        // set a reference to this characteristic in the device
+                    Device.connectedDevice!.setRXCharacteristic(characteristic);
+                    
+                        // once found, subscribe to this particular characteristic
+                    peripheral.setNotifyValue(true, for: rxCharacteristic!)
+                    
+                    peripheral.readValue(for: characteristic);
+                    print("Rx Characteristic: \(characteristic.uuid)");
+                }
                 
-                    // once found, subscribe to this particular characteristic
-                peripheral.setNotifyValue(true, for: rxCharacteristic!)
+                    // looks for the transmission characteristic
+                if characteristic.uuid.isEqual(BLE_Characteristic_uuid_Tx)
+                {
+                    txCharacteristic = characteristic;
+                        // set a reference to this characteristic in the device
+                    Device.connectedDevice!.setTXCharacteristic(characteristic);
+                    print("Tx Characteristic: \(characteristic.uuid)");
+                }
                 
-                peripheral.readValue(for: characteristic);
-                print("Rx Characteristic: \(characteristic.uuid)");
+                    // looks for the battery level characteristic (Never called, because we don't look for the battery service
+    //            if characteristic.uuid.isEqual(BLE_Characteristic_uuid_batteryValue)
+    //            {
+    //                batteryCharacteristic = characteristic;
+    //
+    //                    // once found, subscribe to this characteristic to update the battery level
+    //                peripheral.setNotifyValue(true, for: batteryCharacteristic!);
+    //
+    //                peripheral.readValue(for: characteristic);
+    //                print("Battery characteristic: \(characteristic.uuid)");
+    //            }
+                
+                peripheral.discoverDescriptors(for: characteristic);
+                
             }
             
-                // looks for the transmission characteristic
-            if characteristic.uuid.isEqual(BLE_Characteristic_uuid_Tx)
-            {
-                txCharacteristic = characteristic;
-                    // set a reference to this characteristic in the device
-                Device.connectedDevice!.setTXCharacteristic(characteristic);
-                print("Tx Characteristic: \(characteristic.uuid)");
-            }
-            
-                // looks for the battery level characteristic (Never called, because we don't look for the battery service
-//            if characteristic.uuid.isEqual(BLE_Characteristic_uuid_batteryValue)
-//            {
-//                batteryCharacteristic = characteristic;
-//
-//                    // once found, subscribe to this characteristic to update the battery level
-//                peripheral.setNotifyValue(true, for: batteryCharacteristic!);
-//
-//                peripheral.readValue(for: characteristic);
-//                print("Battery characteristic: \(characteristic.uuid)");
-//            }
-            
-            peripheral.discoverDescriptors(for: characteristic);
-            
-        }
             // set flag
-        Device.connectedDevice?.hasDiscoveredCharacteristics = true;
+            Device.connectedDevice?.hasDiscoveredCharacteristics = true;
             // notify connection button that it can be enabled
-        NotificationCenter.default.post(name: Notification.Name(rawValue: "didDiscoverPeripheralCharacteristics"), object: nil);
+            NotificationCenter.default.post(name: Notification.Name(rawValue: "didDiscoverPeripheralCharacteristics"), object: nil);
+        }
+        
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
@@ -1067,7 +1161,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         }
     }
     
-    func disconnectFromDevice()
+    func disconnectFromPrimaryDevice()
     {
         if Device.connectedDevice?.peripheral != nil
         {
@@ -1076,6 +1170,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             Device.connectedDevice!.hasDiscoveredCharacteristics = false;
             Device.connectedDevice? = Device(true);
                 // setting the connectedDevice to the "emptyDevice" placeholder
+            
+            BLEConnectionTableViewController.CBCentralState = .UNCONNECTED_SCANNING_FOR_PRIMARY;
+            print(BLEConnectionTableViewController.CBCentralState);
         }
                 // if it's a demo device, it also has to be "disconnected"
         else if (Device.connectedDevice?.isDemoDevice ?? false)
@@ -1086,14 +1183,22 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         }
     }
     
-    
-
-
-    
-    
-    
-
-    
+    func disconnectAllDevices()
+    {
+        disconnectFromPrimaryDevice();
+        
+            // all the currently connected peripherals
+        let peripheralsToDisconnectFrom = centralManager.retrieveConnectedPeripherals(withServices: [BLEService_UUID]);
+        
+            // if there are still some left over, we need to disconnect from them
+        if (peripheralsToDisconnectFrom.count > 0)
+        {
+            for i in 0...peripheralsToDisconnectFrom.count - 1
+            {
+                centralManager.cancelPeripheralConnection(peripheralsToDisconnectFrom[i]);
+            }
+        }
+    }
 
     // Table view data source
 
@@ -1122,7 +1227,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
                 Device.connectedDevice?.isConnected = false;
                 Device.connectedDevice?.isConnecting = true;
-                connectToDevice();
+                connectToPrimaryDevice();
                 return;
             }
             
@@ -1132,23 +1237,25 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             if (Device.connectedDevice!.peripheral != visibleDevices[indexPath.row].peripheral)
             {
                     // disconnect from old devices, if any
-                disconnectFromDevice();
+                disconnectFromPrimaryDevice();
                 Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
                 Device.connectedDevice?.isConnected = false;
                 Device.connectedDevice?.isConnecting = true;
-                connectToDevice();
+                connectToPrimaryDevice();
             }
             else
             {
                 print("Selected the same device");
             }
             
+           
+            
         }
             // otherwise we're selecting the demo device
         else
         {
             // disconnect from old devices, if any
-            disconnectFromDevice();
+            disconnectFromPrimaryDevice();
             Device.setConnectedDevice(newDevice: demoDevice);
                 // pretend it already connected
             Device.connectedDevice?.isConnected = true;
@@ -1284,7 +1391,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // stop scanning
         if (centralManager.state == CBManagerState.poweredOn)
         {
-            centralManager?.stopScan();
+            cancelScan();
         }
         
         print("Scan stopped");
@@ -1296,10 +1403,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     // MARK: - Actions
     
         // disconnecting from the currently selected peripheral, deselecting the table, and starting to scan again
-    @IBAction func startScanningAgain(_ sender: UIButton)
+    @IBAction func startScanningForPrimaryAgain(_ sender: UIButton)
     {
             // disconnect from the device, if any
-        disconnectFromDevice();
+        disconnectFromPrimaryDevice();
         
             // deselect the currently selected item
         if let index = deviceTableView.indexPathForSelectedRow
@@ -1308,7 +1415,67 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         }
         
             // scanning again, using the shorter scan time to quickly and roughly update the list
-        startScan(0.2);
+        startScan();
+    }
+    
+    // MARK: - Public Methods
+    
+    @objc func updateMimicDevicesAndCentralState()
+    {
+        print("–––––––––––––––––––Updating mimic device list and central state–––––––––––––––––––––");
+        
+        var mimicDevices = Device.connectedDevice!.connectedMimicDevices
+        var mimicDevicesToDisconnectFrom = [CBPeripheral]();
+        
+        if (mimicDevices.count > 0)
+        {
+        
+                // check to see what mimic devices are connected to but aren't on the list
+            for i in 0...(mimicDevices.count - 1)
+            {
+                // if we can't find this device in the mimic list
+                if !(Device.connectedDevice?.mimicList.contains(mimicDevices[i].identifier as NSUUID))!
+                {
+                    mimicDevicesToDisconnectFrom += [mimicDevices[i]];
+                }
+            }
+            
+            if (mimicDevicesToDisconnectFrom.count > 0)
+            {
+                // disconnect from the excess mimic devices
+                for i in 0...(mimicDevicesToDisconnectFrom.count - 1)
+                {
+                    // disconnect from the peripheral
+                    centralManager?.cancelPeripheralConnection(mimicDevicesToDisconnectFrom[i]);
+                    // remove it from the list of connected mimic peripherals
+                    Device.connectedDevice!.connectedMimicDevices.remove(at: Device.connectedDevice!.connectedMimicDevices.index(of: mimicDevicesToDisconnectFrom[i])!);
+                }
+            }
+            
+            
+        }
+        
+        if (Device.connectedDevice!.mimicList.count > 0)
+        {
+                // if we aren't connected to each device on the mimic list, we need to work on doing so
+            if (Device.connectedDevice!.mimicList.count > Device.connectedDevice!.connectedMimicDevices.count)
+            {
+                BLEConnectionTableViewController.CBCentralState = .SCANNING_FOR_MIMICS_TO_CONNECT;
+                print(BLEConnectionTableViewController.CBCentralState);
+            }
+                // otherwise we're good and don't need to scan
+            else
+            {
+                BLEConnectionTableViewController.CBCentralState = .NOT_SCANNING_FOR_MIMICS;
+                print(BLEConnectionTableViewController.CBCentralState);
+            }
+        }
+        else
+        {
+            BLEConnectionTableViewController.CBCentralState = .NOT_SCANNING_FOR_MIMICS;
+            print(BLEConnectionTableViewController.CBCentralState);
+        }
+        
     }
     
     // MARK: - Private Methods
