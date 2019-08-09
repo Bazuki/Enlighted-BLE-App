@@ -54,7 +54,7 @@ class Device: NSObject, NSCoding
     var mimicList = [NSUUID]();
     
         // a list of all the actual mimic devices this device is currently commanding
-    var connectedMimicDevices = [CBPeripheral]();
+    var connectedMimicDevices = [Device]();
     
         // a way to track where Get Thumbnail is in getting a thumbnail
     var thumbnailRowIndex: Int = 0;
@@ -183,6 +183,22 @@ class Device: NSObject, NSCoding
         // mock declaration without a peripheral, so not connected
         isConnected = false;
         isConnecting = false;
+        hasDiscoveredCharacteristics = false;
+    }
+    
+        // an initializer for mimic devices, so they can be stored in a list
+    init(mimicDevicePeripheral: CBPeripheral)
+    {
+        self.name = mimicDevicePeripheral.name ?? "unknown name";
+        self.peripheral = mimicDevicePeripheral
+        isDemoDevice = false;
+        RSSI = -1;
+        currentModeIndex = -1;
+        maxNumModes = -1;
+        maxBitmaps = -1;
+        brightness = -1;
+        isConnected = true;
+        isConnecting = false
         hasDiscoveredCharacteristics = false;
     }
     

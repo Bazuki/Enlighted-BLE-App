@@ -643,16 +643,18 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         //let valueNSData = valueNSString! + modeIndexUInt;
         //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
         //{
-        print("sending " + valueString, Device.connectedDevice!.currentModeIndex, valueArray);
-        
-            // checking to see if we're disconnected (will have to do from every command)
+        //print("sending " + valueString, Device.connectedDevice!.currentModeIndex, valueData, "to primary peripheral");
         
         
         
-        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
             // setting "active request" flag
-        Device.connectedDevice!.requestWithoutResponse = true;
+        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
         Device.connectedDevice?.requestedModeChange = true;
+        
+        //var mimicDevice: Device;
+        
+        
+        
         //Device.connectedDevice!.peripheral.writeValue(valueNSString!, for: Device.connectedDevice!.txCharacteristic!, type:CBCharacteristicWriteType.withoutResponse)
         //}
     }
@@ -708,11 +710,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
         let valueData = NSData(bytes: valueArray, length: 4)
         
-        print("sending: " + valueString, bitmapIndexUInt);
+        //print("sending: " + valueString, bitmapIndexUInt);
         
-        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
-        // "active request" flag
-        Device.connectedDevice?.requestWithoutResponse = true;
+        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
         
     }
     
@@ -790,11 +790,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
         let valueData = NSData(bytes: valueArray, length: 9)
         
-        print("sending: " + valueString, valueArray);
-        
-        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
-        // "active request" flag
-        Device.connectedDevice?.requestWithoutResponse = true;
+        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
     }
     
 //    // old "initial selection" code
@@ -907,8 +903,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 let stringArray: [UInt8] = Array(inputString.utf8);
                 let outputArray = stringArray + [uInputInt] + [secondUInputInt];
                 let outputData = NSData(bytes: outputArray, length: 5)
-                print("Sending: " + inputString, inputInt, secondInputInt, outputArray);
-                Device.connectedDevice!.peripheral.writeValue(outputData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+                BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
             }
             else
             {
@@ -916,21 +911,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 let stringArray: [UInt8] = Array(inputString.utf8);
                 let outputArray = stringArray + [uInputInt];
                 let outputData = NSData(bytes: outputArray, length: 4)
-                print("Sending: " + inputString, inputInt, outputArray);
-                Device.connectedDevice!.peripheral.writeValue(outputData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+                BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
             }
         }
         else
         {
             let inputNSString = (inputString as NSString).data(using: String.Encoding.ascii.rawValue);
             // https://stackoverflow.com/questions/40088253/how-can-i-print-the-content-of-a-variable-of-type-data-using-swift for printing NSString
-            print("Sending: " + inputString, inputNSString! as NSData);
-            Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+            BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: inputNSString! as NSData, sendToMimicDevices: false);
         }
-        
-        
-            // "active request" flag
-        Device.connectedDevice!.requestWithoutResponse = true;
     }
     
         // saves the Device after loading

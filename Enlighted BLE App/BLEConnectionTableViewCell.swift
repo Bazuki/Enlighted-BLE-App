@@ -51,6 +51,8 @@ class BLEConnectionTableViewCell: UITableViewCell
         
         wasSelected = false;
         
+        connectButton.isEnabled = false;
+        
             // Formatting the images to allow for recoloration
         connectionImage.image = connectionImage.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
             //recoloring doesn't allow for enabling/disabling graphics
@@ -68,7 +70,10 @@ class BLEConnectionTableViewCell: UITableViewCell
         if (isDemoDevice)
         {
             connectButton.isEnabled = true;
+            //connectButton.tintColor = UIColor.white;
         }
+        
+        
             // button is disabled by default until the device is connected
 //        else if (selected && !wasSelected)// && Device.connectedDevice?.isConnecting ?? false)
 //        {
@@ -133,12 +138,19 @@ class BLEConnectionTableViewCell: UITableViewCell
     
     @objc func enableButton()
     {
+        
+        print("\(Device.connectedDevice!.name): ");
+        print("     is connected: \((Device.connectedDevice?.isConnected)!)");
+        print("     is the same as this cell's device, \(device.name): \(Device.connectedDevice == device)");
+        print("     and has discovered its characteristics: \((Device.connectedDevice?.hasDiscoveredCharacteristics)!)");
+        
             // if the device (that this cell is responsible for) is successfully connected, enable the button
         if ((Device.connectedDevice?.hasDiscoveredCharacteristics)! && (Device.connectedDevice?.isConnected)! && Device.connectedDevice == device)
         {
             //timer.invalidate();
             connectButton.isEnabled = true;
             print("Enabling button");
+            
             //timer.invalidate();
         }
         else

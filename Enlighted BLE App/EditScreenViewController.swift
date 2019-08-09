@@ -375,9 +375,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
         print("sending: " + valueString, bitmapIndexUInt, valueArray);
         
-        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
-        // "active request" flag
-        Device.connectedDevice?.requestWithoutResponse = true;
+        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
         
     }
     
@@ -466,11 +464,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
         let valueData = NSData(bytes: valueArray, length: 9)
         
-        print("sending: " + valueString, valueArray);
-        
-        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
-        // "active request" flag
-        Device.connectedDevice?.requestWithoutResponse = true;
+        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
     }
     
     func getRGBStringFromUIColor(_ color: UIColor) -> String
@@ -934,8 +928,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 let stringArray: [UInt8] = Array(inputString.utf8);
                 let outputArray = stringArray + [uInputInt] + [secondUInputInt];
                 let outputData = NSData(bytes: outputArray, length: 5)
-                print("Sending: " + inputString, inputInt, secondInputInt, outputArray);
-                Device.connectedDevice!.peripheral.writeValue(outputData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+                BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
             }
             else
             {
@@ -943,21 +936,16 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 let stringArray: [UInt8] = Array(inputString.utf8);
                 let outputArray = stringArray + [uInputInt];
                 let outputData = NSData(bytes: outputArray, length: 4)
-                print("Sending: " + inputString, inputInt, outputArray);
-                Device.connectedDevice!.peripheral.writeValue(outputData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+                BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
             }
         }
         else
         {
             let inputNSString = (inputString as NSString).data(using: String.Encoding.ascii.rawValue);
             // https://stackoverflow.com/questions/40088253/how-can-i-print-the-content-of-a-variable-of-type-data-using-swift for printing NSString
-            print("Sending: " + inputString, inputNSString! as NSData);
-            Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+            BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: inputNSString! as NSData, sendToMimicDevices: false)
+
         }
-        
-        
-        // "active request" flag
-        Device.connectedDevice!.requestWithoutResponse = true;
     }
     
     

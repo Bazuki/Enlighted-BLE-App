@@ -159,13 +159,8 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
         let valueData = NSData(bytes: valueArray, length: 4)
         
-        print("sending: " + valueString, (Device.connectedDevice!.brightness));
-        //print("\(String(describing: valueNSString))");
-        //let valueNSData = valueNSString! + modeIndexUInt;
-        //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
-        //{
-        Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
-        Device.connectedDevice!.requestWithoutResponse = true;
+        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
+        
     }
     
     
@@ -320,10 +315,7 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         
         let inputNSString = (inputString as NSString).data(using: String.Encoding.ascii.rawValue);
         // https://stackoverflow.com/questions/40088253/how-can-i-print-the-content-of-a-variable-of-type-data-using-swift for printing NSString
-        print("Sending: " + inputString, inputNSString! as NSData);
-        Device.connectedDevice!.peripheral.writeValue(inputNSString!, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
-            // "active request" flag
-        Device.connectedDevice!.requestWithoutResponse = true;
+        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: inputNSString! as NSData, sendToMimicDevices: false)
         
     }
     

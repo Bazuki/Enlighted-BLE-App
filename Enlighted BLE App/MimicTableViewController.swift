@@ -89,7 +89,11 @@ class MimicTableViewController: UITableViewController
     
     @objc func updateMimicDisplay()
     {
-        visiblePeripherals = BLEConnectionTableViewController.advertisingPeripherals + Device.connectedDevice!.connectedMimicDevices;
+        visiblePeripherals = BLEConnectionTableViewController.advertisingPeripherals;
+        for device in Device.connectedDevice!.connectedMimicDevices
+        {
+            visiblePeripherals += [device.peripheral];
+        }
         self.tableView.reloadData();
     }
     
