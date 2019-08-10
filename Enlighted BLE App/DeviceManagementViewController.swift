@@ -68,9 +68,9 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         let batteryInt = (Device.connectedDevice?.batteryPercentage)!;
         batteryStatusImage.image = getBatteryImageForPercentage(batteryInt);
         
-        NotificationCenter.default.addObserver(self, selector: #selector(updateBrightnessValue), name: Notification.Name(rawValue: "gotBrightness"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateBrightnessValue), name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BRIGHTNESS_VALUE), object: nil)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(updateBatteryPercentage), name: Notification.Name(rawValue: "gotBattery"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateBatteryPercentage), name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BATTERY_VALUE), object: nil)
         
     }
 
@@ -157,7 +157,7 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         let stringArray: [UInt8] = Array(valueString.utf8);
         let valueArray = stringArray + [brightnessIndexUInt]
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
-        let valueData = NSData(bytes: valueArray, length: 4)
+        let valueData = NSData(bytes: valueArray, length: valueArray.count)
         
         BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
         
@@ -204,7 +204,7 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
                 // clear thumbnail list
                 Device.connectedDevice?.thumbnails = [UIImage]();
                 // clear current thumbnail row
-                NotificationCenter.default.post(name: Notification.Name(rawValue: "resendRow"), object: nil);
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RESEND_THUMBNAIL_ROW), object: nil);
                 
             }
                 // credit to https://stackoverflow.com/questions/28190070/swift-poptoviewcontroller for navigating to a specific viewController

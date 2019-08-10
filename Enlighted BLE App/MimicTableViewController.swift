@@ -40,10 +40,10 @@ class MimicTableViewController: UITableViewController
         cachedDevices = BLEConnectionTableViewController.loadDevices() ?? [Device]();
         
         BLEConnectionTableViewController.CBCentralState = .SCANNING_FOR_MIMICS_TO_DISPLAY;
-        NotificationCenter.default.post(name: Notification.Name(rawValue: "startScanning"), object: nil);
+        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.START_SCAN), object: nil);
         print(BLEConnectionTableViewController.CBCentralState);
         
-        NotificationCenter.default.addObserver(self, selector: #selector(updateMimicDisplay), name: Notification.Name(rawValue: "discoveredNewPeripherals"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateMimicDisplay), name: Notification.Name(rawValue: Constants.MESSAGES.DISCOVERED_NEW_PERIPHERALS), object: nil)
     }
     
     override func viewWillDisappear(_ animated: Bool)
@@ -52,7 +52,7 @@ class MimicTableViewController: UITableViewController
         print("Removing MimicTableViewController's observers (in viewWillDisappear)");
         NotificationCenter.default.removeObserver(self);
         
-        NotificationCenter.default.post(name: Notification.Name(rawValue: "updateCBCentralState"), object: nil);
+        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.UPDATE_CBCENTRAL_STATE), object: nil);
     }
     
     // MARK: - Table view data source
@@ -110,9 +110,9 @@ class MimicTableViewController: UITableViewController
         
         var newDevices = [Device]();
         
-        var devicesOnMimicList = [Device]();
+        //var devicesOnMimicList = [Device]();
         
-        var devicesNotOnMimicList = [Device]();
+        //var devicesNotOnMimicList = [Device]();
         
         if (BLEConnectionTableViewController.advertisingPeripherals.count > 0)
         {
@@ -120,19 +120,16 @@ class MimicTableViewController: UITableViewController
             {
                 var newDevice: Device = Device(mimicDevicePeripheral: BLEConnectionTableViewController.advertisingPeripherals[i]);
                 
+                    // setting the RSSI
                 newDevice.RSSI = Int(truncating: BLEConnectionTableViewController.advertisingRSSIs[i]);
+                
+                    // setting the UUID
+                newDevice.UUID = newDevice.peripheral.identifier as NSUUID;
                 //newDevice.nickname = BLEConnectionTableViewController.nicknames[i];
                 
                 
                 newDevices += [newDevice]
             }
-            
-            
-            
-//            newDevices.sort
-//                {
-//                    $0.nickname > $1.nickname
-//            }
         }
         
         visibleDevices += newDevices;
@@ -164,38 +161,43 @@ class MimicTableViewController: UITableViewController
                 }
             }
             
-                // separating into lists of devices on and not on the mimic list
-            for i in 0...(visibleDevices.count - 1)
-            {
-                if (visibleDevices[i].hasDiscoveredCharacteristics)
-                {
-                    visibleDevices[i].RSSI = -2;
-                }
-                
-                if Device.connectedDevice!.mimicList.contains(visibleDevices[i].peripheral?.identifier as! NSUUID)
-                {
-                    devicesOnMimicList += [visibleDevices[i]];
-                }
-                else
-                {
-                    devicesNotOnMimicList += [visibleDevices[i]];
-                }
-            }
+//                // separating into lists of devices on and not on the mimic list
+//            for i in 0...(visibleDevices.count - 1)
+//            {
+//                if (visibleDevices[i].hasDiscoveredCharacteristics)
+//                {
+//                    visibleDevices[i].RSSI = -2;
+//                }
+//
+//                if Device.connectedDevice!.mimicList.contains(visibleDevices[i].peripheral?.identifier as! NSUUID)
+//                {
+//                    devicesOnMimicList += [visibleDevices[i]];
+//                }
+//                else
+//                {
+//                    devicesNotOnMimicList += [visibleDevices[i]];
+//                }
+//            }
         }
         
             // sort by whatever's higher up on the mimic list
-        devicesOnMimicList.sort
+//        devicesOnMimicList.sort
+//            {
+//                Device.connectedDevice!.mimicList.index(of: $0.UUID as! NSUUID)! < Device.connectedDevice!.mimicList.index(of: $1.UUID as! NSUUID)!;
+//        }
+//
+//        devicesNotOnMimicList.sort
+//            {
+//                $0.nickname > $1.nickname;
+//        }
+        
+            // sort by NSUUID
+        visibleDevices.sort
             {
-                Device.connectedDevice!.mimicList.index(of: $0.UUID as! NSUUID)! < Device.connectedDevice!.mimicList.index(of: $1.UUID as! NSUUID)!;
+                $0.UUID!.uuidString < $1.UUID!.uuidString;
         }
         
-        devicesNotOnMimicList.sort
-            {
-                $0.nickname > $1.nickname;
-        }
-        
-            // adding the two sorted lists together
-        devicesToDisplay = devicesOnMimicList + devicesNotOnMimicList;
+        devicesToDisplay = visibleDevices;//devicesOnMimicList + devicesNotOnMimicList;
         
         self.tableView.reloadData();
     }

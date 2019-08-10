@@ -57,7 +57,7 @@ class BLEConnectionTableViewCell: UITableViewCell
         connectionImage.image = connectionImage.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
             //recoloring doesn't allow for enabling/disabling graphics
         //connectButton.imageView?.image = connectButton.imageView?.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
-        NotificationCenter.default.addObserver(self, selector: #selector(enableButton), name: Notification.Name(rawValue: "didDiscoverPeripheralCharacteristics"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(enableButton), name: Notification.Name(rawValue: Constants.MESSAGES.DISCOVERED_PRIMARY_CHARACTERISTICS), object: nil)
     }
 
     override func setSelected(_ selected: Bool, animated: Bool)

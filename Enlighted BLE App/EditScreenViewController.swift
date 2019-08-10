@@ -213,7 +213,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
         print("\(self.navigationController?.viewControllers)");
         
-        NotificationCenter.default.addObserver(self, selector: #selector(finishRevertingMode), name: Notification.Name(rawValue: "revertedMode"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(finishRevertingMode), name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_MODE_VALUE), object: nil)
         
             // clearing history upon entry to the view screen
         bitmapHistory = [Int]();
@@ -371,7 +371,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         let stringArray: [UInt8] = Array(valueString.utf8);
         let valueArray = stringArray + [bitmapIndexUInt]
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
-        let valueData = NSData(bytes: valueArray, length: 4)
+        let valueData = NSData(bytes: valueArray, length: valueArray.count)
         
         print("sending: " + valueString, bitmapIndexUInt, valueArray);
         
@@ -462,7 +462,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         valueArray += [green2];
         valueArray += [blue2];
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
-        let valueData = NSData(bytes: valueArray, length: 9)
+        let valueData = NSData(bytes: valueArray, length: valueArray.count)
         
         BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
     }
@@ -788,7 +788,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 //color2History = [UIColor]();
             }
             
-            NotificationCenter.default.post(name: Notification.Name(rawValue: "revertedMode"), object: nil);
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_MODE_VALUE), object: nil);
         }
         else
         {
@@ -927,7 +927,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 let secondUInputInt: UInt8 = UInt8(secondInputInt);
                 let stringArray: [UInt8] = Array(inputString.utf8);
                 let outputArray = stringArray + [uInputInt] + [secondUInputInt];
-                let outputData = NSData(bytes: outputArray, length: 5)
+                let outputData = NSData(bytes: outputArray, length: outputArray.count)
                 BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
             }
             else
@@ -935,7 +935,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 let uInputInt: UInt8 = UInt8(inputInt);
                 let stringArray: [UInt8] = Array(inputString.utf8);
                 let outputArray = stringArray + [uInputInt];
-                let outputData = NSData(bytes: outputArray, length: 4)
+                let outputData = NSData(bytes: outputArray, length: outputArray.count)
                 BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
             }
         }

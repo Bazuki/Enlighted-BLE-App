@@ -78,9 +78,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewWillAppear(animated);
         
-        NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: "changedMode"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(prepareForSetup), name: Notification.Name(rawValue: "gotLimits"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(prepareForSetup), name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil)
+        
+            // when we connect to a new device (like a mimic), send the current mode settings
+        NotificationCenter.default.addObserver(self, selector: #selector(updateModeOnHardware), name: Notification.Name(rawValue:  Constants.MESSAGES.DISCOVERED_MIMIC_CHARACTERISTICS), object: nil)
         
             // getLimits for this device, though not if it's a demo device
         if !(Device.connectedDevice!.isDemoDevice)
@@ -99,7 +102,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             }
             
             
-            NotificationCenter.default.post(name: Notification.Name(rawValue:"gotLimits"), object: nil);
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil);
         }
         //progress += 0.04
     }
@@ -107,8 +110,14 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     override func viewWillDisappear(_ animated: Bool)
     {
         super.viewWillDisappear(animated);
-        print("Removing ModeTableViewController's observers (in viewWillDisappear)");
-        NotificationCenter.default.removeObserver(self);
+        
+            // only remove observers if this screen is being popped (i.e. the user is going back to the connection screen), because we want it to update the mimic devices on connection no matter what screen they connect on
+        if (self.isMovingFromParentViewController)
+        {
+            print("Removing ModeTableViewController's observers (in viewWillDisappear)");
+            NotificationCenter.default.removeObserver(self);
+        }
+        
     }
     
 //    override func viewDidAppear(_ animated: Bool)
@@ -273,7 +282,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 { (action) -> Void in
                     print("settings kept");
                     BLEConnectionTableViewController.CBCentralState = .SCANNING_FOR_MIMICS_TO_CONNECT;
-                    NotificationCenter.default.post(name: Notification.Name(rawValue: "startScanning"), object: nil);
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.START_SCAN), object: nil);
                     print(BLEConnectionTableViewController.CBCentralState);
                 }
                 
@@ -292,7 +301,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             }
             
                 // update the CBCentralState, depending on the length/status of the mimic list
-            NotificationCenter.default.post(name: Notification.Name(rawValue: "updateCBCentralState"), object: nil);
+            //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.UPDATE_CBCENTRAL_STATE), object: nil);
             
                 // enabling the settings button when showing modes
             self.navigationItem.rightBarButtonItem?.isEnabled = true;
@@ -399,7 +408,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     // if we haven't gotten all the modes, keep chugging
             else if ((Device.connectedDevice?.modes.count)! < (Device.connectedDevice?.maxNumModes)!)
             {
-                    // how much progress each Get Name
+                    // how much progress each Get Name is "worth"
                 let progressValue: Float = 2 / Float(totalPacketsForSetup);
                 
                     // if we haven't yet, request the name of the first mode we need
@@ -520,7 +529,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         {
             let progressValue: Float = 4 / Float(totalPacketsForSetup);
             progress -= progressValue;
-            NotificationCenter.default.post(name: Notification.Name(rawValue: "resendRow"), object: nil);
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RESEND_THUMBNAIL_ROW), object: nil);
         }
     }
     
@@ -602,7 +611,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
         // MARK: - BLE TX Methods
     
-    func updateModeOnHardware()
+    @objc func updateModeOnHardware()
     {
         if (!(Device.connectedDevice?.isConnected)!)
         {
@@ -637,7 +646,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         let stringArray: [UInt8] = Array(valueString.utf8);
         let valueArray = stringArray + [modeIndexUInt]
             // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
-        let valueData = NSData(bytes: valueArray, length: 4)
+        let valueData = NSData(bytes: valueArray, length: valueArray.count)
         
         //print("\(String(describing: valueNSString))");
         //let valueNSData = valueNSString! + modeIndexUInt;
@@ -708,7 +717,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         let stringArray: [UInt8] = Array(valueString.utf8);
         let valueArray = stringArray + [bitmapIndexUInt]
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
-        let valueData = NSData(bytes: valueArray, length: 4)
+        let valueData = NSData(bytes: valueArray, length: valueArray.count)
         
         //print("sending: " + valueString, bitmapIndexUInt);
         
@@ -788,7 +797,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         valueArray += [green2];
         valueArray += [blue2];
         // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
-        let valueData = NSData(bytes: valueArray, length: 9)
+        let valueData = NSData(bytes: valueArray, length: valueArray.count)
         
         BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
     }
@@ -902,7 +911,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 let secondUInputInt: UInt8 = UInt8(secondInputInt);
                 let stringArray: [UInt8] = Array(inputString.utf8);
                 let outputArray = stringArray + [uInputInt] + [secondUInputInt];
-                let outputData = NSData(bytes: outputArray, length: 5)
+                let outputData = NSData(bytes: outputArray, length: outputArray.count)
                 BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
             }
             else
@@ -910,7 +919,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 let uInputInt: UInt8 = UInt8(inputInt);
                 let stringArray: [UInt8] = Array(inputString.utf8);
                 let outputArray = stringArray + [uInputInt];
-                let outputData = NSData(bytes: outputArray, length: 4)
+                let outputData = NSData(bytes: outputArray, length: outputArray.count)
                 BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
             }
         }
@@ -944,6 +953,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         if let indexOfDevice = cachedDevices.firstIndex(where: {$0.UUID == Device.connectedDevice?.peripheral.identifier as NSUUID?})
         {
             cachedDevices[indexOfDevice] = Device.connectedDevice!
+            print("Just updated the cache for \(Device.connectedDevice!.name)");
                 // clearing out duplicates
 //            var j = (cachedDevices.count - 1);
 //

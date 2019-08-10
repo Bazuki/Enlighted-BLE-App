@@ -26,6 +26,7 @@ class Device: NSObject, NSCoding
         static let name = "name";
         static let nickname = "nickname";
         static let NSUUID = "nsuuid";
+        static let mimicList = "mimiclist";
     }
     
     // MARK: Archiving Paths
@@ -121,6 +122,31 @@ class Device: NSObject, NSCoding
         
         
         
+            // default values, before being read from hardware
+        currentModeIndex = -1;
+        maxNumModes = -1;
+        maxBitmaps = -1;
+        brightness = -1;
+        
+        isConnected = false;
+        isConnecting = false;
+        hasDiscoveredCharacteristics = false;
+    }
+    
+    
+        // constructor from cache with mimic list discovered
+    init(name: String, nickname: String, modes: [Mode], thumbnails: [UIImage], UUID: NSUUID, mimicList: [NSUUID])
+    {
+        self.name = name;
+        self.nickname = nickname;
+        self.RSSI = -1;
+        self.peripheral = nil;
+        self.UUID = UUID;
+        self.mimicList = mimicList;
+        
+        self.modes = modes;
+        self.thumbnails = thumbnails;
+        
         // will also need to be read and set with the new protocol
         currentModeIndex = -1;
         maxNumModes = -1;
@@ -132,6 +158,7 @@ class Device: NSObject, NSCoding
         hasDiscoveredCharacteristics = false;
     }
     
+    // constructor from cache WITHOUT mimic list discovered
     init(name: String, nickname: String, modes: [Mode], thumbnails: [UIImage], UUID: NSUUID)
     {
         self.name = name;
@@ -139,6 +166,7 @@ class Device: NSObject, NSCoding
         self.RSSI = -1;
         self.peripheral = nil;
         self.UUID = UUID;
+        //self.mimicList = [NSUUID]();
         
         self.modes = modes;
         self.thumbnails = thumbnails;
@@ -190,7 +218,7 @@ class Device: NSObject, NSCoding
     init(mimicDevicePeripheral: CBPeripheral)
     {
         self.name = mimicDevicePeripheral.name ?? "unknown name";
-        self.peripheral = mimicDevicePeripheral
+        self.peripheral = mimicDevicePeripheral;
         isDemoDevice = false;
         RSSI = -1;
         currentModeIndex = -1;
@@ -228,7 +256,7 @@ class Device: NSObject, NSCoding
     
     // MARK: - Actions
     
-    func setBrightness(value:Int)
+    func setBrightness(value: Int)
     {
         brightness = value;
     }
@@ -275,6 +303,7 @@ class Device: NSObject, NSCoding
         aCoder.encode(UUID, forKey: PropertyKey.NSUUID)
         //print("Just encoded \(modes.count) modes");
         aCoder.encode(thumbnails, forKey: PropertyKey.thumbnails);
+        aCoder.encode(mimicList, forKey: PropertyKey.mimicList);
     }
     
     required convenience init?(coder aDecoder: NSCoder)
@@ -309,8 +338,16 @@ class Device: NSObject, NSCoding
             return nil;
         }
         
+        
+        guard let mimicList = aDecoder.decodeObject(forKey: PropertyKey.mimicList) as? [NSUUID] else
+        {
+            os_log("Unable to decode the mimic list for the Device.", log: OSLog.default, type: .debug);
+            self.init(name: name, nickname: nickname, modes: modes, thumbnails: thumbnails, UUID: UUID);
+            return;
+        }
+        
             // must call designated initializer.
-        self.init(name: name, nickname: nickname, modes: modes, thumbnails: thumbnails, UUID: UUID);
+        self.init(name: name, nickname: nickname, modes: modes, thumbnails: thumbnails, UUID: UUID, mimicList: mimicList);
     }
 }
 

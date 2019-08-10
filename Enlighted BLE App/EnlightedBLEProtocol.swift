@@ -15,11 +15,18 @@ class EnlightedBLEProtocol
     // MARK: - Uart Protocol
     
     // MARK: Getters
+    
+        // getting the current mode index, and the number of modes/bitmaps
     static let ENL_BLE_GET_LIMITS = "!GL"
+        // getting the current brightness of the hardware
     static let ENL_BLE_GET_BRIGHTNESS = "!GG"
+        // getting the current battery level of the hardware
     static let ENL_BLE_GET_BATTERY_LEVEL = "!GB"
+        // getting the name of a specific mode
     static let ENL_BLE_GET_NAME = "!GN"
+        // getting the type and values of a specific mode
     static let ENL_BLE_GET_MODE = "!GM"
+        // getting a thumbnail for a bitmap, in multiple messages
     static let ENL_BLE_GET_THUMBNAIL = "!GT"
     
     // MARK: Setters
@@ -58,17 +65,11 @@ class Constants
         // the brightness setting (0-255) that the hardware goes into while in standby mode
     static let STANDBY_BRIGHTNESS = 50;
     
-        // whether or not to use the "Standby" mode, since it's still being worked out and we don't want a non-functional app in the meantime
+        // whether or not to use the "Standby" mode
     static let USE_STANDBY_MODE = true;
     
         // relatedly, but independently to the above, whether to dim the brightness to STANDBY_BRIGHTNESS when loading modes.
     static let USE_STANDBY_BRIGHTNESS = true;
-    
-//        // the text to show while loading modes
-//    static let LOADING_MODES_TEXT = "Reading modes from hardware – ";
-//
-//        // the text to show while loading bitmaps/thumbnails
-//    static let LOADING_BITMAPS_TEXT = "Reading bitmaps from hardware – ";
     
         // the number of packets that must be received before a mode is fully retrieved from hardware (1 for GetMode, 2 for GetName)
     static let BLE_PACKETS_PER_MODE = 3;
@@ -89,4 +90,23 @@ class Constants
         case SCANNING_FOR_MIMICS_TO_CONNECT
     }
     
+        // the messages this app sends
+    struct MESSAGES
+    {
+        static let DISCOVERED_PRIMARY_CHARACTERISTICS = "discoveredPrimaryCharacteristics";
+        static let DISCOVERED_MIMIC_CHARACTERISTICS = "discoveredMimicCharacteristics";
+        static let DISCOVERED_NEW_PERIPHERALS = "discoveredNewPeripherals";
+        
+        static let RESEND_THUMBNAIL_ROW = "resendThumbnailRow";
+        
+        static let UPDATE_CBCENTRAL_STATE = "updateCBCentralState";
+        static let START_SCAN = "startScan";
+        
+        static let RECEIVED_LIMITS_VALUE = "receivedLimitsValue";
+        static let RECEIVED_BRIGHTNESS_VALUE = "receivedBrightnessValue";
+        static let RECEIVED_BATTERY_VALUE = "receivedBatteryValue";
+        static let RECEIVED_MODE_VALUE = "receivedModeValue";
+        
+        static let CHANGED_MODE_VALUE = "changedModeValue";
+    }
 }

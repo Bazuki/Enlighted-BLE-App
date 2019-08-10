@@ -96,11 +96,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         centralManager = CBCentralManager(delegate:self, queue: nil);
         
-        NotificationCenter.default.addObserver(self, selector: #selector(resetThumbnailRow), name: Notification.Name(rawValue: "resendRow"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(resetThumbnailRow), name: Notification.Name(rawValue: Constants.MESSAGES.RESEND_THUMBNAIL_ROW), object: nil)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(updateMimicDevicesAndCentralState), name: Notification.Name(rawValue: "updateCBCentralState"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateMimicDevicesAndCentralState), name: Notification.Name(rawValue: Constants.MESSAGES.UPDATE_CBCENTRAL_STATE), object: nil)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(startScan), name: Notification.Name(rawValue: "startScanning"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(startScan), name: Notification.Name(rawValue: Constants.MESSAGES.START_SCAN), object: nil)
 
         
         
@@ -478,7 +478,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             print(peripherals);
             
             
-            NotificationCenter.default.post(name: Notification.Name(rawValue: "discoveredNewPeripherals"), object: nil);
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.DISCOVERED_NEW_PERIPHERALS), object: nil);
             
             startScan();
             
@@ -538,7 +538,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             let rxInt = Int(receivedArray[0]);
             
             
-            print("received \(receivedArray) from \(peripheral.name)");
+            print("received \(receivedArray) from \(String(describing: peripheral.name))");
             
             
                 // stopping "active request" flag, because a response has been received
@@ -643,14 +643,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     Device.connectedDevice?.currentModeIndex = 1;
                 }
                 
-                NotificationCenter.default.post(name: Notification.Name(rawValue:"gotLimits"), object: nil);
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil);
             }
                 // if the first letter is "G", we're getting the brightness, on a scale from 0-255;
             else if (rxString?.prefix(1) == "G") //[(rxString?.startIndex)!] == "G")
             {
                 print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]));
                 Device.connectedDevice?.brightness = Int(rxValue[1]);
-                NotificationCenter.default.post(name: Notification.Name(rawValue: "gotBrightness"), object: nil);
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BRIGHTNESS_VALUE), object: nil);
             }
                 // if the first letter is "B", we're getting the battery, which must be manipulated to give percentage
             else if (rxString?.prefix(1) == "B")
@@ -662,7 +662,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 let voltage = (Float(ADCValue) / 1024) * 16.5;
                     // calculates the battery percentage given the voltage
                 Device.connectedDevice?.batteryPercentage = calculateBatteryPercentage(voltage);
-                NotificationCenter.default.post(name: Notification.Name(rawValue: "gotBattery"), object: nil);
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BATTERY_VALUE), object: nil);
             }
                 // if the first letter is "M", we're getting details about a mode, and need to add it to the Device.connectedDevice's list
             else if (rxString?.prefix(1) == "M")
@@ -720,7 +720,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     }
                     Device.connectedDevice?.currentlyRevertingMode = false;
                     print("No longer looking for modes for reversion, ready to send message to EditScreenViewController");
-                    NotificationCenter.default.post(name: Notification.Name(rawValue: "revertedMode"), object: nil);
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_MODE_VALUE), object: nil);
                 }
                 
                 Device.connectedDevice?.requestedName = false;
@@ -757,7 +757,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 if ((Device.connectedDevice?.requestedModeChange)!)
                 {
                     Device.connectedDevice?.requestedModeChange = false;
-                    NotificationCenter.default.post(name: Notification.Name(rawValue: "changedMode"), object: nil);
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil);
                 }
                 
                     // we need to know if the standby was set, in order to do other things in the setup loop
@@ -809,13 +809,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     print("String recieved: " + (rxString ?? "ERROR"));
                 }
             }
-            NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
+            //NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
         }
             // receiving from other characteristics, most likely the mimic devices' rxCharacteristics
         else
         {
                 // print the value and source
-            print(" \(characteristic.value) received from \(peripheral.name)");
+            print(" \(String(describing: characteristic.value)) received from \(String(describing: peripheral.name))");
         }
         
         
@@ -919,7 +919,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         }
         else
         {
-            Device.connectedDevice?.connectedMimicDevices += [Device(mimicDevicePeripheral: peripheral)];
+            var newDevice = Device(mimicDevicePeripheral: peripheral);
+                // setting the UUID
+            newDevice.UUID = newDevice.peripheral.identifier as NSUUID;
+            
+            //sendBLEPacketsToConnectedPeripherals(
+            
+            Device.connectedDevice?.connectedMimicDevices += [newDevice];
             
             updateMimicDevicesAndCentralState();
         }
@@ -1107,7 +1113,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // set flag
                     Device.connectedDevice?.hasDiscoveredCharacteristics = true;
                     // notify connection button that it can be enabled
-                    NotificationCenter.default.post(name: Notification.Name(rawValue: "didDiscoverPeripheralCharacteristics"), object: nil);
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.DISCOVERED_PRIMARY_CHARACTERISTICS), object: nil);
                 }
                 
                     // looks for the battery level characteristic (Never called, because we don't look for the battery service
@@ -1123,10 +1129,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     //            }
                 
                 peripheral.discoverDescriptors(for: characteristic);
-                
             }
-            
-            
         }
         else
         {
@@ -1153,7 +1156,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         // set a reference to this characteristic in the device
                         mimicDevice?.setTXCharacteristic(characteristic);
                         mimicDevice?.hasDiscoveredCharacteristics = true;
-                        print("Tx Characteristic of mimic device \(mimicDevice?.name): \(characteristic.uuid)");
+                        print("Tx Characteristic of mimic device \(String(describing: mimicDevice?.name)): \(characteristic.uuid)");
+                        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.DISCOVERED_MIMIC_CHARACTERISTICS), object: nil);
                     }
                     
                 }
@@ -1235,7 +1239,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             centralManager?.cancelPeripheralConnection(Device.connectedDevice!.peripheral);
             Device.connectedDevice!.isConnected = false;
             Device.connectedDevice!.hasDiscoveredCharacteristics = false;
-            Device.connectedDevice? = Device(true);
+            //Device.connectedDevice? = Device(true);
                 // setting the connectedDevice to the "emptyDevice" placeholder
             
             BLEConnectionTableViewController.CBCentralState = .UNCONNECTED_SCANNING_FOR_PRIMARY;
@@ -1246,8 +1250,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         {
             Device.connectedDevice!.isConnected = false;
             Device.connectedDevice!.hasDiscoveredCharacteristics = false;
-            Device.connectedDevice? = Device(true);
+            //Device.connectedDevice? = Device(true);
         }
+        Device.connectedDevice? = Device(true);
     }
     
     func disconnectAllDevices()
@@ -1570,7 +1575,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             {
                 BLEConnectionTableViewController.CBCentralState = .SCANNING_FOR_MIMICS_TO_CONNECT;
                 print(BLEConnectionTableViewController.CBCentralState);
-                NotificationCenter.default.post(name: Notification.Name(rawValue: "startScanning"), object: nil);
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.START_SCAN), object: nil);
             }
                 // otherwise we're good and don't need to scan
             else
