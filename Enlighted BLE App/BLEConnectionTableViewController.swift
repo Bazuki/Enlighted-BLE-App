@@ -27,6 +27,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     static var advertisingPeripherals = [CBPeripheral]();
     
+    static var advertisingRSSIs = [NSNumber]();
+    
+    static var nicknames = [String]();
+    
         // The devices that show up on the connection screen.
     var visibleDevices = [Device]();
     
@@ -117,7 +121,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         super.viewWillAppear(animated);
         
             // load cached devices
-        cachedDevices = loadDevices() ?? [Device]();
+        cachedDevices = BLEConnectionTableViewController.loadDevices() ?? [Device]();
         
         //centralManager = CBCentralManager(delegate:self, queue: nil);
         
@@ -332,6 +336,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
             // making the peripherals visible from anywhere
         BLEConnectionTableViewController.advertisingPeripherals = peripherals;
+        BLEConnectionTableViewController.advertisingRSSIs = RSSIs;
         
         // if we're scanning for a primary device, update that list
         if (BLEConnectionTableViewController.CBCentralState == .UNCONNECTED_SCANNING_FOR_PRIMARY || BLEConnectionTableViewController.CBCentralState == .CONNECTED_SCANNING_FOR_PRIMARY)
@@ -471,6 +476,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         {
             print("We are looking for mimic devices to display on the Choose Mimic Device To Display screen");
             print(peripherals);
+            
             
             NotificationCenter.default.post(name: Notification.Name(rawValue: "discoveredNewPeripherals"), object: nil);
             
@@ -1685,7 +1691,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     }
     
         // loads stored Devices from storage, so that we can circumvent having to load
-    private func loadDevices() -> [Device]?
+    static func loadDevices() -> [Device]?
     {
         return NSKeyedUnarchiver.unarchiveObject(withFile: Device.ArchiveURL.path) as? [Device];
     }

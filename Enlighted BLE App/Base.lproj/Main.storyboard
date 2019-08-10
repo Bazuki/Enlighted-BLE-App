@@ -162,7 +162,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="50" minValue="1" maxValue="255" continuous="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oOd-f8-Sd2">
-                                <rect key="frame" x="14" y="300.5" width="347" height="29"/>
+                                <rect key="frame" x="14" y="297" width="347" height="29"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="28" id="DIr-ZR-QLh"/>
                                 </constraints>
@@ -172,7 +172,7 @@
                                 </connections>
                             </slider>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Brightness" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="8d0-BG-XPn">
-                                <rect key="frame" x="16" y="268.5" width="343" height="21"/>
+                                <rect key="frame" x="16" y="265" width="343" height="21"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="21" id="6nK-n1-uy6"/>
                                 </constraints>
@@ -205,12 +205,12 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="characterWrap" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="KiC-bX-rXI">
-                                <rect key="frame" x="16" y="340.5" width="343" height="35.5"/>
+                                <rect key="frame" x="16" y="337" width="343" height="37.5"/>
                                 <state key="normal">
                                     <attributedString key="attributedTitle">
                                         <fragment content="Reload All Settings from Hardware">
                                             <attributes>
-                                                <font key="NSFont" metaFont="system" size="20"/>
+                                                <font key="NSFont" size="22" name=".SFNSDisplay"/>
                                                 <paragraphStyle key="NSParagraphStyle" alignment="center" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
                                             </attributes>
                                         </fragment>
@@ -220,7 +220,7 @@
                                     <action selector="RevertToOriginalSettings:" destination="R0A-of-WvX" eventType="touchUpInside" id="wZh-nt-cNe"/>
                                 </connections>
                             </button>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Version 1.0.16" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Version 1.0.17" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
                                 <rect key="frame" x="16" y="578" width="343" height="24"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                 <color key="textColor" name="Subtitle"/>
@@ -242,17 +242,17 @@
                                 </constraints>
                             </imageView>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="6bj-TA-3cI" userLabel="Battery Info">
-                                <rect key="frame" x="130" y="224" width="115" height="36.5"/>
+                                <rect key="frame" x="130" y="224" width="115" height="33"/>
                                 <subviews>
                                     <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="BatteryIndicator" translatesAutoresizingMaskIntoConstraints="NO" id="HID-vS-zhV">
-                                        <rect key="frame" x="0.0" y="0.0" width="45" height="44.5"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="45" height="41"/>
                                         <color key="tintColor" name="Subtitle"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="45" id="tpl-nm-Mtl"/>
                                         </constraints>
                                     </imageView>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="100%" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="r5D-i7-3bl">
-                                        <rect key="frame" x="59" y="0.0" width="56" height="44.5"/>
+                                        <rect key="frame" x="59" y="0.0" width="56" height="41"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                         <color key="textColor" name="Subtitle"/>
                                         <nil key="highlightedColor"/>
@@ -277,7 +277,7 @@
                                     <constraint firstAttribute="height" constant="30" id="CKP-R9-H3Q"/>
                                     <constraint firstAttribute="width" relation="lessThanOrEqual" constant="344" id="sxI-AY-Dgo"/>
                                 </constraints>
-                                <color key="textColor" name="Subtitle"/>
+                                <color key="textColor" name="Button"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                 <textInputTraits key="textInputTraits" returnKeyType="done" textContentType="nickname"/>
                                 <connections>
@@ -294,12 +294,12 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="characterWrap" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jjJ-hW-IO8">
-                                <rect key="frame" x="16" y="376.5" width="343" height="36"/>
+                                <rect key="frame" x="16" y="375" width="343" height="37.5"/>
                                 <state key="normal">
                                     <attributedString key="attributedTitle">
                                         <fragment content="Edit Mimic Device Settings">
                                             <attributes>
-                                                <font key="NSFont" metaFont="system" size="20"/>
+                                                <font key="NSFont" size="22" name=".SFNSDisplay"/>
                                                 <paragraphStyle key="NSParagraphStyle" alignment="center" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
                                             </attributes>
                                         </fragment>
@@ -1080,6 +1080,9 @@
         <image name="SettingsIcon" width="50" height="50"/>
         <namedColor name="Background">
             <color red="0.210999995470047" green="0.210999995470047" blue="0.210999995470047" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="Button">
+            <color red="0.72899997234344482" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
         <namedColor name="NavigationHeader">
             <color red="0.11764705882352941" green="0.11764705882352941" blue="0.11764705882352941" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
