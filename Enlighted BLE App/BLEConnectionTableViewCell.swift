@@ -110,7 +110,6 @@ class BLEConnectionTableViewCell: UITableViewCell
     
     func updateRSSIValue(_ newRSSI: Int)
     {
-        
             // 127 is a sort of nil value, and so will be ignored (if the device is truly disconnected, it will be removed within half a second).
         if (newRSSI == 127)
         {

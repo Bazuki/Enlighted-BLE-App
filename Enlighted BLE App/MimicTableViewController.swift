@@ -78,27 +78,30 @@ class MimicTableViewController: UITableViewController
             fatalError("The dequeued cell is not an instance of MimicTableViewCell.");
         }
 
+        var cellRepresentsAdvertisingOrConnectedDevice = true;
             // a reference to the peripheral that's represented in this cell
         let peripheral = devicesToDisplay[indexPath.row].peripheral;
         
         cell.deviceNameLabel.text = "\(devicesToDisplay[indexPath.row].name)\(devicesToDisplay[indexPath.row].nickname)";
-        if (devicesToDisplay[indexPath.row].RSSI == -2)
+        
+        if (devicesToDisplay[indexPath.row].RSSI == -3)
         {
-            cell.RSSIValueLabel.text = "Connected";
+            cellRepresentsAdvertisingOrConnectedDevice = false;
         }
-        else
-        {
-            cell.RSSIValueLabel.text = "RSSI: \(devicesToDisplay[indexPath.row].RSSI)";
-        }
+        
+        cell.isOn = cellRepresentsAdvertisingOrConnectedDevice;
+        
+        cell.updateRSSIValue(devicesToDisplay[indexPath.row].RSSI)
         //\( )";
         cell.peripheral = peripheral;
+        cell.NSUUID = devicesToDisplay[indexPath.row].UUID;
+        // if the device is currently set as a mimic, show it as on
+        cell.mimicStatusSwitch.isOn = (Device.connectedDevice!.mimicList.contains(devicesToDisplay[indexPath.row].UUID));
         
-            // if the device is currently set as a mimic, show it as on
-        cell.mimicStatusSwitch.isOn = (Device.connectedDevice!.mimicList.contains(peripheral?.identifier as! NSUUID));
         
         
         
-        // Configure the cell...
+        
 
         return cell
     }
@@ -127,13 +130,46 @@ class MimicTableViewController: UITableViewController
                 newDevice.UUID = newDevice.peripheral.identifier as NSUUID;
                 //newDevice.nickname = BLEConnectionTableViewController.nicknames[i];
                 
-                
-                newDevices += [newDevice]
+                    // only add the device if it's in the cache (i.e. previously connected)
+                //if (cacheContainsUUID(identifier: newDevice.peripheral.identifier))
+                //{
+                    newDevices += [newDevice]
+                //}
             }
         }
         
         visibleDevices += newDevices;
         
+        // finding out what devices are on the mimic list but not currently advertising
+        var remainingMimicDevices = Device.connectedDevice!.mimicList;
+        
+        for peripheral in BLEConnectionTableViewController.advertisingPeripherals
+        {
+            if let indexOfUUID = remainingMimicDevices.firstIndex(of: peripheral.identifier as NSUUID)
+            {
+                remainingMimicDevices.remove(at: indexOfUUID);
+            }
+        }
+        
+        for device in Device.connectedDevice!.connectedMimicDevices
+        {
+            if let indexOfUUID = remainingMimicDevices.firstIndex(of: device.peripheral.identifier as NSUUID)
+            {
+                remainingMimicDevices.remove(at: indexOfUUID);
+            }
+        }
+        
+        for NSUUID in remainingMimicDevices
+        {
+                // if we find a cached primary name, use that, otherwise use the cached mimic/secondary name
+            var newDevice = Device(mimicDeviceName: getNameForUUID(NSUUID as UUID) ??  Device.connectedDevice!.mimicListNames[Device.connectedDevice!.mimicList.firstIndex(of: NSUUID)!]);
+            if newDevice != nil
+            {
+                newDevice.RSSI = -3;
+                newDevice.UUID = NSUUID;
+                visibleDevices += [newDevice];
+            }
+        }
         
         if (visibleDevices.count > 0)
         {
@@ -141,25 +177,9 @@ class MimicTableViewController: UITableViewController
             // discovering nicknames
             for i in 0...(visibleDevices.count - 1)
             {
-                if (cachedDevices.count > 0)
-                {
-                    // by default, there's no nickname
-                    visibleDevices[i].nickname = "";
-                    
-                    let backwardsIndex = cachedDevices.count - 1;
-                    // going through cache to see if we can match the name
-                    for j in 0...(cachedDevices.count - 1)
-                    {
-                        // if we recognize it in the cache, save the nickname
-                        if (cachedDevices[backwardsIndex - j].UUID! as UUID == visibleDevices[i].peripheral.identifier)
-                        {
-                            visibleDevices[i].nickname = " – \(cachedDevices[backwardsIndex - j].nickname)";
-                            
-                            print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total), adding nickname to visible device list");
-                        }
-                    }
-                }
+                visibleDevices[i].nickname = getNicknameForUUID(visibleDevices[i].UUID as UUID);
             }
+            
             
 //                // separating into lists of devices on and not on the mimic list
 //            for i in 0...(visibleDevices.count - 1)
@@ -249,6 +269,87 @@ class MimicTableViewController: UITableViewController
         
         // Get the new view controller using segue.destination.
         // Pass the selected object to the new view controller.
+    }
+    
+    // MARK: - Private Methods
+    
+    func getNicknameForUUID(_ identifier: UUID) -> String
+    {
+        var nickname = "";
+        
+        if (cachedDevices.count > 0)
+        {
+            
+            //visibleDevices[i].nickname = "";
+            
+            let backwardsIndex = cachedDevices.count - 1;
+            // going through cache to see if we can match the name
+            for j in 0...(cachedDevices.count - 1)
+            {
+                // if we recognize it in the cache, save the nickname
+                if (cachedDevices[backwardsIndex - j].UUID! as UUID == identifier)
+                {
+                    nickname = " – \(cachedDevices[backwardsIndex - j].nickname)";
+                    
+                    print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total)");
+                    
+                    //return cachedDevices[backwardsIndex - j];
+                }
+            }
+        }
+        
+        return nickname;
+    }
+    
+    func getNameForUUID(_ identifier: UUID) -> String?
+    {
+        
+        if (cachedDevices.count > 0)
+        {
+            
+            //visibleDevices[i].nickname = "";
+            
+            let backwardsIndex = cachedDevices.count - 1;
+            // going through cache to see if we can match the name
+            for j in 0...(cachedDevices.count - 1)
+            {
+                // if we recognize it in the cache, save the nickname
+                if (cachedDevices[backwardsIndex - j].UUID! as UUID == identifier)
+                {
+                    return cachedDevices[backwardsIndex - j].name;
+                    
+                    print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total)");
+                    
+                    //return cachedDevices[backwardsIndex - j];
+                }
+            }
+        }
+        
+        return nil;
+    }
+    
+    
+    // if the cache contains an item with the given UUID, it will return true; if there's no cache, or no such item in the cache, it'll return false.
+    func cacheContainsUUID(identifier: UUID) -> Bool
+    {
+        if (cachedDevices.count > 0)
+        {
+            
+            //visibleDevices[i].nickname = "";
+            
+            let backwardsIndex = cachedDevices.count - 1;
+            // going through cache to see if we can match the name
+            for j in 0...(cachedDevices.count - 1)
+            {
+                // if we recognize it in the cache, save the nickname
+                if (cachedDevices[backwardsIndex - j].UUID! as UUID == identifier)
+                {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
  
     

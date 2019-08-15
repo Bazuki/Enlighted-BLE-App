@@ -47,6 +47,12 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
             // setting the nickname editor delegate
         nicknameField.delegate = self;
         
+        
+        var placeholderTextColor = UIColor(named: "Button");
+            // making it have half opacity
+        placeholderTextColor = placeholderTextColor?.withAlphaComponent(0.75)
+        nicknameField.attributedPlaceholder = NSAttributedString(string: "Add Nickname", attributes: [NSAttributedString.Key.foregroundColor: placeholderTextColor]);
+        
             // creating references to the battery images
         batteryIcons.append(UIImage(named: "BatteryEmpty")!);
         batteryIcons.append(UIImage(named: "Battery1")!);
@@ -164,7 +170,11 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     }
     
     
-    
+//    func drawPlaceholder(in rect: CGRect)
+//    {
+//        nicknameField.place
+//        super.drawPlaceholder(rect);
+//    }
     
     
     // MARK: Actions

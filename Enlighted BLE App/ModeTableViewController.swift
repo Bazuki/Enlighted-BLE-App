@@ -261,10 +261,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // if we have a mimic list already, and we haven't asked what the user wants to do with it yet, ask what the user wants to do with it
             if (deviceHasMimicList && !Device.connectedDevice!.promptedMimicListSettings)
             {
-                let dialogMessage = UIAlertController(title:"Mimic List Found", message: "A cached list of mimic devices was found.  Do you want to use the same mimic device settings?.", preferredStyle: .alert);
+                let dialogMessage = UIAlertController(title:"Mimic List Found", message: "A cached list of mimic devices was found.  Do you want to use the same mimic device list?.", preferredStyle: .alert);
                 
                 // defining the change settings button
-                let changeSettings = UIAlertAction(title: "No, change settings", style: .destructive, handler:
+                let changeSettings = UIAlertAction(title: "No, change list", style: .destructive, handler:
                 {(action) -> Void in
                     
                     
@@ -278,9 +278,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 })
                 
                 // defining the keep settings button
-                let keepSettings = UIAlertAction(title: "Yes, keep settings", style: .default)
+                let keepSettings = UIAlertAction(title: "Yes, keep list", style: .default)
                 { (action) -> Void in
-                    print("settings kept");
+                    print("mimic list kept");
                     BLEConnectionTableViewController.CBCentralState = .SCANNING_FOR_MIMICS_TO_CONNECT;
                     NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.START_SCAN), object: nil);
                     print(BLEConnectionTableViewController.CBCentralState);

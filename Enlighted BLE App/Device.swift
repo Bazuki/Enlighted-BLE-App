@@ -27,6 +27,7 @@ class Device: NSObject, NSCoding
         static let nickname = "nickname";
         static let NSUUID = "nsuuid";
         static let mimicList = "mimiclist";
+        static let mimicListNames = "mimicListNames";
     }
     
     // MARK: Archiving Paths
@@ -53,6 +54,8 @@ class Device: NSObject, NSCoding
     
         // a list of all the "mimic devices" that this device should command
     var mimicList = [NSUUID]();
+    
+    var mimicListNames = [String]();
     
         // a list of all the actual mimic devices this device is currently commanding
     var connectedMimicDevices = [Device]();
@@ -134,7 +137,32 @@ class Device: NSObject, NSCoding
     }
     
     
-        // constructor from cache with mimic list discovered
+    // constructor from cache with everything discovered
+    init(name: String, nickname: String, modes: [Mode], thumbnails: [UIImage], UUID: NSUUID, mimicList: [NSUUID], mimicListNames: [String])
+    {
+        self.name = name;
+        self.nickname = nickname;
+        self.RSSI = -1;
+        self.peripheral = nil;
+        self.UUID = UUID;
+        self.mimicList = mimicList;
+        self.mimicListNames = mimicListNames;
+        
+        self.modes = modes;
+        self.thumbnails = thumbnails;
+        
+        // will also need to be read and set with the new protocol
+        currentModeIndex = -1;
+        maxNumModes = -1;
+        maxBitmaps = -1;
+        brightness = -1;
+        
+        isConnected = false;
+        isConnecting = false;
+        hasDiscoveredCharacteristics = false;
+    }
+    
+        // constructor from cache with mimic list discovered but no mimic names array
     init(name: String, nickname: String, modes: [Mode], thumbnails: [UIImage], UUID: NSUUID, mimicList: [NSUUID])
     {
         self.name = name;
@@ -230,6 +258,22 @@ class Device: NSObject, NSCoding
         hasDiscoveredCharacteristics = false;
     }
     
+        // an initializer to show mimics that are on the mimic list but not advertising
+    init(mimicDeviceName: String)
+    {
+        self.name = mimicDeviceName;
+        //self.peripheral = mimicDevicePeripheral;
+        isDemoDevice = false;
+        RSSI = -1;
+        currentModeIndex = -1;
+        maxNumModes = -1;
+        maxBitmaps = -1;
+        brightness = -1;
+        isConnected = true;
+        isConnecting = false
+        hasDiscoveredCharacteristics = false;
+    }
+    
         // as a placeholder when disconnecting from a device.
     init(_ emptyDevice: Bool)
     {
@@ -304,6 +348,7 @@ class Device: NSObject, NSCoding
         //print("Just encoded \(modes.count) modes");
         aCoder.encode(thumbnails, forKey: PropertyKey.thumbnails);
         aCoder.encode(mimicList, forKey: PropertyKey.mimicList);
+        aCoder.encode(mimicListNames, forKey: PropertyKey.mimicListNames);
     }
     
     required convenience init?(coder aDecoder: NSCoder)
@@ -346,8 +391,15 @@ class Device: NSObject, NSCoding
             return;
         }
         
+        guard let mimicListNames = aDecoder.decodeObject(forKey: PropertyKey.mimicListNames) as? [String] else
+        {
+            os_log("Unable to decode the mimic list names for the Device.", log: OSLog.default, type: .debug);
+            self.init(name: name, nickname: nickname, modes: modes, thumbnails: thumbnails, UUID: UUID, mimicList: mimicList);
+            return;
+        }
+        
             // must call designated initializer.
-        self.init(name: name, nickname: nickname, modes: modes, thumbnails: thumbnails, UUID: UUID, mimicList: mimicList);
+        self.init(name: name, nickname: nickname, modes: modes, thumbnails: thumbnails, UUID: UUID, mimicList: mimicList, mimicListNames: mimicListNames);
     }
 }
 
