@@ -281,9 +281,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 let keepSettings = UIAlertAction(title: "Yes, keep list", style: .default)
                 { (action) -> Void in
                     print("mimic list kept");
-                    BLEConnectionTableViewController.CBCentralState = .SCANNING_FOR_MIMICS_TO_CONNECT;
-                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.START_SCAN), object: nil);
-                    print(BLEConnectionTableViewController.CBCentralState);
+                    //BLEConnectionTableViewController.CBCentralState = .SCANNING_FOR_MIMICS_TO_CONNECT;
+                    //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.START_SCAN), object: nil);
+                    //print(BLEConnectionTableViewController.CBCentralState);
                 }
                 
                 // add the buttons to the message
@@ -296,12 +296,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             else
             {
                 Device.connectedDevice!.promptedMimicListSettings = true;
-                BLEConnectionTableViewController.CBCentralState = .NOT_SCANNING_FOR_MIMICS;
-                print(BLEConnectionTableViewController.CBCentralState);
+                //BLEConnectionTableViewController.CBCentralState = .NOT_SCANNING_FOR_MIMICS;
+                //print(BLEConnectionTableViewController.CBCentralState);
             }
             
                 // update the CBCentralState, depending on the length/status of the mimic list
-            //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.UPDATE_CBCENTRAL_STATE), object: nil);
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.UPDATE_CBCENTRAL_STATE), object: nil);
             
                 // enabling the settings button when showing modes
             self.navigationItem.rightBarButtonItem?.isEnabled = true;

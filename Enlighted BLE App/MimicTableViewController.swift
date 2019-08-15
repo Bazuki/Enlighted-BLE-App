@@ -289,11 +289,15 @@ class MimicTableViewController: UITableViewController
                 // if we recognize it in the cache, save the nickname
                 if (cachedDevices[backwardsIndex - j].UUID! as UUID == identifier)
                 {
-                    nickname = " – \(cachedDevices[backwardsIndex - j].nickname)";
-                    
-                    print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total)");
-                    
-                    //return cachedDevices[backwardsIndex - j];
+                    if (cachedDevices[backwardsIndex - j].nickname != "")
+                    {
+                        nickname = " – \(cachedDevices[backwardsIndex - j].nickname)";
+                        print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total)");
+                    }
+                    else
+                    {
+                        print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total), but didn't find a suitable nickname");
+                    }
                 }
             }
         }

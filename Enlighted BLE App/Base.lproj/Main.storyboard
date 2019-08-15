@@ -198,7 +198,7 @@
                                 <color key="textColor" name="Title"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 1.0.19" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 1.0.20" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
                                 <rect key="frame" x="17" y="578" width="344" height="24"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                 <color key="textColor" name="Subtitle"/>
@@ -325,8 +325,8 @@
                                     <constraint firstItem="Vj8-K3-bAZ" firstAttribute="centerX" secondItem="DSr-Os-0T6" secondAttribute="centerX" id="k0G-mj-95O"/>
                                 </constraints>
                             </view>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="6bj-TA-3cI" userLabel="Battery Info">
-                                <rect key="frame" x="130" y="306" width="115" height="37"/>
+                            <view contentMode="scaleToFill" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6bj-TA-3cI" userLabel="Battery Info">
+                                <rect key="frame" x="130" y="303" width="115" height="37"/>
                                 <subviews>
                                     <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="BatteryIndicator" translatesAutoresizingMaskIntoConstraints="NO" id="HID-vS-zhV">
                                         <rect key="frame" x="0.0" y="0.0" width="45" height="45"/>
@@ -356,7 +356,7 @@
                         </subviews>
                         <color key="backgroundColor" red="0.26051741839999998" green="0.2605243921" blue="0.260520637" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="9c8-Ue-bgf" firstAttribute="centerX" secondItem="6bj-TA-3cI" secondAttribute="centerX" id="0Dv-Vn-QxY"/>
+                            <constraint firstAttribute="centerX" secondItem="6bj-TA-3cI" secondAttribute="centerX" id="0Dv-Vn-QxY"/>
                             <constraint firstItem="FCc-N4-AeS" firstAttribute="top" secondItem="DSr-Os-0T6" secondAttribute="bottom" id="0G1-0r-Lcc"/>
                             <constraint firstItem="oOd-f8-Sd2" firstAttribute="leading" secondItem="U9a-y1-1Rd" secondAttribute="leading" id="2TL-kY-SYW"/>
                             <constraint firstItem="8d0-BG-XPn" firstAttribute="top" secondItem="6bj-TA-3cI" secondAttribute="bottom" constant="3" id="2ey-5Q-mzX"/>
@@ -1124,6 +1124,9 @@
         <image name="SettingsIcon" width="50" height="50"/>
         <namedColor name="Background">
             <color red="0.210999995470047" green="0.210999995470047" blue="0.210999995470047" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="Button">
+            <color red="0.72899997234344482" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
         <namedColor name="Button">
             <color red="0.72899997234344482" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
