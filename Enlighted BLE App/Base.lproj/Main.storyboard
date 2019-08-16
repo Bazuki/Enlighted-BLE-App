@@ -198,7 +198,7 @@
                                 <color key="textColor" name="Title"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 1.0.20" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 1.0.21" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
                                 <rect key="frame" x="17" y="578" width="344" height="24"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                 <color key="textColor" name="Subtitle"/>
@@ -336,7 +336,7 @@
                                         </constraints>
                                     </imageView>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="100%" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="r5D-i7-3bl">
-                                        <rect key="frame" x="59" y="0.0" width="56" height="45"/>
+                                        <rect key="frame" x="59" y="0.0" width="50.5" height="45"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                         <color key="textColor" name="Subtitle"/>
                                         <nil key="highlightedColor"/>
@@ -373,7 +373,7 @@
                             <constraint firstItem="aDK-hd-M3S" firstAttribute="top" secondItem="9c8-Ue-bgf" secondAttribute="bottom" constant="7" id="H8T-wb-NPm"/>
                             <constraint firstItem="DSr-Os-0T6" firstAttribute="trailing" secondItem="FCc-N4-AeS" secondAttribute="trailing" id="PEG-Zr-F3d"/>
                             <constraint firstItem="U9a-y1-1Rd" firstAttribute="leading" secondItem="S4i-ZK-u4N" secondAttribute="leading" id="SSy-ac-Jj8"/>
-                            <constraint firstItem="6bj-TA-3cI" firstAttribute="leading" secondItem="dSf-ow-bAI" secondAttribute="leading" constant="130" id="TmK-V7-vcj"/>
+                            <constraint firstItem="6bj-TA-3cI" firstAttribute="leading" secondItem="dSf-ow-bAI" secondAttribute="leading" priority="250" constant="130" id="TmK-V7-vcj"/>
                             <constraint firstItem="7ie-Tg-p73" firstAttribute="centerX" secondItem="U9a-y1-1Rd" secondAttribute="centerX" id="YZE-fC-1eb"/>
                             <constraint firstItem="DSr-Os-0T6" firstAttribute="leading" secondItem="FCc-N4-AeS" secondAttribute="leading" id="b6O-5L-nxs"/>
                             <constraint firstItem="dSf-ow-bAI" firstAttribute="bottom" secondItem="7ie-Tg-p73" secondAttribute="bottom" constant="82" id="cCa-IT-Zbl"/>
