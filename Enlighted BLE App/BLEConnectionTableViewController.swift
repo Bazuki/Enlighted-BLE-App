@@ -40,8 +40,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // the devices we have stored in memory, which we will recognize by name
     var cachedDevices = [Device]();
     
-        // The bluetooth CentralManager object controlling the connection to peripherals
-    var centralManager : CBCentralManager!;
+        // The bluetooth CentralManager objects controlling the connection to peripherals
+            // one for nRF8001 devices (this is the "main" one, which is checked for state for example, and the nRF51822CentralManager mirrors)
+    var nRF8001CentralManager : CBCentralManager!;
+            // one for nRF51822 devices
+    var nRF51822CentralManager : CBCentralManager!;
     
         // A timer object to help in searching
     var timer = Timer();
@@ -57,6 +60,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // want to get "real" names from advertising data
     var peripheralNames = [String]();
     var RSSIs = [NSNumber]();
+    var types = [Constants.PERIPHERAL_TYPE]();
     var data = NSMutableData();
     
         // variables to help in parsing names
@@ -93,8 +97,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // storing the height of the searching indicator, so we can restore it to this height if we have to re-load
         initialSearchingIndicatorHeight = searchingIndicator.frame.size.height;
         
-        
-        centralManager = CBCentralManager(delegate:self, queue: nil);
+        // initializing both central managers
+        nRF8001CentralManager = CBCentralManager(delegate:self, queue: nil);
+        nRF51822CentralManager = CBCentralManager(delegate:self, queue: nil);
         
         NotificationCenter.default.addObserver(self, selector: #selector(resetThumbnailRow), name: Notification.Name(rawValue: Constants.MESSAGES.RESEND_THUMBNAIL_ROW), object: nil)
         
@@ -166,7 +171,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         super.viewDidAppear(animated);
         
             // if bluetooth isn't enabled
-        if (centralManager.state != CBManagerState.poweredOn)
+        if (nRF8001CentralManager.state != CBManagerState.poweredOn)
         {
                 // make it possible to show the demo mode eventually
             if !(self.canShowDemoDevice)
@@ -198,14 +203,15 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         if central.state == CBManagerState.poweredOn
         {
-            print("Bluetooth Enabled")
+            print("Bluetooth Enabled, \(central) is active")
             startScan();
             
             // should scan multiple times
             
             //scanTimer = Timer.scheduledTimer(timeInterval: scanTimeInterval, target: self, selector: #selector(startScan), userInfo: nil, repeats: true);// startScan();
         }
-        else
+            // we only want to do these actions once (the disconnectFromPrimaryDevice function can handle devices of either type)
+        else if (central == nRF8001CentralManager)
         {
             print("Should go to the Connect Screen at this point");
             _ = self.navigationController?.popToRootViewController(animated: true);
@@ -215,6 +221,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             peripherals = [CBPeripheral]();
             peripheralNames = [String]();
             RSSIs = [NSNumber]();
+            types = [Constants.PERIPHERAL_TYPE]();
+            
             visibleDevices = [Device]();
             deviceTableView.reloadData();
             
@@ -259,14 +267,40 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         if (advertisedName.prefix(3) == "ENL")
         {
-            print("Found a new device \(advertisedName), cached name \(String(describing: peripheral.name)), adding it, its advertised name, and its RSSI to the list");
+            print("Found a device \(advertisedName), cached name \(String(describing: peripheral.name)), adding it, its advertised name, and its RSSI to the list");
             self.peripherals.append(peripheral);
             self.peripheralNames.append(advertisedName);
             self.RSSIs.append(RSSI);
+                // specifying the type based on which central discovered the peripheral
+            if (central == nRF8001CentralManager)
+            {
+                self.types.append(.nRF8001);
+            }
+            else if (central == nRF51822CentralManager)
+            {
+                self.types.append(.nRF51822);
+            }
+            else
+            {
+                self.types.append(.UNKNOWN);
+            }
+            
         }
         else
         {
-            print("Found a new device \(advertisedName), but it doesn't look like it's an Enlighted device, so it will be excluded from the list");
+            print("Found a new device \(advertisedName) with UUID \(peripheral.identifier.description), but it doesn't look like it's an Enlighted device, so it will be excluded from the list");
+            
+            let advertisedServiceUUIDs = advertisementData[CBAdvertisementDataServiceUUIDsKey] as! [CBUUID];
+            print(advertisedServiceUUIDs);
+//            if (advertisedServiceUUIDs.contains(nRF8001_BLEService_UUID))
+//            {
+//                print("This device is advertising the nRF8001 Uart service UUID");
+//            }
+//            if (advertisedServiceUUIDs.contains(nRF51822_BLEService_UUID))
+//            {
+//                print("This device is advertising the nRF51822 Uart service UUID");
+//            }
+            
             return;
         }
         
@@ -293,7 +327,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         let scanTime = Constants.SCAN_DURATION;
         
             // don't scan if we can't
-        if (centralManager.state != CBManagerState.poweredOn)
+        if (nRF8001CentralManager.state != CBManagerState.poweredOn)
         {
             print("Bluetooth isn't available right now, make sure it's activated on your phone");
             return;
@@ -320,17 +354,21 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         peripherals = [CBPeripheral]();
         peripheralNames = [String]();
         RSSIs = [NSNumber]();
+        types = [Constants.PERIPHERAL_TYPE]();
         
         print("Now scanning...");
         self.timer.invalidate();
-        centralManager?.scanForPeripherals(withServices: [BLEService_UUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey:false])
+            // scanning with both centralmanagers, for different service UUIDs
+        nRF8001CentralManager?.scanForPeripherals(withServices: [nRF8001_BLEService_UUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey:false])
+        nRF51822CentralManager?.scanForPeripherals(withServices: [nRF51822_BLEService_UUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey:false])
         self.timer = Timer.scheduledTimer(timeInterval: scanTime, target: self, selector: #selector(self.cancelScan), userInfo: nil, repeats: false);
     }
     
         // cancelling the scan for peripherals
     @objc func cancelScan()
     {
-        self.centralManager?.stopScan()
+        self.nRF8001CentralManager?.stopScan()
+        self.nRF51822CentralManager?.stopScan()
         print("Scan Stopped")
         print("Number of Peripherals Found: \(peripherals.count)")
         
@@ -365,6 +403,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         peripherals.remove(at: foundPeripheralIndex);
                         peripheralNames.remove(at: foundPeripheralIndex);
                         RSSIs.remove(at: foundPeripheralIndex);
+                        types.remove(at: foundPeripheralIndex);
                         
                         deviceIndex += 1;
                     }
@@ -418,6 +457,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                                 newDevice.RSSI = RSSIs[i].intValue;
                                     // because we may have cached an old name, overwriting it here
                                 newDevice.name = peripheralNames[i];
+                                newDevice.hardwareType = types[i];
                                 visibleDevices.append(newDevice);
                                 foundCachedDevice = true;
                                 print("We recognized it from our cache at index \(backwardsIndex - j) (out of \(backwardsIndex + 1) total), adding \(peripheralNames[i]) to visible device list");
@@ -430,13 +470,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         {
                             // otherwise create a brand-new device
                             print("Didn't recognize it from cache, creating new device");
-                            visibleDevices.append(Device(name: peripheralNames[i], RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
+                            visibleDevices.append(Device(name: peripheralNames[i], RSSI: RSSIs[i].intValue, peripheral: peripherals[i], type: types[i]));
                         }
                     }
                     else
                     {
                         // otherwise create a brand-new device
-                        visibleDevices.append(Device(name: peripheralNames[i], RSSI: RSSIs[i].intValue, peripheral: peripherals[i]));
+                        visibleDevices.append(Device(name: peripheralNames[i], RSSI: RSSIs[i].intValue, peripheral: peripherals[i], type: types[i]));
                     }
                 }
             }
@@ -493,7 +533,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     if (Device.connectedDevice!.mimicList.contains(peripherals[i].identifier as NSUUID))
                     {
                             // connect to it (it's added to the "connected mimic devices" list in the callback)
-                        centralManager.connect(peripherals[i], options: nil);
+                        if (types[i] == .nRF8001)
+                        {
+                            nRF8001CentralManager.connect(peripherals[i], options: nil);
+                        }
+                        else if (types[i] == .nRF51822)
+                        {
+                            nRF51822CentralManager.connect(peripherals[i], options: nil);
+                        }
+                        else
+                        {
+                            print("Found mimic device named \(peripheralNames[i]) we would like to connect to, but unable to connect to devices of hardware type \(types[i])");
+                        }
                     }
                 }
             }
@@ -884,7 +935,19 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // connecting to the peripheral of the connected device in Device
     func connectToPrimaryDevice()
     {
-        centralManager.connect(Device.connectedDevice!.peripheral, options: nil);
+        if (Device.connectedDevice?.hardwareType == Constants.PERIPHERAL_TYPE.nRF8001)
+        {
+            nRF8001CentralManager.connect(Device.connectedDevice!.peripheral, options: nil);
+        }
+        else if (Device.connectedDevice?.hardwareType == Constants.PERIPHERAL_TYPE.nRF51822)
+        {
+            nRF51822CentralManager.connect(Device.connectedDevice!.peripheral, options: nil);
+        }
+        else
+        {
+            print("Attempted to connect to device \(Device.connectedDevice?.name), but unable to connect to devices of hardware type \(Device.connectedDevice?.hardwareType)");
+        }
+        
         
             // making sure the top bar's items are correctly shown/hidden/enabled
         
@@ -922,7 +985,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             var newDevice = Device(mimicDevicePeripheral: peripheral);
                 // setting the UUID
             newDevice.UUID = newDevice.peripheral.identifier as NSUUID;
-            
+            if (central == nRF8001CentralManager)
+            {
+                newDevice.hardwareType = .nRF8001;
+            }
+            else if (central == nRF51822CentralManager)
+            {
+                newDevice.hardwareType = .nRF51822;
+            }
             //sendBLEPacketsToConnectedPeripherals(
             
             Device.connectedDevice?.connectedMimicDevices += [newDevice];
@@ -947,7 +1017,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // Discovery callback
         peripheral.delegate = self;
             // Only look for services that match the transmit UUID
-        peripheral.discoverServices([BLEService_UUID]);
+        peripheral.discoverServices([nRF8001_BLEService_UUID]);
         //peripheral.discoverServices([BLEBatteryService_UUID]);
     }
     
@@ -1083,9 +1153,22 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         print("Found \(characteristics.count) characteristics!");
         
+            // by default, look for the "old" nRF8001 characteristics
+        var BLE_Characteristic_uuid_Rx = nRF8001_Rx_BLECharacteristic_UUID;
+        var BLE_Characteristic_uuid_Tx = nRF8001_Tx_BLECharacteristic_UUID;
+        
+            // but if this is an nRF51822 service/board, use those instead
+        if (service.uuid == nRF51822_BLEService_UUID)
+        {
+            BLE_Characteristic_uuid_Rx = nRF51822_Rx_BLECharacteristic_UUID;
+            BLE_Characteristic_uuid_Tx = nRF51822_Tx_BLECharacteristic_UUID;
+        }
+        
+        
+            // if this is the main connected device
         if (peripheral.identifier as NSUUID == Device.connectedDevice!.peripheral.identifier as! NSUUID)
         {
-        
+            
             for characteristic in characteristics
             {
                     // looks for the read characteristic
@@ -1182,18 +1265,77 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
         print("*******************************************************")
         
-        if error != nil {
+        if error != nil
+        {
             print("\(error.debugDescription)")
             return
         }
-        if ((characteristic.descriptors) != nil) {
-            
+        
+        if (characteristic == Device.connectedDevice?.rxCharacteristic)
+        {
+            print("Discovered primary device's rxCharacteristic's descriptors: ");
+            print("properties: \(String(format:"%02X", characteristic.properties.rawValue))")
+        }
+        else if (characteristic == Device.connectedDevice?.txCharacteristic)
+        {
+            print("Discovered primary device's txCharacteristic's descriptors: ");
+            print("properties: \(String(format:"%02X", characteristic.properties.rawValue))")
+        }
+        
+        if ((characteristic.descriptors) != nil)
+        {
+            print("\(String(describing: characteristic.descriptors?.count)) descriptors discovered: ")
             for x in characteristic.descriptors!{
                 let descript = x as CBDescriptor!
-                print("function name: DidDiscoverDescriptorForChar \(String(describing: descript?.description))")
-                print("Rx Value \(String(describing: rxCharacteristic?.value))")
-                print("Tx Value \(String(describing: txCharacteristic?.value))")
+                peripheral.readValue(for: descript!)
+                print("\(String(describing: descript?.description))")
             }
+        }
+        else
+        {
+            print("no descriptors discovered.");
+        }
+    }
+    
+        // getting descriptor values, from https://stackoverflow.com/questions/42984737/ios-ble-characteristic-user-description
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor descriptor: CBDescriptor, error: Error?)
+    {
+        switch descriptor.uuid.uuidString
+        {
+            case CBUUIDCharacteristicExtendedPropertiesString:
+                guard let properties = descriptor.value as? NSNumber else
+                {
+                    break
+                }
+                print("  Extended properties: \(properties)")
+            case CBUUIDCharacteristicUserDescriptionString:
+                guard let description = descriptor.value as? NSString else
+                {
+                    break
+                }
+                print("  User description: \(description)")
+            case CBUUIDClientCharacteristicConfigurationString:
+                guard let clientConfig = descriptor.value as? NSNumber else
+                {
+                    break
+                }
+                print("  Client configuration: \(clientConfig)")
+            case CBUUIDServerCharacteristicConfigurationString:
+                guard let serverConfig = descriptor.value as? NSNumber else
+                {
+                    break
+                }
+                print("  Server configuration: \(serverConfig)")
+            case CBUUIDCharacteristicFormatString:
+                guard let format = descriptor.value as? NSData else
+                {
+                    break
+                }
+                print("  Format: \(format)")
+            case CBUUIDCharacteristicAggregateFormatString:
+                print("  Aggregate Format: (is not documented)")
+            default:
+                break
         }
     }
     
@@ -1236,7 +1378,19 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         if Device.connectedDevice?.peripheral != nil
         {
-            centralManager?.cancelPeripheralConnection(Device.connectedDevice!.peripheral);
+            if (Device.connectedDevice?.hardwareType == Constants.PERIPHERAL_TYPE.nRF8001)
+            {
+                nRF8001CentralManager?.cancelPeripheralConnection(Device.connectedDevice!.peripheral);
+            }
+            else if (Device.connectedDevice?.hardwareType == Constants.PERIPHERAL_TYPE.nRF51822)
+            {
+                nRF51822CentralManager?.cancelPeripheralConnection(Device.connectedDevice!.peripheral);
+            }
+            else
+            {
+                 print("Attempted to disconnect from device \(Device.connectedDevice?.name), but unable to find an appropriate central for devices of hardware type \(Device.connectedDevice?.hardwareType) (was the type changed after connection?)");
+            }
+            
             Device.connectedDevice!.isConnected = false;
             Device.connectedDevice!.hasDiscoveredCharacteristics = false;
             //Device.connectedDevice? = Device(true);
@@ -1259,15 +1413,27 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         disconnectFromPrimaryDevice();
         
-            // all the currently connected peripherals
-        let peripheralsToDisconnectFrom = centralManager.retrieveConnectedPeripherals(withServices: [BLEService_UUID]);
+            // all the currently connected nRF8001 peripherals
+        let nRF8001PeripheralsToDisconnectFrom = nRF8001CentralManager.retrieveConnectedPeripherals(withServices: [nRF8001_BLEService_UUID]);
         
             // if there are still some left over, we need to disconnect from them
-        if (peripheralsToDisconnectFrom.count > 0)
+        if (nRF8001PeripheralsToDisconnectFrom.count > 0)
         {
-            for i in 0...peripheralsToDisconnectFrom.count - 1
+            for i in 0...nRF8001PeripheralsToDisconnectFrom.count - 1
             {
-                centralManager.cancelPeripheralConnection(peripheralsToDisconnectFrom[i]);
+                nRF8001CentralManager.cancelPeripheralConnection(nRF8001PeripheralsToDisconnectFrom[i]);
+            }
+        }
+        
+        // all the currently connected nRF8001 peripherals
+        let nRF51822PeripheralsToDisconnectFrom = nRF51822CentralManager.retrieveConnectedPeripherals(withServices: [nRF51822_BLEService_UUID]);
+            
+                // if there are still some left over, we need to disconnect from them
+        if (nRF51822PeripheralsToDisconnectFrom.count > 0)
+        {
+            for i in 0...nRF51822PeripheralsToDisconnectFrom.count - 1
+            {
+                nRF51822CentralManager.cancelPeripheralConnection(nRF51822PeripheralsToDisconnectFrom[i]);
             }
         }
     }
@@ -1461,7 +1627,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         
         // stop scanning
-        if (centralManager.state == CBManagerState.poweredOn)
+        if (nRF8001CentralManager.state == CBManagerState.poweredOn)
         {
             cancelScan();
         }
@@ -1559,7 +1725,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 for i in 0...(mimicDevicesToDisconnectFrom.count - 1)
                 {
                     // disconnect from the peripheral
-                    centralManager?.cancelPeripheralConnection(mimicDevicesToDisconnectFrom[i].peripheral);
+                    if (mimicDevicesToDisconnectFrom[i].hardwareType == Constants.PERIPHERAL_TYPE.nRF8001)
+                    {
+                        nRF8001CentralManager?.cancelPeripheralConnection(mimicDevicesToDisconnectFrom[i].peripheral);
+                    }
+                    else if (mimicDevicesToDisconnectFrom[i].hardwareType == Constants.PERIPHERAL_TYPE.nRF51822)
+                    {
+                        nRF51822CentralManager?.cancelPeripheralConnection(mimicDevicesToDisconnectFrom[i].peripheral);
+                    }
+                    else
+                    {
+                         print("Attempted to disconnect from a mimic device, but unable to find an appropriate central for devices of hardware type \(mimicDevicesToDisconnectFrom[i].hardwareType) (was the type changed after connection?)");
+                    }
                     // remove it from the list of connected mimic peripherals
                     Device.connectedDevice!.connectedMimicDevices.remove(at: Device.connectedDevice!.connectedMimicDevices.index(of: mimicDevicesToDisconnectFrom[i])!);
                 }

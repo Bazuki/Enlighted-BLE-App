@@ -57,6 +57,9 @@ class Device: NSObject, NSCoding
     
     var mimicListNames = [String]();
     
+        // the hardware type of this peripheral; set upon discovery by a centralManager
+    var hardwareType = Constants.PERIPHERAL_TYPE.UNKNOWN;
+    
         // a list of all the actual mimic devices this device is currently commanding
     var connectedMimicDevices = [Device]();
     
@@ -116,12 +119,13 @@ class Device: NSObject, NSCoding
     
     // MARK: Initialization
     
-    init(name: String, RSSI: Int, peripheral: CBPeripheral)
+    init(name: String, RSSI: Int, peripheral: CBPeripheral, type: Constants.PERIPHERAL_TYPE)
     {
         self.name = name;
         self.RSSI = RSSI;
         self.peripheral = peripheral;
         self.UUID = peripheral.identifier as NSUUID;
+        self.hardwareType = type;
         
         
         
@@ -227,6 +231,7 @@ class Device: NSObject, NSCoding
         isDemoDevice = true;
         // just for this demo, choosing a random int between 1 and 100 as the "RSSI value"
         RSSI = -1;
+        hardwareType = .DEMO;
         
         // starting at mode -1; in the real app, would read current mode from device
         currentModeIndex = -1;

@@ -90,6 +90,15 @@ class Constants
         case SCANNING_FOR_MIMICS_TO_CONNECT
     }
     
+        // what type of board a peripheral uses
+    enum PERIPHERAL_TYPE
+    {
+        case nRF8001
+        case nRF51822
+        case DEMO
+        case UNKNOWN
+    }
+    
         // the messages this app sends
     struct MESSAGES
     {
