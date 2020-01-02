@@ -265,7 +265,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // the true (non-cached) advertised name of the device
         let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as! String;
         
-        if (advertisedName.prefix(3) == "ENL")
+        if (advertisedName.lowercased().prefix(3) == "enl")
         {
             print("Found a device \(advertisedName), cached name \(String(describing: peripheral.name)), adding it, its advertised name, and its RSSI to the list");
             self.peripherals.append(peripheral);
@@ -574,7 +574,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 print("ERROR didUpdateValueFor \(e.localizedDescription)");
                 return;
             }
-            
+            if (characteristic.value!.count < 1)
+            {
+                print("Empty value. Returning");
+                return;
+            }
             
             var receivedArray: [UInt8] = [];
             
@@ -1274,12 +1278,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         if (characteristic == Device.connectedDevice?.rxCharacteristic)
         {
             print("Discovered primary device's rxCharacteristic's descriptors: ");
-            print("properties: \(String(format:"%02X", characteristic.properties.rawValue))")
+            print("properties: \(String(format:"%04X", characteristic.properties.rawValue))")
         }
         else if (characteristic == Device.connectedDevice?.txCharacteristic)
         {
             print("Discovered primary device's txCharacteristic's descriptors: ");
-            print("properties: \(String(format:"%02X", characteristic.properties.rawValue))")
+            print("properties: \(String(format:"%04X", characteristic.properties.rawValue))")
         }
         
         if ((characteristic.descriptors) != nil)
