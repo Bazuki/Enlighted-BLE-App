@@ -22,6 +22,8 @@ class EnlightedBLEProtocol
     static let ENL_BLE_GET_BRIGHTNESS = "!GG"
         // getting the current battery level of the hardware
     static let ENL_BLE_GET_BATTERY_LEVEL = "!GB"
+        // getting the version of the hardware
+    static let ENL_BLE_GET_VERSION = "!GV"
         // getting the name of a specific mode
     static let ENL_BLE_GET_NAME = "!GN"
         // getting the type and values of a specific mode
@@ -54,10 +56,11 @@ class Constants
         // the time (in seconds) between scans of the battery level on the settings screen (as of 1.0.2, no longer used)
     //static let BATTERY_SCAN_INTERVAL = 0.33;
     
-        // the time (in seconds) before the device decides to scrap and re-send a row of thumbnail pixels
-            // The watchdog timer on the hardware is set to 0.3 seconds, but going too low causes it to time out far too often.
-            // 0.2 seconds was a good middle ground to avoid both issues.
-    static let THUMBNAIL_ROW_TIMEOUT_TIME = 0.2;
+        // the time (in seconds) before the app decides to scrap and re-send a row of thumbnail pixels
+    static let THUMBNAIL_ROW_TIMEOUT_TIME = 1.75;
+    
+        // the time (in seconds) before the app stops looking for a version response (as the nRF8001 does not provide one)
+    static let VERSION_TIMEOUT_TIME = 0.2;
     
         // the default brightness to set the hardware to if it's at STANDBY_BRIGHTNESS
     static let DEFAULT_BRIGHTNESS = 127;
@@ -90,6 +93,58 @@ class Constants
         case SCANNING_FOR_MIMICS_TO_CONNECT
     }
     
+        // the different potential hardware versions
+    enum HARDWARE_VERSION
+    {
+        case UNKNOWN
+        case DEMO
+        case NRF8001
+        case NRF51822
+    }
+    
+        // a dictionary of functions that will test if a packet is "complete" according to varying standards
+    static let PACKET_REQUIREMENTS =
+    [
+            // Get Battery Level should receive 3 bytes: [‘B’], [unsigned byte BattADCMSB], [unsigned byte BattADCLSB]
+        EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL: {(data: [UInt8]) -> Bool in
+            return data.count == 3;
+        },
+            // Get Limits should receive 4 bytes: [‘L’], [unsigned byte CurrentModeNumber], [unsigned byte LastModeNumber], [unsigned byte LastBitmapNumber]
+        EnlightedBLEProtocol.ENL_BLE_GET_LIMITS: {(data: [UInt8]) -> Bool in
+            return data.count == 4;
+        },
+            // Get Mode should receive 8 bytes: [‘M’], [unsigned byte ColorMode], [unsigned byte Red1], [unsigned byte Green1], [unsigned byte Blue1], [unsigned byte Red2], [unsigned byte Green2], [unsigned byte Blue2]
+        EnlightedBLEProtocol.ENL_BLE_GET_MODE: {(data: [UInt8]) -> Bool in
+            return data.count == 8;
+        },
+            // Get Name should receive a variable number of bytes, but the first and last bytes should always be ["]
+        EnlightedBLEProtocol.ENL_BLE_GET_NAME: {(data: [UInt8]) -> Bool in
+            let dataString = String(bytes: data, encoding: .ascii);
+            return dataString?.prefix(1) == "\"" && dataString?.suffix(1) == "\"";
+        },
+            // Get Thumbnail should receive a 60-byte row (20 pixels, each with an R, G, and B-value byte).
+        EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL: {(data: [UInt8]) -> Bool in
+            return data.count == 60;
+        },
+            // Get Brightness should receive 2 bytes: [‘G’], [unsigned byte Brightness]
+        EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS: {(data: [UInt8]) -> Bool in
+            return data.count == 2;
+        },
+            // Get Version should receive 2 bytes: [‘V’], [ASCII Version]
+        EnlightedBLEProtocol.ENL_BLE_GET_VERSION: {(data: [UInt8]) -> Bool in
+            return data.count == 2;
+        },
+            // The Success response is a single byte: [1]
+        "Success": {(data: [UInt8]) -> Bool in
+            return data.count == 1;
+        },
+            // The Failure response is a single byte: [0]
+        "Failure": {(data: [UInt8]) -> Bool in
+            return data.count == 1;
+        },
+        
+    ]
+    
         // the messages this app sends
     struct MESSAGES
     {
@@ -106,6 +161,8 @@ class Constants
         static let RECEIVED_BRIGHTNESS_VALUE = "receivedBrightnessValue";
         static let RECEIVED_BATTERY_VALUE = "receivedBatteryValue";
         static let RECEIVED_MODE_VALUE = "receivedModeValue";
+        
+        static let PARSED_COMPLETE_PACKET = "parsedCompletePacket";
         
         static let CHANGED_MODE_VALUE = "changedModeValue";
     }

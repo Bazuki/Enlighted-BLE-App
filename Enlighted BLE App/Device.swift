@@ -46,6 +46,9 @@ class Device: NSObject, NSCoding
         // whether or not this is a "demo", non-BLE enabled digital device
     var isDemoDevice = false;
     
+        // whether this device uses the nRF8001 ("v1") or nRF51822 ("v2") hardware/firmware
+    var hardwareVersion = Constants.HARDWARE_VERSION.UNKNOWN;
+    
         // a list of all the modes this device has, from Get Mode;
     var modes = [Mode]();
     
@@ -83,6 +86,7 @@ class Device: NSObject, NSCoding
         // flags for parsing individual packets
     var requestedLimits = false;
     var requestedBrightness = false;
+    var requestedVersion = false;
     var requestedBattery = false;
     var requestedName = false;
     var receivedName = false;
@@ -235,6 +239,8 @@ class Device: NSObject, NSCoding
         
         // initial value;
         brightness = -1;
+        
+        hardwareVersion = .DEMO;
         
         // mock declaration without a peripheral, so not connected
         isConnected = false;

@@ -24,6 +24,8 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Bluetooth is used to communicate with your Enlighted LED controller.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>App uses Bluetooth Low Energy to communicate with the Enlighted firmware.</string>
 	<key>UIBackgroundModes</key>

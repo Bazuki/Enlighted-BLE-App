@@ -48,6 +48,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
         // A timer object to know when to prompt the "Demo" device
     var deviceTimeoutTimer = Timer();
+        
+        // A timer to introduce a delay for older hardware
+    var delayTimer = Timer();
     
         // Whether or not the demo device can show up (if there are no "real" devices)
     var canShowDemoDevice = false;
@@ -62,6 +65,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // variables to help in parsing names
     //var currentlyParsingName = false;
     var parsedName: String = "";
+    
+        // temporary variable to aid in parsing thumbnails in irregular packets
+    var thumbnailRow = [UInt8]();
+    
+        // variable for identifying the additional packets of multi-packet messages - should only be set to "" or one of the EnlightedBLEProtocol get command strings.
+    var currentPacketType: String = "";
+    
+        // variable for keeping track of the contents of multi-packet messages
+    var currentPacketContents = [UInt8]();
+    
+        // variable for keeping track of whether we need to construct a multipacket message or start a new one
+    var incompletePacketReceived = false;
     
         // pixel data – credit to https://stackoverflow.com/questions/30958427/pixel-array-to-uiimage-in-swift
     public struct Pixel
@@ -257,7 +272,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // the true (non-cached) advertised name of the device
         let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as! String;
         
-        if (advertisedName.prefix(3) == "ENL")
+        if (advertisedName.lowercased().prefix(3) == "enl")
         {
             print("Found a new device \(advertisedName), cached name \(String(describing: peripheral.name)), adding it, its advertised name, and its RSSI to the list");
             self.peripherals.append(peripheral);
@@ -524,20 +539,25 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 return;
             }
             
+            if (characteristic.value!.count < 1)
+            {
+                print("Empty characteristic value returned")
+                return;
+            }
             
             var receivedArray: [UInt8] = [];
             
-            let rxValue = [UInt8](characteristic.value!);
+            var rxValue = [UInt8](characteristic.value!);
             
             receivedArray = Array(characteristic.value!);
             
                 // converting data to a string
-            let rxString = String(bytes: receivedArray, encoding: .ascii);
+            var rxString = String(bytes: receivedArray, encoding: .ascii);
             
                 //converting first byte into an int, for the 1 or 0 success responses
             let rxInt = Int(receivedArray[0]);
             
-            
+            // TODO: enable this for debugging; removing for performance
             print("received \(receivedArray) from \(String(describing: peripheral.name))");
             
             
@@ -547,90 +567,112 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 Device.connectedDevice?.requestWithoutResponse = false;
             }
             
-                // check for the end of a name first, because the first letter could be "L" or "M", etc.
-            if ((Device.connectedDevice?.currentlyParsingName)!)
+                // if we have received more of an incomplete response, add it to what we already have
+            if ((incompletePacketReceived) && currentPacketType != "")
             {
-                if (rxString?.suffix(1) == "\"")
+                currentPacketContents += rxValue;
+            }
+            else
+            {
+                currentPacketType = "";
+                currentPacketContents = rxValue;
+                    // Get Thumbnail
+                if ((Device.connectedDevice?.requestedThumbnail)!)
                 {
-                    
-                    Device.connectedDevice?.currentlyParsingName = false;
-                    parsedName = parsedName + rxString!.filter { $0 != "\"" };
-                //Device.connectedDevice?.requestedName = false;
-                    
-                    print("Received complete name: " + parsedName);
-                    Device.connectedDevice?.receivedName = true;
-                    return;
+                    //print("Receiving a Thumbnail")
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL;
+                }
+                    // Get Battery
+                else if (rxString?.prefix(1) == "B")
+                {
+                    print("Receiving battery level")
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL;
+                }
+                    // Get Limits
+                else if (rxString?.prefix(1) == "L")
+                {
+                    print("Receiving limits")
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_LIMITS;
+                }
+                    // Get Mode
+                else if (rxString?.prefix(1) == "M")
+                {
+                    print("Receiving a mode's data")
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_MODE;
+                }
+                    // Get Name
+                else if (rxString?.prefix(1) == "\"")
+                {
+                    print("Receiving a mode's name")
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_NAME;
+                }
+                    // Get Brightness
+                else if (rxString?.prefix(1) == "G")
+                {
+                    print("Receiving a brightness value")
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS;
+                }
+                    // Get Version
+                else if (rxString?.prefix(1) == "V")
+                {
+                    print("Receiving a hardware version")
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_VERSION;
+                }
+                else if (rxInt == 1)
+                {
+                    print("Receiving a success response");
+                    currentPacketType = "Success";
+                }
+                else if (rxInt == 0)
+                {
+                    print("Receiving a failure response");
+                    currentPacketType = "Failure";
                 }
                 else
-                    // if the response after the first half of a name isn't a name, something's wrong, and we should clear everything
                 {
-                    print("Caught a name error: \(parsedName)");
-                    Device.connectedDevice?.currentlyParsingName = false;
-                    parsedName = "";
+                    print("Unable to parse response")
+                    return
+                }
+                
+                
+            }
+            
+            if (currentPacketType != "")
+            {
+                    // evaluating based on packet type whether the packet is complete
+                let completePacket = Constants.PACKET_REQUIREMENTS[currentPacketType]!(currentPacketContents);
+                print("Received complete packet? \(completePacket)")
+                    // if we didn't receive a complete packet, we want to return and wait for the next part of it
+                incompletePacketReceived = !completePacket;
+                if (!completePacket)
+                {
+                    return;
                 }
             }
-                
-                // if it's a 15-byte value and we've requested the thumbnail, it's probably the thumbnail
-            if ((Device.connectedDevice?.requestedThumbnail)! && rxValue.count == 15)
+            
+            rxValue = currentPacketContents;
+            rxString = String(bytes: currentPacketContents, encoding: .ascii);
+            
+                // MARK: Parsing Complete Packets:
+            switch currentPacketType
             {
-                // debug message, but super slow to print every time
-                //print("Value Received: \(rxValue[0], rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7], rxValue[8], rxValue[9], rxValue[10], rxValue[11], rxValue[12], rxValue[13], rxValue[14])");
+                    // MARK: Get Battery Level
+            case EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL:
                 
-                for i in 0...4
-                {
-                    let indexOffset = i * 3;
-                    bitmapPixelRow.append(Pixel(r: rxValue[0 + indexOffset], g: rxValue[1 + indexOffset], b: rxValue[2 + indexOffset], a: UInt8(255)));
-                }
-                // debug message, might slow down the program too much
-                //print("Thumbnail \((Device.connectedDevice?.thumbnails.count)! + 1) is \(Float(bitmapPixels.count) / 4.0) percent complete");
-                // if we just finished a row of 20 pixels, we can go on to the next one
-                if (bitmapPixelRow.count == 20)
-                {
-                    // if this command was interrupted, we need to make sure it ends, but we don't want it to leave a remnant in the pixel array
-                    if ((Device.connectedDevice?.currentlyBuildingThumbnails)!)
-                    {
-                        // adding this row to the whole thing
-                        bitmapPixels += bitmapPixelRow;
-                        // resetting row
-                        bitmapPixelRow = [Pixel]();
-                        Device.connectedDevice?.thumbnailRowIndex += 1;
-                    }
-                        // if we get a pixel row at the wrong time, we want to make sure the pixel array is empty for when we really want thumbnails
-                    else
-                    {
-                            // reset the whole thumbnail
-                        bitmapPixels = [Pixel]();
-                            // reset the row counter
-                        Device.connectedDevice?.thumbnailRowIndex = 0;
-                            // reset the individual row
-                        bitmapPixelRow = [Pixel]();
-                        
-                    }
-                    
-                    Device.connectedDevice?.requestedThumbnail = false;
-                }
-                // if the 20x20 grid is finished, turn it into a UIImage and go on to the next one
-                if (bitmapPixels.count >= 400)
-                {
-                    print("Finished bitmap");
-                    // Generate a new UIImage (20x20 is hardcoded)
-                    guard let newThumbnail = UIImageFromBitmap(pixels: bitmapPixels, width: 20) else
-                    {
-                        print("Was unable to generate UIImage thumbnail");
-                        return;
-                    }
-                    // add it to the Device
-                    Device.connectedDevice?.thumbnails.append(newThumbnail);
-                    // clear the Pixel array
-                    bitmapPixels = [Pixel]();
-                    // reset the row counter
-                    Device.connectedDevice?.thumbnailRowIndex = 0;
-                }
-            }
-                // if the first letter is "L", we're getting the current mode, max number of modes, and max number of bitmaps.
-            else if (rxString?.prefix(1) == "L") //[(rxString?.startIndex)!] == "L")
-            {
-                print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
+                    // conversion from https://stackoverflow.com/questions/32830866/how-in-swift-to-convert-int16-to-two-uint8-bytes
+                let ADCValue = Int16(rxValue[1]) << 8 | Int16(rxValue[2]);
+                
+                print("Received a complete battery level packet, parsing: " + rxString!.prefix(1), Int(ADCValue));
+                //print("Value Recieved: " + ;
+                let voltage = (Float(ADCValue) / 1024) * 16.5;
+                    // calculates the battery percentage given the voltage
+                Device.connectedDevice?.batteryPercentage = calculateBatteryPercentage(voltage);
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BATTERY_VALUE), object: nil);
+
+                    // MARK: Get Limits
+            case EnlightedBLEProtocol.ENL_BLE_GET_LIMITS:
+                
+                print("Received a complete limits packet, parsing: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
                 //print(Int(rxValue[1]));
                 Device.connectedDevice?.currentModeIndex = Int(rxValue[1]);
                 Device.connectedDevice?.maxNumModes = Int(rxValue[2]);
@@ -644,30 +686,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 }
                 
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil);
-            }
-                // if the first letter is "G", we're getting the brightness, on a scale from 0-255;
-            else if (rxString?.prefix(1) == "G") //[(rxString?.startIndex)!] == "G")
-            {
-                print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]));
-                Device.connectedDevice?.brightness = Int(rxValue[1]);
-                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BRIGHTNESS_VALUE), object: nil);
-            }
-                // if the first letter is "B", we're getting the battery, which must be manipulated to give percentage
-            else if (rxString?.prefix(1) == "B")
-            {
+                    
+                    // MARK: Get Mode
+            case EnlightedBLEProtocol.ENL_BLE_GET_MODE:
                 
-                    // conversion from https://stackoverflow.com/questions/32830866/how-in-swift-to-convert-int16-to-two-uint8-bytes
-                let ADCValue = Int16(rxValue[1]) << 8 | Int16(rxValue[2]);
-                print("Value Recieved: " + rxString!.prefix(1), Int(ADCValue));
-                let voltage = (Float(ADCValue) / 1024) * 16.5;
-                    // calculates the battery percentage given the voltage
-                Device.connectedDevice?.batteryPercentage = calculateBatteryPercentage(voltage);
-                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BATTERY_VALUE), object: nil);
-            }
-                // if the first letter is "M", we're getting details about a mode, and need to add it to the Device.connectedDevice's list
-            else if (rxString?.prefix(1) == "M")
-            {
-                    // the first value after "M" determines whether or not it's a bitmap-type mode
+                    // the first byte after "M" determines whether it's a bitmap or color mode
                 let usesBitmap = (rxValue[1] == 0);
                 
                 let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
@@ -726,11 +749,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 Device.connectedDevice?.requestedName = false;
                 Device.connectedDevice?.requestedMode = false;
                 
-            }
-                // if the first character is a " (quote) we're starting to get a name of a mode (unless we're currently parsing a name, in which case it could be that only the final quote was sent in the second packet (and it shouldn't be a new name in that case)
-            else if (rxString?.prefix(1) == "\"" && !(Device.connectedDevice?.currentlyParsingName)!)
-            {
-                print("Receiving name: " + rxString!);
+                    // MARK: Get Name
+            case EnlightedBLEProtocol.ENL_BLE_GET_NAME:
+                
+                print("Received a complete name packet: " + rxString!);
                     // if the end quote is in this string, the whole name was sent in one packet
                 if (rxString!.suffix(1) == "\"")
                 {
@@ -738,19 +760,83 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         // taking off quotes
                     parsedName = receivedName.filter { $0 != "\"" }
                     //Device.connectedDevice?.requestedName = false;
-                    print("Received complete name: " + parsedName);
+                    //print("Received complete name: " + parsedName);
                     Device.connectedDevice?.receivedName = true;
                     
                 }
-                    // otherwise we have to wait for the second half
-                else
+                
+                    // MARK: Get Thumbnail
+            case EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL:
+                
+                print("Received a complete thumbnail row, parsing")
+                bitmapPixelRow = [Pixel]();
+                for i in 0...19
                 {
-                    Device.connectedDevice?.currentlyParsingName = true;
-                    parsedName = rxString!.filter { $0 != "\"" };
+                    let indexOffset = i * 3;
+                    bitmapPixelRow.append(Pixel(r: currentPacketContents[0 + indexOffset], g: currentPacketContents[1 + indexOffset], b: currentPacketContents[2 + indexOffset], a: UInt8(255)));
                 }
-            }
-            else if (rxInt == 1)
-            {
+                
+                // if we just finished a row of 20 pixels, we can go on to the next one
+                if (bitmapPixelRow.count == 20)
+                {
+                    // if this command was interrupted, we need to make sure it ends, but we don't want it to leave a remnant in the pixel array
+                    if ((Device.connectedDevice?.currentlyBuildingThumbnails)!)
+                    {
+                        // adding this row to the whole thing
+                        bitmapPixels += bitmapPixelRow;
+                        // resetting row
+                        bitmapPixelRow = [Pixel]();
+                        Device.connectedDevice?.thumbnailRowIndex += 1;
+                    }
+                        // if we get a pixel row at the wrong time, we want to make sure the pixel array is empty for when we really want thumbnails
+                    else
+                    {
+                            // reset the whole thumbnail
+                        bitmapPixels = [Pixel]();
+                            // reset the row counter
+                        Device.connectedDevice?.thumbnailRowIndex = 0;
+                            // reset the individual row
+                        bitmapPixelRow = [Pixel]();
+                        
+                    }
+                    
+                    Device.connectedDevice?.requestedThumbnail = false;
+                }
+                // if the 20x20 grid is finished, turn it into a UIImage and go on to the next one
+                if (bitmapPixels.count >= 400)
+                {
+                    //print("Finished bitmap");
+                    // Generate a new UIImage (20x20 is hardcoded)
+                    guard let newThumbnail = UIImageFromBitmap(pixels: bitmapPixels, width: 20) else
+                    {
+                        print("Was unable to generate UIImage thumbnail");
+                        return;
+                    }
+                    // add it to the Device
+                    Device.connectedDevice?.thumbnails.append(newThumbnail);
+                    // clear the Pixel array
+                    bitmapPixels = [Pixel]();
+                    // reset the row counter
+                    Device.connectedDevice?.thumbnailRowIndex = 0;
+                }
+                
+                    // MARK: Get Brightness
+            case EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS:
+                
+                print("Received a complete brightness level packet, parsing: " + rxString!.prefix(1), Int(rxValue[1]));
+                Device.connectedDevice?.brightness = Int(rxValue[1]);
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BRIGHTNESS_VALUE), object: nil);
+                
+                    // MARK: Get Version
+            case EnlightedBLEProtocol.ENL_BLE_GET_VERSION:
+                
+                print("Received a hardware version packet: " + rxString!.prefix(2));
+                //(rxString!.prefix(2).suffix(1);
+                Device.connectedDevice?.hardwareVersion = .NRF51822;
+                
+                    // MARK: Success Response
+            case "Success":
+                
                 print("Command succeeded.");
                 
                     // we need to know if a "change mode" was just done, so that we can apply user settings
@@ -778,27 +864,30 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         // if the stored brightness isn't its default value (i.e. something's been stored because we're in standby mode and so have set it to something else)
                     if (Device.connectedDevice?.storedBrightness != -1)
                     {
+                        print("Standby brightness activated.")
                             // set the flag that we're in that standby mode
                         Device.connectedDevice?.dimmedBrightnessForStandby = true;
                     }
                         // otherwise
                     else
                     {
+                        print("Standby brightness deactivated.")
                             // set the flag that we aren't in that mode
                         Device.connectedDevice?.dimmedBrightnessForStandby = false;
                     }
                     
                     Device.connectedDevice?.requestedBrightnessChange = false;
                 }
-            }
-            else if (rxInt == 0)
-            {
+                
+                    // MARK: Failure Response
+            case "Failure":
+                
                 print("Command failed.");
                     // vibrate if command failed
                 AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-            }
-            else
-            {
+                
+                    // MARK: Unidentifiable Packet
+            default:
                 print("unable to parse response, might be unimplemented");
                 if (rxString == nil)
                 {
@@ -809,7 +898,371 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     print("String recieved: " + (rxString ?? "ERROR"));
                 }
             }
-            //NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
+            
+                // resetting these, since we're done with their contents and we're ready for a new packet/packet type
+            currentPacketContents = [UInt8]();
+            currentPacketType = "";
+            
+                // if we already have limits but are reading modes/bitmaps/etc from hardware, we want to go back to that loop when we parse a packet
+            if (!Device.connectedDevice!.readyToShowModes && Device.connectedDevice!.maxNumModes > 0)
+            {
+                //print("Finished parsing packet, going back to loop")
+                
+                //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+                    // FIXME: trying to see what went wrong on the nRF8001
+                    // if it's the nRF8001, we need to introduce a bit of delay, otherwise, do this instantly
+                if (Device.connectedDevice?.hardwareVersion == .NRF8001)
+                {
+                    delayTimer.invalidate();
+                    //print("Since we're using older hardware, delaying message");
+                    delayTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: false)
+                    { timer in
+                        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+                    }
+                }
+                else
+                {
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+                }
+            }
+            
+//                // check for the end of a name first, because the first letter could be "L" or "M", etc.
+//            if (currentPacketType == EnlightedBLEProtocol.ENL_BLE_GET_NAME)
+//            {
+//                if (rxString?.suffix(1) == "\"")
+//                {
+//
+//                    Device.connectedDevice?.currentlyParsingName = false;
+//                    parsedName = parsedName + rxString!.filter { $0 != "\"" };
+//                //Device.connectedDevice?.requestedName = false;
+//
+//                    print("Received complete name: " + parsedName);
+//                    Device.connectedDevice?.receivedName = true;
+//                    return;
+//                }
+//                else
+//                    // if the response after the first half of a name isn't a name, something's wrong, and we should clear everything
+//                {
+//                    print("Caught a name error: \(parsedName)");
+//                    Device.connectedDevice?.currentlyParsingName = false;
+//                    parsedName = "";
+//                }
+//            }
+//
+//                // if it's a 15-byte value and we've requested the thumbnail, it's probably the thumbnail
+//            if ((Device.connectedDevice?.requestedThumbnail)! && rxValue.count == 15 && Device.connectedDevice?.hardwareVersion == .NRF8001)
+//            {
+//                // debug message, but super slow to print every time
+//                //print("Value Received: \(rxValue[0], rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7], rxValue[8], rxValue[9], rxValue[10], rxValue[11], rxValue[12], rxValue[13], rxValue[14])");
+//
+//                for i in 0...4
+//                {
+//                    let indexOffset = i * 3;
+//                    bitmapPixelRow.append(Pixel(r: rxValue[0 + indexOffset], g: rxValue[1 + indexOffset], b: rxValue[2 + indexOffset], a: UInt8(255)));
+//                }
+//                // debug message, might slow down the program too much
+//                //print("Thumbnail \((Device.connectedDevice?.thumbnails.count)! + 1) is \(Float(bitmapPixels.count) / 4.0) percent complete");
+//                // if we just finished a row of 20 pixels, we can go on to the next one
+//                if (bitmapPixelRow.count == 20)
+//                {
+//                    // if this command was interrupted, we need to make sure it ends, but we don't want it to leave a remnant in the pixel array
+//                    if ((Device.connectedDevice?.currentlyBuildingThumbnails)!)
+//                    {
+//                        // adding this row to the whole thing
+//                        bitmapPixels += bitmapPixelRow;
+//                        // resetting row
+//                        bitmapPixelRow = [Pixel]();
+//                        Device.connectedDevice?.thumbnailRowIndex += 1;
+//                    }
+//                        // if we get a pixel row at the wrong time, we want to make sure the pixel array is empty for when we really want thumbnails
+//                    else
+//                    {
+//                            // reset the whole thumbnail
+//                        bitmapPixels = [Pixel]();
+//                            // reset the row counter
+//                        Device.connectedDevice?.thumbnailRowIndex = 0;
+//                            // reset the individual row
+//                        bitmapPixelRow = [Pixel]();
+//
+//                    }
+//
+//                    Device.connectedDevice?.requestedThumbnail = false;
+//                }
+//                // if the 20x20 grid is finished, turn it into a UIImage and go on to the next one
+//                if (bitmapPixels.count >= 400)
+//                {
+//                    print("Finished bitmap");
+//                    // Generate a new UIImage (20x20 is hardcoded)
+//                    guard let newThumbnail = UIImageFromBitmap(pixels: bitmapPixels, width: 20) else
+//                    {
+//                        print("Was unable to generate UIImage thumbnail");
+//                        return;
+//                    }
+//                    // add it to the Device
+//                    Device.connectedDevice?.thumbnails.append(newThumbnail);
+//                    // clear the Pixel array
+//                    bitmapPixels = [Pixel]();
+//                    // reset the row counter
+//                    Device.connectedDevice?.thumbnailRowIndex = 0;
+//                }
+//            }
+//                // MARK: nRF81522-specific debugging thumbnail
+//            else if ((Device.connectedDevice?.requestedThumbnail)! && Device.connectedDevice?.hardwareVersion == .NRF51822)
+//            {
+//                // debug message, but super slow to print every time
+//                //print("Value Received: \(rxValue[0], rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7], rxValue[8], rxValue[9], rxValue[10], rxValue[11], rxValue[12], rxValue[13], rxValue[14])");
+//                print("Found parts of a thumbnail, adding to current row, which went from \(thumbnailRow.count)/60 bytes to \(thumbnailRow.count + rxValue.count)/60 bytes")
+//                    // if we've found less then all 60 bytes for this row, keep adding until we have the whole row
+//                if (thumbnailRow.count <= 60)
+//                {
+//                    thumbnailRow += rxValue;
+//                        // once we do, parse that row
+//                    if (thumbnailRow.count == 60)
+//                    {
+//
+//                        print("BitmapPixelRow is now \(bitmapPixelRow.count) pixels long")
+//                            // and clear our holder
+//                        thumbnailRow = [UInt8]();
+//                    }
+//                }
+//
+//                // debug message, might slow down the program too much
+//                //print("Thumbnail \((Device.connectedDevice?.thumbnails.count)! + 1) is \(Float(bitmapPixels.count) / 4.0) percent complete");
+//                // if we just finished a row of 20 pixels, we can go on to the next one
+//                if (bitmapPixelRow.count == 20)
+//                {
+//                    // if this command was interrupted, we need to make sure it ends, but we don't want it to leave a remnant in the pixel array
+//                    if ((Device.connectedDevice?.currentlyBuildingThumbnails)!)
+//                    {
+//                        // adding this row to the whole thing
+//                        bitmapPixels += bitmapPixelRow;
+//                        // resetting row
+//                        bitmapPixelRow = [Pixel]();
+//                        Device.connectedDevice?.thumbnailRowIndex += 1;
+//                    }
+//                        // if we get a pixel row at the wrong time, we want to make sure the pixel array is empty for when we really want thumbnails
+//                    else
+//                    {
+//                            // reset the whole thumbnail
+//                        bitmapPixels = [Pixel]();
+//                            // reset the row counter
+//                        Device.connectedDevice?.thumbnailRowIndex = 0;
+//                            // reset the individual row
+//                        bitmapPixelRow = [Pixel]();
+//
+//                    }
+//
+//                    Device.connectedDevice?.requestedThumbnail = false;
+//                }
+//                // if the 20x20 grid is finished, turn it into a UIImage and go on to the next one
+//                if (bitmapPixels.count >= 400)
+//                {
+//                    print("Finished bitmap");
+//                    // Generate a new UIImage (20x20 is hardcoded)
+//                    guard let newThumbnail = UIImageFromBitmap(pixels: bitmapPixels, width: 20) else
+//                    {
+//                        print("Was unable to generate UIImage thumbnail");
+//                        return;
+//                    }
+//                    // add it to the Device
+//                    Device.connectedDevice?.thumbnails.append(newThumbnail);
+//                    // clear the Pixel array
+//                    bitmapPixels = [Pixel]();
+//                    // reset the row counter
+//                    Device.connectedDevice?.thumbnailRowIndex = 0;
+//                }
+//            }
+//                // if the first letter is "L", we're getting the current mode, max number of modes, and max number of bitmaps.
+//            else if (rxString?.prefix(1) == "L") //[(rxString?.startIndex)!] == "L")
+//            {
+//                print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
+//                //print(Int(rxValue[1]));
+//                Device.connectedDevice?.currentModeIndex = Int(rxValue[1]);
+//                Device.connectedDevice?.maxNumModes = Int(rxValue[2]);
+//                Device.connectedDevice?.maxBitmaps = Int(rxValue[3]);
+//
+//                    // making sure that the current mode isn't above the max (which can sometimes happen in a sort of "demo" mode)
+//                if ((Device.connectedDevice?.currentModeIndex)! > (Device.connectedDevice?.maxNumModes)!)
+//                {
+//                        // if it is, default to mode 1 on the app
+//                    Device.connectedDevice?.currentModeIndex = 1;
+//                }
+//
+//                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil);
+//            }
+//            // if the first letter is "V", we're getting the hardware version, which will be 2 for the nRF51822 (the nRF8001 will not return anything);
+//            else if (rxString?.prefix(1) == "V") //[(rxString?.startIndex)!] == "G")
+//            {
+//                print("Value Recieved: " + rxString!.prefix(2));
+//                //(rxString!.prefix(2).suffix(1);
+//                Device.connectedDevice?.hardwareVersion = .NRF51822;
+//            }
+//                // if the first letter is "G", we're getting the brightness, on a scale from 0-255;
+//            else if (rxString?.prefix(1) == "G") //[(rxString?.startIndex)!] == "G")
+//            {
+//                print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]));
+//                Device.connectedDevice?.brightness = Int(rxValue[1]);
+//                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BRIGHTNESS_VALUE), object: nil);
+//            }
+//                // if the first letter is "B", we're getting the battery, which must be manipulated to give percentage
+//            else if (rxString?.prefix(1) == "B")
+//            {
+//
+//                    // conversion from https://stackoverflow.com/questions/32830866/how-in-swift-to-convert-int16-to-two-uint8-bytes
+//                let ADCValue = Int16(rxValue[1]) << 8 | Int16(rxValue[2]);
+//                print("Value Recieved: " + rxString!.prefix(1), Int(ADCValue));
+//                let voltage = (Float(ADCValue) / 1024) * 16.5;
+//                    // calculates the battery percentage given the voltage
+//                Device.connectedDevice?.batteryPercentage = calculateBatteryPercentage(voltage);
+//                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BATTERY_VALUE), object: nil);
+//            }
+//                // if the first letter is "M", we're getting details about a mode, and need to add it to the Device.connectedDevice's list
+//            else if (rxString?.prefix(1) == "M")
+//            {
+//                    // the first value after "M" determines whether or not it's a bitmap-type mode
+//                let usesBitmap = (rxValue[1] == 0);
+//
+//                let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
+//
+//                if (currentIndex <= (Device.connectedDevice?.maxNumModes)!)
+//                {
+//                // if it's a bitmap mode, we should create one and add it to the Device's list
+//                    if (usesBitmap)
+//                    {
+//                        //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
+//                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+//                            // clamping to min/max
+//                        let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
+//                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil])!];
+//                    }
+//                    else
+//                    {
+//                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+//
+//                        let color1 = UIColor(displayP3Red: CGFloat(Float(rxValue[2]) / 255), green: CGFloat(Float(rxValue[3]) / 255), blue: CGFloat(Float(rxValue[4]) / 255), alpha: 1)
+//                        let color2 = UIColor(displayP3Red: CGFloat(Float(rxValue[5]) / 255), green: CGFloat(Float(rxValue[6]) / 255), blue: CGFloat(Float(rxValue[7]) / 255), alpha: 1)
+//                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [color1, color2])!];
+//
+//                    }
+//                }
+//                    // if we're currently reverting the mode
+//                else if ((Device.connectedDevice?.currentlyRevertingMode)!)
+//                {
+//                    print("Recieved a mode we want to use for reversion");
+//
+//                    Device.connectedDevice?.mode?.usesBitmap = usesBitmap;
+//
+//                    if (usesBitmap)
+//                    {
+//                        //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
+//                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+//                        // clamping to min/max
+//                        let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
+//                        Device.connectedDevice?.mode?.bitmapIndex = bitmapIndex;
+//                    }
+//                    else
+//                    {
+//                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+//
+//                        let color1 = UIColor(displayP3Red: CGFloat(Float(rxValue[2]) / 255), green: CGFloat(Float(rxValue[3]) / 255), blue: CGFloat(Float(rxValue[4]) / 255), alpha: 1)
+//                        let color2 = UIColor(displayP3Red: CGFloat(Float(rxValue[5]) / 255), green: CGFloat(Float(rxValue[6]) / 255), blue: CGFloat(Float(rxValue[7]) / 255), alpha: 1)
+//                        Device.connectedDevice?.mode?.color1 = color1;
+//                        Device.connectedDevice?.mode?.color2 = color2;
+//
+//                    }
+//                    Device.connectedDevice?.currentlyRevertingMode = false;
+//                    print("No longer looking for modes for reversion, ready to send message to EditScreenViewController");
+//                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_MODE_VALUE), object: nil);
+//                }
+//
+//                Device.connectedDevice?.requestedName = false;
+//                Device.connectedDevice?.requestedMode = false;
+//
+//            }
+//                // if the first character is a " (quote) we're starting to get a name of a mode (unless we're currently parsing a name, in which case it could be that only the final quote was sent in the second packet (and it shouldn't be a new name in that case)
+//            else if (rxString?.prefix(1) == "\"" && !(Device.connectedDevice?.currentlyParsingName)!)
+//            {
+//                print("Receiving name: " + rxString!);
+//                    // if the end quote is in this string, the whole name was sent in one packet
+//                if (rxString!.suffix(1) == "\"")
+//                {
+//                    let receivedName = rxString!;
+//                        // taking off quotes
+//                    parsedName = receivedName.filter { $0 != "\"" }
+//                    //Device.connectedDevice?.requestedName = false;
+//                    print("Received complete name: " + parsedName);
+//                    Device.connectedDevice?.receivedName = true;
+//
+//                }
+//                    // otherwise we have to wait for the second half
+//                else
+//                {
+//                    Device.connectedDevice?.currentlyParsingName = true;
+//                    parsedName = rxString!.filter { $0 != "\"" };
+//                }
+//            }
+//            else if (rxInt == 1)
+//            {
+//                print("Command succeeded.");
+//
+//                    // we need to know if a "change mode" was just done, so that we can apply user settings
+//                if ((Device.connectedDevice?.requestedModeChange)!)
+//                {
+//                    Device.connectedDevice?.requestedModeChange = false;
+//                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil);
+//                }
+//
+//                    // we need to know if the standby was set, in order to do other things in the setup loop
+//                if ((Device.connectedDevice?.requestedStandbyActivated)!)
+//                {
+//                    Device.connectedDevice?.requestedStandbyActivated = false;
+//                    Device.connectedDevice?.isInStandby = true;
+//                }
+//                else if ((Device.connectedDevice?.requestedStandbyDeactivated)!)
+//                {
+//                    Device.connectedDevice?.requestedStandbyDeactivated = false;
+//                    Device.connectedDevice?.isInStandby = false;
+//                }
+//
+//                    // and likewise for the standby brightness change
+//                if ((Device.connectedDevice?.requestedBrightnessChange)!)
+//                {
+//                        // if the stored brightness isn't its default value (i.e. something's been stored because we're in standby mode and so have set it to something else)
+//                    if (Device.connectedDevice?.storedBrightness != -1)
+//                    {
+//                        print("Standby brightness activated.")
+//                            // set the flag that we're in that standby mode
+//                        Device.connectedDevice?.dimmedBrightnessForStandby = true;
+//                    }
+//                        // otherwise
+//                    else
+//                    {
+//                        print("Standby brightness deactivated.")
+//                            // set the flag that we aren't in that mode
+//                        Device.connectedDevice?.dimmedBrightnessForStandby = false;
+//                    }
+//
+//                    Device.connectedDevice?.requestedBrightnessChange = false;
+//                }
+//            }
+//            else if (rxInt == 0)
+//            {
+//                print("Command failed.");
+//                    // vibrate if command failed
+//                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+//            }
+//            else
+//            {
+//                print("unable to parse response, might be unimplemented");
+//                if (rxString == nil)
+//                {
+//                    print("Recieved \(rxValue)");
+//                }
+//                else
+//                {
+//                    print("String recieved: " + (rxString ?? "ERROR"));
+//                }
+//            }
         }
             // receiving from other characteristics, most likely the mimic devices' rxCharacteristics
         else
@@ -1499,8 +1952,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         {
             return;
         }
-        
-        print("sending \(valueData) to primary peripheral");
+            // TODO: useful debug messages, disabled for performance
+        print(" ");
+        print("*********************************************************************");
+        print(" ");
+        print("     Sending \(valueData) to primary peripheral");
+        print(" ");
         
         if Device.connectedDevice!.hasDiscoveredCharacteristics
         {
@@ -1600,8 +2057,24 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print("Timed out, clearing row");
             // clear the half-baked row
         bitmapPixelRow = [Pixel]();
+        thumbnailRow = [UInt8]();
+        currentPacketType = "";
+        currentPacketContents = [UInt8]();
             // tell the ModeTableViewController setup loop to get the thumbnails again
         Device.connectedDevice?.requestedThumbnail = false;
+        
+        
+//        if (Device.connectedDevice?.hardwareVersion == .NRF8001)
+//        {
+//            let delayTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false)
+//            { timer in
+//                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+//            }
+//        }
+//        else
+//        {
+//            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+//        }
     }
     
         // credit to https://stackoverflow.com/questions/30958427/pixel-array-to-uiimage-in-swift

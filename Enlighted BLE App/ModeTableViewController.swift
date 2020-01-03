@@ -38,6 +38,14 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // timer to check BLE timeout, especially when fetching bitmaps
     var BLETimeoutTimer = Timer();
     
+        // separate timer for querying the hardware version, as only the nRF51822 will respond
+    var BLEVersionTimer = Timer();
+    
+        // FIX-`ME: temporary variables for testing bad ascii characters on the nRF51822
+//    var brightnessTestingTimer = Timer();
+//    var brightnessCounter = 0;
+//    var startedTimer = false;
+    
         // whether or not the currently selected mode has to be initialized
     var initialModeSelected = false;
     
@@ -84,6 +92,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
             // when we connect to a new device (like a mimic), send the current mode settings
         NotificationCenter.default.addObserver(self, selector: #selector(updateModeOnHardware), name: Notification.Name(rawValue:  Constants.MESSAGES.DISCOVERED_MIMIC_CHARACTERISTICS), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(setUpTable), name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil)
+        
         
             // getLimits for this device, though not if it's a demo device
         if !(Device.connectedDevice!.isDemoDevice)
@@ -198,6 +209,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         {
             totalPacketsForSetup += 1;
         }
+            // same with the hardware version
+        
+        if (Device.connectedDevice!.hardwareVersion == Constants.HARDWARE_VERSION.UNKNOWN)
+        {
+            totalPacketsForSetup += 1;
+        }
         
         
         
@@ -241,9 +258,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // disabling user interaction with the empty TableView until loading is complete
         modeTableView.isUserInteractionEnabled = false;
         
-        print("Setting timer");
+        setUpTable();
+        
+        //print("Setting timer");
         // Set the timer that governs the setup of the mode table
-        self.timer = Timer.scheduledTimer(timeInterval: 0.04, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
+            // FIXME: trying to see what went wrong on the nRF8001
+        //self.timer = Timer.scheduledTimer(timeInterval: 0.00005, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
         
     }
     
@@ -341,6 +361,25 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // otherwise do preparatory steps, as long as a multi-message response isn't currently happening
         else if (Device.connectedDevice?.requestedThumbnail == false && Device.connectedDevice?.currentlyParsingName == false && Device.connectedDevice?.requestWithoutResponse == false)
         {
+            // FIX-ME: debugging bad ASCII characters for the nRF51822
+//            if Device.connectedDevice!.brightness >= 255
+//            {
+//                    // set brightness to 0
+//                getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: 0)
+//            }
+//            else if Device.connectedDevice!.brightness < 255
+//            {
+//                if (!startedTimer)
+//                {
+//                    brightnessCounter = 0;
+//                    brightnessTestingTimer.invalidate();
+//                    brightnessTestingTimer = Timer.scheduledTimer(timeInterval: 0.2, target: self, selector: #selector(self.testBrightness), userInfo: nil, repeats: true);
+//                    startedTimer = true
+//                }
+//
+//            }
+//            return;
+            // FIX-ME: Remove up to here for actual app
                 // if getLimits hasn't received a value yet
             if ((Device.connectedDevice?.currentModeIndex)! < 0)
             {
@@ -352,6 +391,20 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     //progress += 0.4;
                 }
                     // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
+                return;
+            }
+            else if (((Device.connectedDevice?.hardwareVersion)! == .UNKNOWN))
+            {
+                // if we haven't already, get the hardware version for this device
+                if (!(Device.connectedDevice?.requestedVersion)!)
+                {
+                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_VERSION);
+                    Device.connectedDevice?.requestedVersion = true;
+                    progress += 1 / Float(totalPacketsForSetup);
+                    BLEVersionTimer.invalidate();
+                    BLEVersionTimer = Timer.scheduledTimer(timeInterval: Constants.VERSION_TIMEOUT_TIME, target: self, selector: #selector(versionTimeout), userInfo: nil, repeats: false);
+                }
+                // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
             }
             else if (((Device.connectedDevice?.brightness)! < 0))
@@ -411,6 +464,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     // how much progress each Get Name is "worth"
                 let progressValue: Float = 2 / Float(totalPacketsForSetup);
                 
+                // MARK: Debugging nRF51822, skipping "!GN10"
+                if (Device.connectedDevice?.hardwareVersion == .NRF51822 && ((Device.connectedDevice?.modes.count)! + 1 == 10 || (Device.connectedDevice?.modes.count)! + 1 == 13))
+                {
+                    let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
+                    
+                    Device.connectedDevice?.modes += [Mode(name: "ERROR", index: currentIndex, usesBitmap: true, bitmapIndex: 1, colors: [nil])!];
+                    progress += 3 / Float(totalPacketsForSetup);
+                }
+                
                     // if we haven't yet, request the name of the first mode we need
                 if (!(Device.connectedDevice?.requestedName)!)
                 {
@@ -442,6 +504,14 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     // 4 packets per row
                 let progressValue: Float = 4 / Float(totalPacketsForSetup);
                 
+                    // MARK: nRF51822-specific bug, skipping thumbnails 10 and 13
+                if (Device.connectedDevice?.hardwareVersion == .NRF51822 && ((Device.connectedDevice?.thumbnails.count)! + 1 == 10 || (Device.connectedDevice?.thumbnails.count)! + 1 == 13))
+                {
+                    let errorBitmap = UIImage(named: "Bitmap2")!;
+                    Device.connectedDevice?.thumbnails.append(errorBitmap);
+                    progress += progressValue * 4;
+                }
+                
                     // if we haven't already
                 if (!(Device.connectedDevice?.requestedThumbnail)!)
                 {
@@ -466,7 +536,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 return;
             }
                 // if the Device is still dimmed, we want to set it back to its original brightness
-            else if (Constants.USE_STANDBY_BRIGHTNESS && ((Device.connectedDevice?.dimmedBrightnessForStandby)! || Device.connectedDevice?.brightness == Constants.STANDBY_BRIGHTNESS))
+            else if (Constants.USE_STANDBY_BRIGHTNESS && ((Device.connectedDevice?.dimmedBrightnessForStandby)!))
             {
                     // we want to make sure we don't have thumbnail remnants if the "Get Thumbnail" process is interrupted
                 Device.connectedDevice?.currentlyBuildingThumbnails = false;
@@ -514,6 +584,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             else
             {
                 Device.connectedDevice?.readyToShowModes = true;
+                setUpTable();
             }
         }
 //        else
@@ -530,6 +601,24 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             let progressValue: Float = 4 / Float(totalPacketsForSetup);
             progress -= progressValue;
             NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RESEND_THUMBNAIL_ROW), object: nil);
+                // FIXME: trying to figure out what went wrong with the nRF8001
+            let delayTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false)
+            { timer in
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+            }
+        }
+    }
+    
+        // the version query will not receive a response if it's the nRF8001 ("v1") hardware, so we will act accordingly
+    @objc func versionTimeout()
+    {
+        //print("Reached version timeout function, and currently the version has been requested: \((Device.connectedDevice?.requestedVersion)!) and the hardware is unknown: \(Device.connectedDevice!.hardwareVersion == .UNKNOWN)")
+        if ((Device.connectedDevice?.requestedVersion)! && Device.connectedDevice!.hardwareVersion == .UNKNOWN)
+        {
+            Device.connectedDevice?.hardwareVersion = .NRF8001;
+            Device.connectedDevice?.requestWithoutResponse = false;
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+            //print("Changed device's hardware version variable to \(String(describing: Device.connectedDevice?.hardwareVersion))")
         }
     }
     
@@ -858,6 +947,18 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 
     
     // MARK: Private Methods
+        // FIX-ME: brightness test
+//    @objc func testBrightness()
+//    {
+//        getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: brightnessCounter);
+//        Device.connectedDevice?.brightness = brightnessCounter;
+//        brightnessCounter += 1;
+//        if (brightnessCounter > 255)
+//        {
+//            self.timer.invalidate();
+//            brightnessTestingTimer.invalidate();
+//        }
+//    }
     
         // takes an Int and makes sure it will fit in an unsigned Int8 (including calling abs())
     private func convertToLegalUInt8(_ value: Int) -> UInt8
@@ -873,6 +974,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // sends get commands to the hardware, using the protocol as the inputString (and an optional int or two at the end, for certain getters)
     private func getValue(_ inputString: String, inputInt: Int = -1, secondInputInt: Int = -1)
     {
+        print(" ");
+        print(" ");
+        print("About to send BLE command \(inputString) with potential inputs \(inputInt) and \(secondInputInt)")
         if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
@@ -919,6 +1023,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 let uInputInt: UInt8 = UInt8(inputInt);
                 let stringArray: [UInt8] = Array(inputString.utf8);
                 let outputArray = stringArray + [uInputInt];
+                print(outputArray);
                 let outputData = NSData(bytes: outputArray, length: outputArray.count)
                 BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
             }
