@@ -99,14 +99,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         bitmapPicker.delegate = self;
         
         let errorBitmap = UIImage(named: "Bitmap2");
-        //let bitmap2 = UIImage(named: "Bitmap2");
-        //let bitmap3 = UIImage(named: "Bitmap3");
-        //let bitmap4 = UIImage(named: "Bitmap4");
             // Add selectable bitmaps, up to the limit from getLimit()
         let maxNumBitmaps: Int = Device.connectedDevice?.maxBitmaps ?? 10; 
         
             // if Get Thumbnails worked, use those thumbnails
-        if (Device.connectedDevice?.thumbnails.count == maxNumBitmaps)
+        if ((Device.connectedDevice?.thumbnails.count)! >= maxNumBitmaps)
         {
             bitmaps = (Device.connectedDevice?.thumbnails)!;
         }
@@ -121,7 +118,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
         
         
-            //allow for the selection of bitmaps
+            // allow for the selection of bitmaps
         bitmapPicker.allowsSelection = true;
         
         
@@ -293,7 +290,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int
     {
-        return bitmaps.count;
+        return min(bitmaps.count, Device.connectedDevice!.maxBitmaps);
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell
@@ -364,6 +361,9 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             return;
         }
         
+            // saving cache
+        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
+        
         let bitmapIndexUInt: UInt8 = UInt8(bitmapIndex);
         
         let valueString = EnlightedBLEProtocol.ENL_BLE_SET_BITMAP;// + "\(modeIndexUInt)";
@@ -418,6 +418,9 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             //self.show(newViewController, sender: self);
             return;
         }
+        
+            // saving cache
+        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
         
             // creating variables for RGB values of color
         var red: CGFloat = 0;

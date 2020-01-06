@@ -66,7 +66,7 @@ class Constants
     static let DEFAULT_BRIGHTNESS = 127;
     
         // the brightness setting (0-255) that the hardware goes into while in standby mode
-    static let STANDBY_BRIGHTNESS = 50;
+    static let STANDBY_BRIGHTNESS = 0;
     
         // whether or not to use the "Standby" mode
     static let USE_STANDBY_MODE = true;
@@ -163,6 +163,8 @@ class Constants
         static let RECEIVED_MODE_VALUE = "receivedModeValue";
         
         static let PARSED_COMPLETE_PACKET = "parsedCompletePacket";
+        
+        static let SAVE_DEVICE_CACHE = "saveDeviceCache";
         
         static let CHANGED_MODE_VALUE = "changedModeValue";
     }

@@ -189,6 +189,7 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     @IBAction func changedDeviceNickname(_ sender: UITextField)
     {
         Device.connectedDevice?.nickname = sender.text ?? "";
+        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
     }
     
     @IBAction func RevertToOriginalSettings(_ sender: UIButton)

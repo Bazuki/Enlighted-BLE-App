@@ -95,6 +95,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         NotificationCenter.default.addObserver(self, selector: #selector(setUpTable), name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil)
         
+        NotificationCenter.default.addObserver(self, selector: #selector(saveDevice), name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil)
+        
         
             // getLimits for this device, though not if it's a demo device
         if !(Device.connectedDevice!.isDemoDevice)
@@ -159,7 +161,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         
         // if we have all the modes and thumbnails, we're ready to display them
-        deviceHasModes = (Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps);
+        deviceHasModes = (Device.connectedDevice!.modes.count >= Device.connectedDevice!.maxNumModes) && (Device.connectedDevice!.thumbnails.count >= Device.connectedDevice!.maxBitmaps);
         
             // if we have a pre-existing mimic list, we want to go into a different state
         deviceHasMimicList = (Device.connectedDevice?.mimicList.count)! > 0;
@@ -167,7 +169,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // if we didn't completely get the mode list & thumbnails (i.e. aren't totally ready to show modes)
         if (!deviceHasModes)
         {
-            
             BLEConnectionTableViewController.CBCentralState = .READING_FROM_HARDWARE;
             print(BLEConnectionTableViewController.CBCentralState);
             
@@ -175,10 +176,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             self.navigationItem.rightBarButtonItem?.isEnabled = false;
             
                 // if we still need to get bitmaps, we want to add that large number of packets to our total
-            totalPacketsForSetup += Constants.BLE_PACKETS_PER_BITMAP * Device.connectedDevice!.maxBitmaps;
+            totalPacketsForSetup += Constants.BLE_PACKETS_PER_BITMAP * (Device.connectedDevice!.maxBitmaps - Device.connectedDevice!.thumbnails.count);
             
                 // and if we still need to get modes, we also want to add those
-            totalPacketsForSetup += Constants.BLE_PACKETS_PER_MODE * Device.connectedDevice!.maxNumModes;
+            totalPacketsForSetup += Constants.BLE_PACKETS_PER_MODE * (Device.connectedDevice!.maxNumModes - Device.connectedDevice!.modes.count);
             
                 // and if we're using the standby brightness / standby modes, add those packets to our total (one to activate, one to deactivate)
             if (Constants.USE_STANDBY_MODE)
@@ -338,12 +339,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             loadingItems.frame = newFrame;
             
             
-            
-            //loadSampleModes(Device.connectedDevice?.maxNumModes ?? 4);
                 // load up the modes stored on the device object
             modes = (Device.connectedDevice?.modes)!;
             
-            // setting the inital mode of the Device
+                // setting the inital mode of the Device
             Device.connectedDevice?.mode = modes[(Device.connectedDevice?.currentModeIndex)! - 1];
             
             let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
@@ -471,6 +470,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     
                     Device.connectedDevice?.modes += [Mode(name: "ERROR", index: currentIndex, usesBitmap: true, bitmapIndex: 1, colors: [nil])!];
                     progress += 3 / Float(totalPacketsForSetup);
+                    
+                        // if this would complete our set of modes, return
+                    if ((Device.connectedDevice?.modes.count)! >= (Device.connectedDevice?.maxNumModes)!)
+                    {
+                        return;
+                    }
                 }
                 
                     // if we haven't yet, request the name of the first mode we need
@@ -509,7 +514,11 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 {
                     let errorBitmap = UIImage(named: "Bitmap2")!;
                     Device.connectedDevice?.thumbnails.append(errorBitmap);
-                    progress += progressValue * 4;
+                    progress += progressValue * 20;
+                    if ((Device.connectedDevice?.thumbnails.count)! >= (Device.connectedDevice?.maxBitmaps)!)
+                    {
+                        return;
+                    }
                 }
                 
                     // if we haven't already
@@ -638,7 +647,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
-        return (Device.connectedDevice?.modes.count)!;
+        return (min(Device.connectedDevice!.modes.count, Device.connectedDevice!.maxNumModes));
     }
 
     
@@ -652,11 +661,25 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             fatalError("The dequeued cell is not an instance of ModeTableViewCell");
         }
 
+        
+        // in case the mode has an illegal bitmap index, set it to 1
+        if ((Device.connectedDevice?.modes[indexPath.row].usesBitmap)!)
+        {
+            //print("Checking each bitmap mode for bitmap index legality")
+            //print("Mode \(Device.connectedDevice!.modes[indexPath.row].name), at index \(indexPath.row), has bitmap index \(Device.connectedDevice!.modes[indexPath.row].bitmapIndex) compared to max \(Device.connectedDevice!.maxBitmaps)")
+            if ((Device.connectedDevice?.modes[indexPath.row].bitmapIndex)! > Device.connectedDevice!.maxBitmaps)
+            {
+                //print("Found a mode named \(Device.connectedDevice?.modes[indexPath.row].name) with an illegal bitmap index, setting to 1");
+                Device.connectedDevice?.modes[indexPath.row].bitmapIndex = 1;
+            }
+        }
+        
         let currentMode = (Device.connectedDevice?.modes[indexPath.row])!;
         
         
         cell.modeLabel.text = currentMode.name;
         cell.modeIndex.text = String(currentMode.index);
+        
         cell.mode = currentMode;
         if (cell.mode?.index == Device.connectedDevice?.currentModeIndex)
         {
@@ -1037,7 +1060,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     }
     
         // saves the Device after loading
-    private func saveDevice()
+    @objc private func saveDevice()
     {
             // never save the demo device
         if (Device.connectedDevice!.isDemoDevice)
@@ -1046,7 +1069,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             return;
         }
         
-        if !(Device.connectedDevice?.modes.count == Device.connectedDevice?.maxNumModes && Device.connectedDevice?.thumbnails.count == Device.connectedDevice?.maxBitmaps)
+        if !(Device.connectedDevice!.modes.count >= Device.connectedDevice!.maxNumModes && Device.connectedDevice!.thumbnails.count >= Device.connectedDevice!.maxBitmaps)
         {
             print("Not a full cache, not caching");
             return;

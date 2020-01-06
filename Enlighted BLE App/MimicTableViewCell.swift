@@ -92,6 +92,8 @@ class MimicTableViewCell: UITableViewCell
             }
             
         }
+            // then save to cache
+        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
     }
     
     override func setSelected(_ selected: Bool, animated: Bool)
