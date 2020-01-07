@@ -9,6 +9,7 @@
 import UIKit
 import CoreBluetooth
 import AVFoundation
+import os.log;
 
 var txCharacteristic : CBCharacteristic?;
 var rxCharacteristic : CBCharacteristic?;
@@ -67,7 +68,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     var parsedName: String = "";
     
         // temporary variable to aid in parsing thumbnails in irregular packets
-    var thumbnailRow = [UInt8]();
+    //var thumbnailRow = [UInt8]();
     
         // variable for identifying the additional packets of multi-packet messages - should only be set to "" or one of the EnlightedBLEProtocol get command strings.
     var currentPacketType: String = "";
@@ -270,13 +271,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber)
     {
             // the true (non-cached) advertised name of the device
-        let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as! String;
+        let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as? String;
         
-        if (advertisedName.lowercased().prefix(3) == "enl")
+        if (advertisedName?.lowercased().prefix(3) == "enl")
         {
             print("Found a new device \(advertisedName), cached name \(String(describing: peripheral.name)), adding it, its advertised name, and its RSSI to the list");
             self.peripherals.append(peripheral);
-            self.peripheralNames.append(advertisedName);
+                // if there wasn't an advertised name, use the real name
+            self.peripheralNames.append(advertisedName ?? peripheral.name!);
             self.RSSIs.append(RSSI);
         }
         else
@@ -558,7 +560,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             let rxInt = Int(receivedArray[0]);
             
             // TODO: enable this for debugging; removing for performance
-            print("received \(receivedArray) from \(String(describing: peripheral.name))");
+            print("Received \(receivedArray) from \(String(describing: peripheral.name))");
             
             
                 // stopping "active request" flag, because a response has been received
@@ -648,6 +650,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 {
                     return;
                 }
+            }
+            else
+            {
+                print("Unable to identify received packet")
+                incompletePacketReceived = false;
+                return;
             }
             
             rxValue = currentPacketContents;
@@ -857,6 +865,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     Device.connectedDevice?.requestedStandbyDeactivated = false;
                     Device.connectedDevice?.isInStandby = false;
                 }
+                    // we need to know when the first color was changed so we can change the second
+                else if ((Device.connectedDevice!.requestedFirstOfTwoColorsChanged))
+                {
+                    print("Since the command to set the first color succeeded, we are going to set the second one now.")
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil);
+                    Device.connectedDevice?.requestedFirstOfTwoColorsChanged = false;
+                }
                 
                     // and likewise for the standby brightness change
                 if ((Device.connectedDevice?.requestedBrightnessChange)!)
@@ -914,9 +929,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 if (Device.connectedDevice?.hardwareVersion == .NRF8001)
                 {
                     delayTimer.invalidate();
-                    //print("Since we're using older hardware, delaying message");
-                    delayTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: false)
+                    os_log("Since we're using older hardware, delaying message", log: OSLog.default, type: .debug);
+                    delayTimer = Timer.scheduledTimer(withTimeInterval: 0.025, repeats: false)
                     { timer in
+                        os_log("Sending message", log: OSLog.default, type: .debug);
                         NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
                     }
                 }
@@ -1006,7 +1022,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
 //                    Device.connectedDevice?.thumbnailRowIndex = 0;
 //                }
 //            }
-//                // MARK: nRF81522-specific debugging thumbnail
+//                // nRF81522-specific debugging thumbnail
 //            else if ((Device.connectedDevice?.requestedThumbnail)! && Device.connectedDevice?.hardwareVersion == .NRF51822)
 //            {
 //                // debug message, but super slow to print every time
@@ -1270,19 +1286,6 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // print the value and source
             print(" \(String(describing: characteristic.value)) received from \(String(describing: peripheral.name))");
         }
-        
-        
-        
-        
-//            // updating battery information on device (unused service)
-//        if characteristic == batteryCharacteristic
-//        {
-//                // credit to https://useyourloaf.com/blog/swift-integer-quick-guide/for help with encoding int8
-//            let value = characteristic.value;
-//            let valueUInt8 = [UInt8](value!);
-//            let batteryLevel: Int32 = Int32(bitPattern: UInt32(valueUInt8[0]));
-//            Device.connectedDevice?.setBatteryPercentage(percentage: Int(batteryLevel));
-//        }
     }
     
         // writing to txCharacteristic
@@ -1945,14 +1948,21 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     // MARK: - Public Methods
     
-    static func sendBLEPacketToConnectedPeripherals( valueData: NSData, sendToMimicDevices: Bool)
+        // takes two data objects in an array, the first for the nRF8001 and the second for the nRF51822
+    static func sendBLEPacketToConnectedPeripherals( valueData: [NSData], sendToMimicDevices: Bool)
     {
+        if (Device.connectedDevice!.isDemoDevice)
+        {
+            print("Not sending BLE packets to a mimic device");
+            return;
+        }
             // if we're still waiting on a response, don't send a new message
         if (Device.connectedDevice!.requestWithoutResponse)
         {
+            print("Still waiting on a response");
             return;
         }
-            // TODO: useful debug messages, disabled for performance
+            // TODO: useful debug messages, disable for performance (?)
         print(" ");
         print("*********************************************************************");
         print(" ");
@@ -1961,7 +1971,17 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         if Device.connectedDevice!.hasDiscoveredCharacteristics
         {
-            Device.connectedDevice!.peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            
+                // send differently-formatted data packets depending on hardware type
+            if (Device.connectedDevice!.hardwareVersion == .NRF51822)
+            {
+                Device.connectedDevice!.peripheral.writeValue(valueData[1] as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            }
+            else
+            {
+                Device.connectedDevice!.peripheral.writeValue(valueData[0] as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            }
+            
             Device.connectedDevice!.requestWithoutResponse = true;
         }
         else
@@ -1976,9 +1996,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             {
                 if (Device.connectedDevice!.connectedMimicDevices[i].hasDiscoveredCharacteristics)
                 {
+                        // FIXME: need to differentiate between nRF8001 and nRF51822 mimics
                     print("sending \(valueData) to mimic peripheral #\(i + 1) ");
                     
-                    Device.connectedDevice!.connectedMimicDevices[i].peripheral.writeValue(valueData as Data, for: Device.connectedDevice!.connectedMimicDevices[i].txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+                    Device.connectedDevice!.connectedMimicDevices[i].peripheral.writeValue(valueData[0] as Data, for: Device.connectedDevice!.connectedMimicDevices[i].txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
                 }
                 else
                 {
@@ -2054,27 +2075,30 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // if we receive a timeout error after requesting a thumbnail row, we have to
     @objc private func resetThumbnailRow()
     {
-        print("Timed out, clearing row");
+        //print("Timed out, clearing row");
             // clear the half-baked row
         bitmapPixelRow = [Pixel]();
-        thumbnailRow = [UInt8]();
+        //thumbnailRow = [UInt8]();
+        incompletePacketReceived = false;
         currentPacketType = "";
         currentPacketContents = [UInt8]();
             // tell the ModeTableViewController setup loop to get the thumbnails again
         Device.connectedDevice?.requestedThumbnail = false;
-        
-        
-//        if (Device.connectedDevice?.hardwareVersion == .NRF8001)
-//        {
-//            let delayTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false)
-//            { timer in
-//                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
-//            }
-//        }
-//        else
-//        {
-//            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
-//        }
+        // FIXME: trying to figure out what went wrong with the nRF8001
+        if (Device.connectedDevice?.hardwareVersion == .NRF8001)
+        {
+            delayTimer.invalidate();
+            os_log("Since we're using older hardware, delaying clear message", log: OSLog.default, type: .debug);
+            delayTimer = Timer.scheduledTimer(withTimeInterval: 0.025, repeats: false)
+            { timer in
+                os_log("Sending message", log: OSLog.default, type: .debug);
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+            }
+        }
+        else
+        {
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+        }
     }
     
         // credit to https://stackoverflow.com/questions/30958427/pixel-array-to-uiimage-in-swift

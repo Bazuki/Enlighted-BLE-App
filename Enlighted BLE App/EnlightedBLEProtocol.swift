@@ -57,7 +57,7 @@ class Constants
     //static let BATTERY_SCAN_INTERVAL = 0.33;
     
         // the time (in seconds) before the app decides to scrap and re-send a row of thumbnail pixels
-    static let THUMBNAIL_ROW_TIMEOUT_TIME = 1.75;
+    static let THUMBNAIL_ROW_TIMEOUT_TIME = 0.5;
     
         // the time (in seconds) before the app stops looking for a version response (as the nRF8001 does not provide one)
     static let VERSION_TIMEOUT_TIME = 0.2;
@@ -120,7 +120,7 @@ class Constants
             // Get Name should receive a variable number of bytes, but the first and last bytes should always be ["]
         EnlightedBLEProtocol.ENL_BLE_GET_NAME: {(data: [UInt8]) -> Bool in
             let dataString = String(bytes: data, encoding: .ascii);
-            return dataString?.prefix(1) == "\"" && dataString?.suffix(1) == "\"";
+            return dataString?.prefix(1) == "\"" && dataString?.suffix(1) == "\"" && data.count > 2;
         },
             // Get Thumbnail should receive a 60-byte row (20 pixels, each with an R, G, and B-value byte).
         EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL: {(data: [UInt8]) -> Bool in
@@ -167,5 +167,6 @@ class Constants
         static let SAVE_DEVICE_CACHE = "saveDeviceCache";
         
         static let CHANGED_MODE_VALUE = "changedModeValue";
+        static let CHANGED_FIRST_COLOR = "changedFirstColor";
     }
 }

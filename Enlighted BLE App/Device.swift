@@ -97,6 +97,7 @@ class Device: NSObject, NSCoding
     var requestedStandbyDeactivated = false;
     var requestedModeChange = false;
     var requestWithoutResponse = false;
+    var requestedFirstOfTwoColorsChanged = false;
     
         // flag to prompt a popup about editting the mimic list when first entering the choose mode screen with a non-empty mimic list
     var promptedMimicListSettings = false;
@@ -340,6 +341,111 @@ class Device: NSObject, NSCoding
         output.name = Constants.DEMO_DEVICE_NAME;
         
         return output;
+    }
+    
+        // a function for formatting packets to be sent over BLE.  This function returns an array of two NSData objects, the first for the nRF8001 and the second for the nRF51822 protocols
+    public static func formatPacket(_ inputString: String, inputInts: [Int] = [Int](), digitsPerInput: Int = 2) -> [NSData]
+    {
+        //print(" ");
+        //print(" ");
+        //print("Formatting BLE command \(inputString) with potential inputs \(inputInts)")
+        
+        
+            // formatting the string part of the packet
+        var intsToParse = inputInts;
+        let stringArray: [UInt8] = Array(inputString.utf8);
+        var uInt8Array8001 = [UInt8]();
+        var uInt8Array51822 = [UInt8]();
+            // formatting ints, if any
+        if (intsToParse.count > 0)
+        {
+                // Set color for the nRF51822 has its first index byte be one digit, while the RGB values themselves are 3 bytes per channel.
+            if (inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_COLOR))
+            {
+                uInt8Array51822 += formatForNRF51822(intsToParse[0], numExpectedDigits: 1)
+                uInt8Array8001.append(UInt8(intsToParse[0]));
+                intsToParse.remove(at: 0);
+            }
+            
+            
+            while (intsToParse.count > 0)
+            {
+                    // the nRF51822 protocol requires special formatting
+                    // FIXME: temporary exception for nRF51822's Set Standby, as that doesn't take a char currently
+                if (!inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY))
+                {
+                    uInt8Array51822 += (formatForNRF51822(intsToParse[0], numExpectedDigits: digitsPerInput));
+                }
+                else
+                {
+                    uInt8Array51822.append(UInt8(intsToParse[0]));
+                }
+                
+                uInt8Array8001.append(UInt8(intsToParse[0]));
+                
+                intsToParse.remove(at: 0);
+            }
+        }
+        
+            // formatting as data
+        let outputArray8001 = stringArray + uInt8Array8001;
+        let outputData8001 = NSData(bytes: outputArray8001, length: outputArray8001.count);
+        
+        let outputArray51822 = stringArray + uInt8Array51822;
+        let outputData51822 = NSData(bytes: outputArray51822, length: outputArray51822.count);
+            // returning formatted data
+        return [outputData8001, outputData51822];
+    }
+    
+    private static func formatForNRF51822(_ input: Int, numExpectedDigits: Int = 2) -> [UInt8]
+    {
+        var inputString = String(input);
+        var output = [UInt8]();
+        
+        // hundreds place (if necessary)
+        while inputString.count < numExpectedDigits
+        {
+                // add as many leading zeroes as necessary
+            inputString = "0" + inputString;
+        }
+        
+        output = Array(inputString.utf8);
+        return output;
+        
+    }
+    
+    private static func formatAsLegalInt(_ value: Int) -> Int
+    {
+            // absolute value
+        var output = abs(value);
+        
+        output = min(Int(UInt8.max), max(value, Int(UInt8.min)));
+        
+        return output;
+    }
+    
+    public static func convertUIColorToIntArray(_ color: UIColor) -> [Int]
+    {
+        // creating variables for RGB values of color
+        var red: CGFloat = 0;
+        var green: CGFloat = 0;
+        var blue: CGFloat = 0;
+        var alpha: CGFloat = 0;
+        
+        // getting color1's RGB values (from 0 to 1.0)
+        color.getRed(&red, green: &green, blue: &blue, alpha: &alpha);
+        
+        // scaling up to 255
+        red *= 255;
+        green *= 255;
+        blue *= 255;
+        
+        // removing decimal places, removing signs
+        let redInt = formatAsLegalInt(Int(red));
+        let greenInt = formatAsLegalInt(Int(green));
+        let blueInt = formatAsLegalInt(Int(blue));
+        
+        return [redInt] + [greenInt] + [blueInt];
     }
     
     // MARK: - NSCoding

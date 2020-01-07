@@ -41,6 +41,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // separate timer for querying the hardware version, as only the nRF51822 will respond
     var BLEVersionTimer = Timer();
     
+    // A timer to introduce a delay for older hardware
+    var delayTimer = Timer();
+    
         // FIX-`ME: temporary variables for testing bad ascii characters on the nRF51822
 //    var brightnessTestingTimer = Timer();
 //    var brightnessCounter = 0;
@@ -88,6 +91,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil)
         
+        NotificationCenter.default.addObserver(self, selector: #selector(setSecondColorOnNRF51822), name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil)
+        
         NotificationCenter.default.addObserver(self, selector: #selector(prepareForSetup), name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil)
         
             // when we connect to a new device (like a mimic), send the current mode settings
@@ -101,7 +106,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // getLimits for this device, though not if it's a demo device
         if !(Device.connectedDevice!.isDemoDevice)
         {
-            getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
+            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
             Device.connectedDevice?.requestedLimits = true;
         }
         else
@@ -264,7 +269,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         //print("Setting timer");
         // Set the timer that governs the setup of the mode table
             // FIXME: trying to see what went wrong on the nRF8001
-        //self.timer = Timer.scheduledTimer(timeInterval: 0.00005, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
+        //self.timer = Timer.scheduledTimer(timeInterval: 0.02, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
         
     }
     
@@ -385,7 +390,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     // if we haven't already, getLimits for this device, so that we'll know it when we change it on the settings screen;  This should already be done, however, in viewDidLoad().  This is just in case that wasn't called somehow.
                 if (!(Device.connectedDevice?.requestedLimits)!)
                 {
-                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
                     Device.connectedDevice?.requestedLimits = true;
                     //progress += 0.4;
                 }
@@ -397,7 +402,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // if we haven't already, get the hardware version for this device
                 if (!(Device.connectedDevice?.requestedVersion)!)
                 {
-                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_VERSION);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_VERSION);
                     Device.connectedDevice?.requestedVersion = true;
                     progress += 1 / Float(totalPacketsForSetup);
                     BLEVersionTimer.invalidate();
@@ -411,7 +416,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // if we haven't already, getBrightness for this device, so that we'll know it when we change it on the settings screen
                 if (!(Device.connectedDevice?.requestedBrightness)!)
                 {
-                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS);
                     Device.connectedDevice?.requestedBrightness = true;
                     progress += 1 / Float(totalPacketsForSetup);
                 }
@@ -424,7 +429,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 {
                     // storing away the current brightness, so that we can re-apply it when the standby mode is over
                     Device.connectedDevice?.storedBrightness = (Device.connectedDevice?.brightness)!;
-                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: Constants.STANDBY_BRIGHTNESS)
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInts: [Constants.STANDBY_BRIGHTNESS], digitsPerInput: 3)
                     Device.connectedDevice?.requestedBrightnessChange = true;
                     progress += 1 / Float(totalPacketsForSetup);
                 }
@@ -437,7 +442,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 if (!(Device.connectedDevice?.requestedStandbyActivated)!)
                 {
                         // turn on the standby mode (any value other than '0' is turning it on)
-                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY, inputInt: 1);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY, inputInts: [1], digitsPerInput: 1);
                     Device.connectedDevice?.requestedStandbyActivated = true;
                     progress += 1 / Float(totalPacketsForSetup);
                 }
@@ -450,7 +455,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // if we haven't already, getBatteryLevel for this device, so that we'll know it when we change it on the settings screen
                 if (!(Device.connectedDevice?.requestedBattery)!)
                 {
-                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL);
                     Device.connectedDevice?.requestedBattery = true;
                     progress += 1 / Float(totalPacketsForSetup);
                 }
@@ -463,20 +468,20 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     // how much progress each Get Name is "worth"
                 let progressValue: Float = 2 / Float(totalPacketsForSetup);
                 
-                // MARK: Debugging nRF51822, skipping "!GN10"
-                if (Device.connectedDevice?.hardwareVersion == .NRF51822 && ((Device.connectedDevice?.modes.count)! + 1 == 10 || (Device.connectedDevice?.modes.count)! + 1 == 13))
-                {
-                    let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
-                    
-                    Device.connectedDevice?.modes += [Mode(name: "ERROR", index: currentIndex, usesBitmap: true, bitmapIndex: 1, colors: [nil])!];
-                    progress += 3 / Float(totalPacketsForSetup);
-                    
-                        // if this would complete our set of modes, return
-                    if ((Device.connectedDevice?.modes.count)! >= (Device.connectedDevice?.maxNumModes)!)
-                    {
-                        return;
-                    }
-                }
+                // FIXME: Debugging nRF51822, skipping "!GN10"
+//                if (Device.connectedDevice?.hardwareVersion == .NRF51822 && ((Device.connectedDevice?.modes.count)! + 1 == 10 || (Device.connectedDevice?.modes.count)! + 1 == 13))
+//                {
+//                    let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
+//
+//                    Device.connectedDevice?.modes += [Mode(name: "ERROR", index: currentIndex, usesBitmap: true, bitmapIndex: 1, colors: [nil])!];
+//                    progress += 3 / Float(totalPacketsForSetup);
+//
+//                        // if this would complete our set of modes, return
+//                    if ((Device.connectedDevice?.modes.count)! >= (Device.connectedDevice?.maxNumModes)!)
+//                    {
+//                        return;
+//                    }
+//                }
                 
                     // if we haven't yet, request the name of the first mode we need
                 if (!(Device.connectedDevice?.requestedName)!)
@@ -484,7 +489,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                         // getting the name of the next Mode
                     loadingLabel.text = "Reading Mode \((Device.connectedDevice?.modes.count)! + 1) of \(Device.connectedDevice!.maxNumModes) from hardware";
                     
-                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInt: (Device.connectedDevice?.modes.count)! + 1);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInts: [(Device.connectedDevice?.modes.count)! + 1]);
                     Device.connectedDevice?.requestedName = true;
                     Device.connectedDevice?.receivedName = false;
                     progress += progressValue;
@@ -494,7 +499,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 else if ((Device.connectedDevice?.receivedName)! && !(Device.connectedDevice?.requestedMode)!)
                 {
                         // getting the details about the next Mode
-                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInt: (Device.connectedDevice?.modes.count)! + 1);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInts: [(Device.connectedDevice?.modes.count)! + 1]);
                     Device.connectedDevice?.requestedMode = true;
                     progress += 1 / Float(totalPacketsForSetup);
                 }
@@ -509,17 +514,17 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     // 4 packets per row
                 let progressValue: Float = 4 / Float(totalPacketsForSetup);
                 
-                    // MARK: nRF51822-specific bug, skipping thumbnails 10 and 13
-                if (Device.connectedDevice?.hardwareVersion == .NRF51822 && ((Device.connectedDevice?.thumbnails.count)! + 1 == 10 || (Device.connectedDevice?.thumbnails.count)! + 1 == 13))
-                {
-                    let errorBitmap = UIImage(named: "Bitmap2")!;
-                    Device.connectedDevice?.thumbnails.append(errorBitmap);
-                    progress += progressValue * 20;
-                    if ((Device.connectedDevice?.thumbnails.count)! >= (Device.connectedDevice?.maxBitmaps)!)
-                    {
-                        return;
-                    }
-                }
+                    // FIXME: nRF51822-specific bug, skipping thumbnails 10 and 13
+//                if (Device.connectedDevice?.hardwareVersion == .NRF51822 && ((Device.connectedDevice?.thumbnails.count)! + 1 == 10 || (Device.connectedDevice?.thumbnails.count)! + 1 == 13))
+//                {
+//                    let errorBitmap = UIImage(named: "Bitmap2")!;
+//                    Device.connectedDevice?.thumbnails.append(errorBitmap);
+//                    progress += progressValue * 20;
+//                    if ((Device.connectedDevice?.thumbnails.count)! >= (Device.connectedDevice?.maxBitmaps)!)
+//                    {
+//                        return;
+//                    }
+//                }
                 
                     // if we haven't already
                 if (!(Device.connectedDevice?.requestedThumbnail)!)
@@ -533,7 +538,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     loadingLabel.text = "Reading Bitmap \((Device.connectedDevice?.thumbnails.count)! + 1) of \(Device.connectedDevice!.maxBitmaps) from hardware";
                     
                         // request the current thumbnail at the current row
-                    getValue(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL, inputInt:  (Device.connectedDevice?.thumbnails.count)! + 1, secondInputInt: (Device.connectedDevice?.thumbnailRowIndex)!);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL, inputInts:  [(Device.connectedDevice?.thumbnails.count)! + 1, (Device.connectedDevice?.thumbnailRowIndex)!]);
                     Device.connectedDevice?.requestedThumbnail = true;
                     
                     progress += progressValue;
@@ -566,7 +571,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     
                         // set the brightness back to the initial pre-standby brightness we stored
                     
-                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInt: brightness);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInts: [brightness], digitsPerInput: 3);
                     Device.connectedDevice?.storedBrightness = -1;
                     Device.connectedDevice?.requestedBrightnessChange = true;
                     
@@ -581,7 +586,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 if !((Device.connectedDevice?.requestedStandbyDeactivated)!)
                 {
                         // deactivating the standby mode
-                    getValue(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY, inputInt: 0);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY, inputInts: [0], digitsPerInput: 1);
                     Device.connectedDevice?.requestedStandbyDeactivated = true;
                     
                     progress += 1 / Float(totalPacketsForSetup);
@@ -607,14 +612,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         if ((Device.connectedDevice?.requestedThumbnail)!)
         {
+            print(" ")
+            print(" ^   ^   ^   ^   ^   ^   ^   ^   ^   ^   ^   ^   ^")
+            print("********** Thumbnail request timed out ***********")
+            print(" ")
             let progressValue: Float = 4 / Float(totalPacketsForSetup);
             progress -= progressValue;
             NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RESEND_THUMBNAIL_ROW), object: nil);
-                // FIXME: trying to figure out what went wrong with the nRF8001
-            let delayTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false)
-            { timer in
-                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
-            }
+            
+            
         }
     }
     
@@ -725,60 +731,63 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     @objc func updateModeOnHardware()
     {
-        if (!(Device.connectedDevice?.isConnected)!)
-        {
-            print("Device is not connected");
-            return;
-        }
-        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
-        {
-            print("Disconnected");
-            
-            // error popup
-            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
-            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
-            {(action) -> Void in
-                print("Should go to the Connect Screen at this point");
-                _ = self.navigationController?.popToRootViewController(animated: true);
-            })
-            
-            dialogMessage.addAction(ok);
-            
-            self.present(dialogMessage, animated: true, completion: nil);
-            // shows the Connection page (hopefully/eventually)
-            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
-            //self.show(newViewController, sender: self);
-        }
-        
-            // converting to an unsigned byte integer
-        let modeIndexUInt: UInt8 = UInt8(Device.connectedDevice!.currentModeIndex);
-        
-        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_MODE;// + "\(modeIndexUInt)";
-        //print(valueString);
-        let stringArray: [UInt8] = Array(valueString.utf8);
-        let valueArray = stringArray + [modeIndexUInt]
-            // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
-        let valueData = NSData(bytes: valueArray, length: valueArray.count)
-        
-        //print("\(String(describing: valueNSString))");
-        //let valueNSData = valueNSString! + modeIndexUInt;
-        //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
-        //{
-        //print("sending " + valueString, Device.connectedDevice!.currentModeIndex, valueData, "to primary peripheral");
-        
-        
-        
-            // setting "active request" flag
-        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_MODE, inputInts: [Device.connectedDevice!.currentModeIndex])
         Device.connectedDevice?.requestedModeChange = true;
-        
-        //var mimicDevice: Device;
-        
-        
-        
-        //Device.connectedDevice!.peripheral.writeValue(valueNSString!, for: Device.connectedDevice!.txCharacteristic!, type:CBCharacteristicWriteType.withoutResponse)
-        //}
     }
+//        if (!(Device.connectedDevice?.isConnected)!)
+//        {
+//            print("Device is not connected");
+//            return;
+//        }
+//        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+//        {
+//            print("Disconnected");
+//
+//            // error popup
+//            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+//            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+//            {(action) -> Void in
+//                print("Should go to the Connect Screen at this point");
+//                _ = self.navigationController?.popToRootViewController(animated: true);
+//            })
+//
+//            dialogMessage.addAction(ok);
+//
+//            self.present(dialogMessage, animated: true, completion: nil);
+//            // shows the Connection page (hopefully/eventually)
+//            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+//            //self.show(newViewController, sender: self);
+//        }
+//
+//            // converting to an unsigned byte integer
+//        let modeIndexUInt: UInt8 = UInt8(Device.connectedDevice!.currentModeIndex);
+//
+//        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_MODE;// + "\(modeIndexUInt)";
+//        //print(valueString);
+//        let stringArray: [UInt8] = Array(valueString.utf8);
+//        let valueArray = stringArray + [modeIndexUInt]
+//            // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
+//        let valueData = NSData(bytes: valueArray, length: valueArray.count)
+//
+//        //print("\(String(describing: valueNSString))");
+//        //let valueNSData = valueNSString! + modeIndexUInt;
+//        //if let Device.connectedDevice!.txCharacteristic = txCharacteristic
+//        //{
+//        //print("sending " + valueString, Device.connectedDevice!.currentModeIndex, valueData, "to primary peripheral");
+//
+//
+//
+//            // setting "active request" flag
+//        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
+//        Device.connectedDevice?.requestedModeChange = true;
+//
+//        //var mimicDevice: Device;
+//
+//
+//
+//        //Device.connectedDevice!.peripheral.writeValue(valueNSString!, for: Device.connectedDevice!.txCharacteristic!, type:CBCharacteristicWriteType.withoutResponse)
+//        //}
+//    }
     
         // because changes like bitmaps aren't saved to the hardware, we have to re-set them from our memory once the mode has changed
     @objc func updateModeSettings()
@@ -793,127 +802,165 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         }
     }
     
+        // since "Set Colors" has to be sent in two packets on the nRF51822
+    @objc func setSecondColorOnNRF51822()
+    {
+        setColor(colorIndex: 2, color: (Device.connectedDevice?.mode?.color2)!)
+        
+        saveDevice();
+    }
+    
         // needs to be done on selection so that it can match the phone
     func setBitmap(_ bitmapIndex: Int)
     {
-        if (!(Device.connectedDevice?.isConnected)!)
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_BITMAP, inputInts: [bitmapIndex], sendToMimicDevices: true)
+    }
+        
+//        if (!(Device.connectedDevice?.isConnected)!)
+//        {
+//            print("Device is not connected");
+//            return;
+//        }
+//        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+//        {
+//            print("Disconnected");
+//
+//            // error popup
+//            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+//            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+//            {(action) -> Void in
+//                print("Should go to the Connect Screen at this point");
+//                _ = self.navigationController?.popToRootViewController(animated: true);
+//            })
+//
+//            dialogMessage.addAction(ok);
+//
+//            self.present(dialogMessage, animated: true, completion: nil);
+//            // shows the Connection page (hopefully/eventually)
+//            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+//            //self.show(newViewController, sender: self);
+//            return;
+//        }
+//
+//        let bitmapIndexUInt: UInt8 = UInt8(bitmapIndex);
+//
+//        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_BITMAP;// + "\(modeIndexUInt)";
+//
+//        let stringArray: [UInt8] = Array(valueString.utf8);
+//        let valueArray = stringArray + [bitmapIndexUInt]
+//        // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
+//        let valueData = NSData(bytes: valueArray, length: valueArray.count)
+//
+//        //print("sending: " + valueString, bitmapIndexUInt);
+//
+//        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
+//
+//    }
+        // the setColor command for the nRF51822, which can only set one at a time
+    func setColor(colorIndex: Int, color: UIColor, setBothColors: Bool = false)
+    {
+        if (setBothColors)
         {
-            print("Device is not connected");
-            return;
+            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: [1] + convertUIColorToIntArray(color), digitsPerInput: 3, sendToMimicDevices: true)
+                // setting flag
+            Device.connectedDevice?.requestedFirstOfTwoColorsChanged = true;
         }
-        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        else
         {
-            print("Disconnected");
-            
-            // error popup
-            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
-            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
-            {(action) -> Void in
-                print("Should go to the Connect Screen at this point");
-                _ = self.navigationController?.popToRootViewController(animated: true);
-            })
-            
-            dialogMessage.addAction(ok);
-            
-            self.present(dialogMessage, animated: true, completion: nil);
-            // shows the Connection page (hopefully/eventually)
-            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
-            //self.show(newViewController, sender: self);
-            return;
+            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: [colorIndex] + convertUIColorToIntArray(color), digitsPerInput: 3, sendToMimicDevices: true)
         }
-        
-        let bitmapIndexUInt: UInt8 = UInt8(bitmapIndex);
-        
-        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_BITMAP;// + "\(modeIndexUInt)";
-        
-        let stringArray: [UInt8] = Array(valueString.utf8);
-        let valueArray = stringArray + [bitmapIndexUInt]
-        // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
-        let valueData = NSData(bytes: valueArray, length: valueArray.count)
-        
-        //print("sending: " + valueString, bitmapIndexUInt);
-        
-        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
         
     }
     
+        // the setColors command for the nRF8001, which can set both simultaneously
     func setColors(color1: UIColor, color2: UIColor)
     {
-        // checking for disconnection before using a BLE command
-        if (!(Device.connectedDevice?.isConnected)!)
+        if (Device.connectedDevice!.hardwareVersion == .NRF51822)
         {
-            print("Device is not connected");
-            return;
+            setColor(colorIndex: 1, color: color1, setBothColors: true)
         }
-        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+        else
         {
-            print("Disconnected");
-            
-            // error popup
-            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
-            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
-            {(action) -> Void in
-                print("Should go to the Connect Screen at this point");
-                _ = self.navigationController?.popToRootViewController(animated: true);
-            })
-            
-            dialogMessage.addAction(ok);
-            
-            self.present(dialogMessage, animated: true, completion: nil);
-            // shows the Connection page (hopefully/eventually)
-            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
-            //self.show(newViewController, sender: self);
-            return;
+            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: convertUIColorToIntArray(color1) + convertUIColorToIntArray(color2), digitsPerInput: 3, sendToMimicDevices: true)
         }
         
-        // creating variables for RGB values of color
-        var red: CGFloat = 0;
-        var green: CGFloat = 0;
-        var blue: CGFloat = 0;
-        var alpha: CGFloat = 0;
-        
-        // getting color1's RGB values (from 0 to 1.0)
-        color1.getRed(&red, green: &green, blue: &blue, alpha: &alpha);
-        
-        // scaling up to 255
-        red *= 255;
-        green *= 255;
-        blue *= 255;
-        
-        // removing decimal places, removing signs, and making them UInt8s
-        let red1 = convertToLegalUInt8(Int(red));
-        let green1 = convertToLegalUInt8(Int(green));
-        let blue1 = convertToLegalUInt8(Int(blue));
-        
-        // getting color2's RGB values
-        color2.getRed(&red, green: &green, blue: &blue, alpha: &alpha);
-        
-        // scaling up to 255
-        red *= 255;
-        green *= 255;
-        blue *= 255;
-        
-        // removing decimal places, removing signs, and making them UInt8s
-        let red2 = convertToLegalUInt8(Int(red));
-        let green2 = convertToLegalUInt8(Int(green));
-        let blue2 = convertToLegalUInt8(Int(blue));
-        
-        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_COLOR;
-        
-        let stringArray: [UInt8] = Array(valueString.utf8);
-        var valueArray = stringArray;
-        valueArray += [red1];
-        valueArray += [green1];
-        valueArray += [blue1];
-        valueArray += [red2];
-        valueArray += [green2];
-        valueArray += [blue2];
-        // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
-        let valueData = NSData(bytes: valueArray, length: valueArray.count)
-        
-        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
     }
-    
+//
+//        // checking for disconnection before using a BLE command
+//        if (!(Device.connectedDevice?.isConnected)!)
+//        {
+//            print("Device is not connected");
+//            return;
+//        }
+//        else if (Device.connectedDevice!.peripheral.state == CBPeripheralState.disconnected)
+//        {
+//            print("Disconnected");
+//
+//            // error popup
+//            let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
+//            let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
+//            {(action) -> Void in
+//                print("Should go to the Connect Screen at this point");
+//                _ = self.navigationController?.popToRootViewController(animated: true);
+//            })
+//
+//            dialogMessage.addAction(ok);
+//
+//            self.present(dialogMessage, animated: true, completion: nil);
+//            // shows the Connection page (hopefully/eventually)
+//            //let newViewController: BLEConnectionTableViewController = BLEConnectionTableViewController();
+//            //self.show(newViewController, sender: self);
+//            return;
+//        }
+//
+//        // creating variables for RGB values of color
+//        var red: CGFloat = 0;
+//        var green: CGFloat = 0;
+//        var blue: CGFloat = 0;
+//        var alpha: CGFloat = 0;
+//
+//        // getting color1's RGB values (from 0 to 1.0)
+//        color1.getRed(&red, green: &green, blue: &blue, alpha: &alpha);
+//
+//        // scaling up to 255
+//        red *= 255;
+//        green *= 255;
+//        blue *= 255;
+//
+//        // removing decimal places, removing signs, and making them UInt8s
+//        let red1 = convertToLegalUInt8(Int(red));
+//        let green1 = convertToLegalUInt8(Int(green));
+//        let blue1 = convertToLegalUInt8(Int(blue));
+//
+//        // getting color2's RGB values
+//        color2.getRed(&red, green: &green, blue: &blue, alpha: &alpha);
+//
+//        // scaling up to 255
+//        red *= 255;
+//        green *= 255;
+//        blue *= 255;
+//
+//        // removing decimal places, removing signs, and making them UInt8s
+//        let red2 = convertToLegalUInt8(Int(red));
+//        let green2 = convertToLegalUInt8(Int(green));
+//        let blue2 = convertToLegalUInt8(Int(blue));
+//
+//        let valueString = EnlightedBLEProtocol.ENL_BLE_SET_COLOR;
+//
+//        let stringArray: [UInt8] = Array(valueString.utf8);
+//        var valueArray = stringArray;
+//        valueArray += [red1];
+//        valueArray += [green1];
+//        valueArray += [blue1];
+//        valueArray += [red2];
+//        valueArray += [green2];
+//        valueArray += [blue2];
+//        // credit to https://stackoverflow.com/questions/24039868/creating-nsdata-from-nsstring-in-swift
+//        let valueData = NSData(bytes: valueArray, length: valueArray.count)
+//
+//        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
+//    }
+//
 //    // old "initial selection" code
 //    func tableView(_tableView: UITableView, willDisplayCell: ModeTableViewCell, forRowAtIndexPath: IndexPath)
 //    {
@@ -994,12 +1041,47 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         return UInt8(output);
     }
     
-        // sends get commands to the hardware, using the protocol as the inputString (and an optional int or two at the end, for certain getters)
-    private func getValue(_ inputString: String, inputInt: Int = -1, secondInputInt: Int = -1)
+    // takes an Int and makes sure it will fit in an unsigned Int8 (including calling abs())
+    private func convertToLegalInt(_ value: Int) -> Int
+    {
+            // absolute value
+        var output = abs(value);
+        
+        output = min(Int(UInt8.max), max(value, Int(UInt8.min)));
+        
+        return output;
+    }
+    
+    private func convertUIColorToIntArray(_ color: UIColor) -> [Int]
+    {
+        // creating variables for RGB values of color
+        var red: CGFloat = 0;
+        var green: CGFloat = 0;
+        var blue: CGFloat = 0;
+        var alpha: CGFloat = 0;
+        
+        // getting color1's RGB values (from 0 to 1.0)
+        color.getRed(&red, green: &green, blue: &blue, alpha: &alpha);
+        
+        // scaling up to 255
+        red *= 255;
+        green *= 255;
+        blue *= 255;
+        
+        // removing decimal places, removing signs
+        let redInt = convertToLegalInt(Int(red));
+        let greenInt = convertToLegalInt(Int(green));
+        let blueInt = convertToLegalInt(Int(blue));
+        
+        return [redInt] + [greenInt] + [blueInt];
+    }
+    
+        // sends commands to the hardware, using the protocol as the inputString (and an optional few ints at the end, for certain commands)
+    private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int](), digitsPerInput: Int = 2, sendToMimicDevices: Bool = false)
     {
         print(" ");
         print(" ");
-        print("About to send BLE command \(inputString) with potential inputs \(inputInt) and \(secondInputInt)")
+        print("About to send BLE command \(inputString) with potential inputs \(inputInts)")
         if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
@@ -1027,37 +1109,143 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             return;
         }
         
+            // formatting data
+        let outputData = Device.formatPacket(inputString, inputInts: inputInts, digitsPerInput: digitsPerInput)
         
-        
-            // if an input value was specified, especially for the getName/getMode commands, add it to the package
-        if (inputInt != -1)
-        {
-            if (secondInputInt != -1)
-            {
-                let uInputInt: UInt8 = UInt8(inputInt);
-                let secondUInputInt: UInt8 = UInt8(secondInputInt);
-                let stringArray: [UInt8] = Array(inputString.utf8);
-                let outputArray = stringArray + [uInputInt] + [secondUInputInt];
-                let outputData = NSData(bytes: outputArray, length: outputArray.count)
-                BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
-            }
-            else
-            {
-                let uInputInt: UInt8 = UInt8(inputInt);
-                let stringArray: [UInt8] = Array(inputString.utf8);
-                let outputArray = stringArray + [uInputInt];
-                print(outputArray);
-                let outputData = NSData(bytes: outputArray, length: outputArray.count)
-                BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
-            }
-        }
-        else
-        {
-            let inputNSString = (inputString as NSString).data(using: String.Encoding.ascii.rawValue);
-            // https://stackoverflow.com/questions/40088253/how-can-i-print-the-content-of-a-variable-of-type-data-using-swift for printing NSString
-            BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: inputNSString! as NSData, sendToMimicDevices: false);
-        }
+//            // formatting the string part of the packet
+//        var intsToParse = inputInts;
+//        let stringArray: [UInt8] = Array(inputString.utf8);
+//        var uInt8Array = [UInt8]();
+//            // formatting ints, if any
+//        if (intsToParse.count > 0)
+//        {
+//            while (intsToParse.count > 0)
+//            {
+//                    // the nRF51822 protocol requires special formatting
+//                    // FIXME: temporary exception for nRF51822's Set Standby, as that doesn't take a char currently
+//                if (Device.connectedDevice!.hardwareVersion == .NRF51822 && !inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY))
+//                {
+//                    uInt8Array += (formatForNRF51822(intsToParse[0], numExpectedDigits: digitsPerInput));
+//                }
+//                else
+//                {
+//                    uInt8Array.append(UInt8(intsToParse[0]));
+//                }
+//
+//                intsToParse.remove(at: 0);
+//            }
+//        }
+//
+//            // formatting as data
+//        let outputArray = stringArray + uInt8Array;
+//        let outputData = NSData(bytes: outputArray, length: outputArray.count);
+            // sending to peripheral(s)
+        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: sendToMimicDevices)
     }
+//
+//            // if an input value was specified, especially for the getName/getMode commands, add it to the package
+//        if (inputInt != -1)
+//        {
+//            if (secondInputInt != -1)
+//            {
+//
+//                let uInputInt: UInt8 = UInt8(inputInt);
+//                let secondUInputInt: UInt8 = UInt8(secondInputInt);
+//                let stringArray: [UInt8] = Array(inputString.utf8);
+//
+//                var outputArray = [UInt8]();
+//
+//                    // the nRF51822 protocol requires special formatting
+//                if (Device.connectedDevice!.hardwareVersion == .NRF51822)
+//                {
+//                    outputArray = stringArray + formatForNRF51822(inputInt, numExpectedDigits: digitsPerInput) + formatForNRF51822(secondInputInt, numExpectedDigits: digitsPerInput);
+//                }
+//                else
+//                {
+//                    outputArray = stringArray + [uInputInt] + [secondUInputInt];
+//                }
+//
+//                let outputData = NSData(bytes: outputArray, length: outputArray.count)
+//                BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
+//            }
+//            else
+//            {
+//                let uInputInt: UInt8 = UInt8(inputInt);
+//                let stringArray: [UInt8] = Array(inputString.utf8);
+//
+//                var outputArray = [UInt8]();
+//
+//                    // the nRF51822 protocol requires special formatting
+//                if (Device.connectedDevice!.hardwareVersion == .NRF51822)
+//                {
+//                    outputArray = stringArray + formatForNRF51822(inputInt, numExpectedDigits: digitsPerInput);
+//                }
+//                else
+//                {
+//                    outputArray = stringArray + [uInputInt];
+//                }
+//
+//                //let outputArray = stringArray + [uInputInt];
+//                print(outputArray);
+//                let outputData = NSData(bytes: outputArray, length: outputArray.count)
+//                BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: false)
+//            }
+//        }
+//        else
+//        {
+//            let inputNSString = (inputString as NSString).data(using: String.Encoding.ascii.rawValue);
+//            // https://stackoverflow.com/questions/40088253/how-can-i-print-the-content-of-a-variable-of-type-data-using-swift for printing NSString
+//            BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: inputNSString! as NSData, sendToMimicDevices: false);
+//        }
+//    }
+    
+        // because the new protocol for the nRF51822 is to send each digit of a number as its own ASCII digit, we have to separate them (and add leading zeroes if necessary)
+    private func formatForNRF51822(_ input: Int, numExpectedDigits: Int = 2) -> [UInt8]
+    {
+        var inputString = String(input);
+        var output = [UInt8]();
+        
+        // hundreds place (if necessary)
+        while inputString.count < numExpectedDigits
+        {
+                // add as many leading zeroes as necessary
+            inputString = "0" + inputString;
+        }
+        
+        output = Array(inputString.utf8);
+        return output;
+        
+    }
+//            // hundreds place (if necessary)
+//        if (numExpectedDigits > 2)
+//        {
+//            if (input > 99)
+//            {
+//                output.append(UInt8(String((input / 100) % 10)));
+//            }
+//            else
+//            {
+//                output.append(UInt8(0));
+//            }
+//        }
+//            // tens place (if necessary)
+//        if (numExpectedDigits > 1)
+//        {
+//            if (input > 9)
+//            {
+//                output.append(UInt8((input / 10) % 10))
+//            }
+//            else
+//            {
+//                output.append(UInt8(0));
+//            }
+//        }
+//
+//            // ones place
+//        output.append(UInt8((input % 10)));
+        
+        //return output;
+    //}
     
         // saves the Device after loading
     @objc private func saveDevice()
@@ -1103,9 +1291,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         }
         
         let isSuccessfulSave = NSKeyedArchiver.archiveRootObject(cachedDevices, toFile: Device.ArchiveURL.path);
-        if isSuccessfulSave {
+        if isSuccessfulSave
+        {
             os_log("Devices successfully saved.", log: OSLog.default, type: .debug)
-        } else {
+        }
+        else
+        {
             os_log("Failed to save devices...", log: OSLog.default, type: .error)
         }
     }
