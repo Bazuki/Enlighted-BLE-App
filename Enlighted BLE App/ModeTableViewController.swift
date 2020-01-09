@@ -49,6 +49,11 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 //    var brightnessCounter = 0;
 //    var startedTimer = false;
     
+        // used in timing how long reloading modes takes
+    var reloadStopwatch = Date()
+    
+    
+    
         // whether or not the currently selected mode has to be initialized
     var initialModeSelected = false;
     
@@ -65,6 +70,20 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewDidLoad();
 
+            // making sure observers are only added once
+        NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(setSecondColorOnNRF51822), name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(prepareForSetup), name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil)
+        
+            // when we connect to a new device (like a mimic), send the current mode settings
+        NotificationCenter.default.addObserver(self, selector: #selector(updateModeOnHardware), name: Notification.Name(rawValue:  Constants.MESSAGES.DISCOVERED_MIMIC_CHARACTERISTICS), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(requestNextDataWithDelay), name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(saveDevice), name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil)
+        
             // storing the height of the loading label, so we can restore it to this height if we have to re-load
         initialLoadingItemsHeight = loadingItems.frame.size.height;
         
@@ -83,24 +102,14 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
             // Uncomment the following line to preserve selection between presentations
         self.clearsSelectionOnViewWillAppear = false;
+        
     }
 
     override func viewWillAppear(_ animated: Bool)
     {
         super.viewWillAppear(animated);
         
-        NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(setSecondColorOnNRF51822), name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil)
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(prepareForSetup), name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil)
-        
-            // when we connect to a new device (like a mimic), send the current mode settings
-        NotificationCenter.default.addObserver(self, selector: #selector(updateModeOnHardware), name: Notification.Name(rawValue:  Constants.MESSAGES.DISCOVERED_MIMIC_CHARACTERISTICS), object: nil)
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(setUpTable), name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil)
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(saveDevice), name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil)
         
         
             // getLimits for this device, though not if it's a demo device
@@ -264,16 +273,23 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // disabling user interaction with the empty TableView until loading is complete
         modeTableView.isUserInteractionEnabled = false;
         
-        setUpTable();
+        requestNextData();
         
         //print("Setting timer");
+        reloadStopwatch = Date();
+        
+            // MARK: profiling stopwatch
+        if (Device.profiling && !deviceHasModes && !Device.currentlyProfiling)
+        {
+            Device.profilerStopwatch = Date();
+            Device.currentlyProfiling = true;
+        }
         // Set the timer that governs the setup of the mode table
             // FIXME: trying to see what went wrong on the nRF8001
         //self.timer = Timer.scheduledTimer(timeInterval: 0.02, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
-        
     }
     
-    @objc func setUpTable()
+    @objc func requestNextData()
     {
             // update progress
         loadingProgressView.setProgress(progress, animated: true);
@@ -349,6 +365,31 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             
                 // setting the inital mode of the Device
             Device.connectedDevice?.mode = modes[(Device.connectedDevice?.currentModeIndex)! - 1];
+            
+                // displaying how long it took to reload the modes
+            let diff = Date().timeIntervalSince(reloadStopwatch);
+            print("");
+            print("");
+            print("*********************              Reloading the modes took \(diff) seconds.");
+            print("");
+            print("");
+            
+            // MARK: profiling: completing file
+            if (Device.profiling && Device.currentlyProfiling)
+            {
+                Device.currentlyProfiling = false;
+                do
+                {
+                    try Device.csvText.write(to: Device.profilerPath!, atomically: true, encoding: String.Encoding.utf8)
+                    let vc = UIActivityViewController(activityItems: [Device.profilerPath!], applicationActivities: [])
+                    present(vc, animated: true, completion: nil)
+                }
+                catch
+                {
+                    print("Failed to create file")
+                    print("\(error)")
+                }
+            }
             
             let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
             
@@ -598,7 +639,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             else
             {
                 Device.connectedDevice?.readyToShowModes = true;
-                setUpTable();
+                requestNextData();
             }
         }
 //        else
@@ -635,6 +676,26 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
             //print("Changed device's hardware version variable to \(String(describing: Device.connectedDevice?.hardwareVersion))")
         }
+    }
+    
+        // FIXME: adding a delay to requesting packets from the nRF8001
+    @objc func requestNextDataWithDelay()
+    {
+        if (Device.connectedDevice!.hardwareVersion == .NRF8001)
+        {
+            delayTimer.invalidate();
+            os_log("Since we're using older hardware, delaying message", log: OSLog.default, type: .debug);
+            delayTimer = Timer.scheduledTimer(withTimeInterval: 0.025, repeats: false)
+            { timer in
+                os_log("Sending message", log: OSLog.default, type: .debug);
+                self.requestNextData();
+            }
+        }
+        else
+        {
+            requestNextData();
+        }
+        
     }
     
     
@@ -1081,7 +1142,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         print(" ");
         print(" ");
-        print("About to send BLE command \(inputString) with potential inputs \(inputInts)")
+        print("About to send BLE command \(inputString) with arguments \(inputInts)")
         if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
@@ -1122,7 +1183,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 //            while (intsToParse.count > 0)
 //            {
 //                    // the nRF51822 protocol requires special formatting
-//                    // FIXME: temporary exception for nRF51822's Set Standby, as that doesn't take a char currently
+//                    // FIX-ME: temporary exception for nRF51822's Set Standby, as that doesn't take a char currently
 //                if (Device.connectedDevice!.hardwareVersion == .NRF51822 && !inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY))
 //                {
 //                    uInt8Array += (formatForNRF51822(intsToParse[0], numExpectedDigits: digitsPerInput));

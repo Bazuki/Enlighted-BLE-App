@@ -19,6 +19,8 @@ var blePeripheral: CBPeripheral?;
     // temporary place to display read Characteristic strings, before parsing
 var rxCharacteristicValue = String();//NSData();
 
+// a timer to see how long the BLE board takes to respond to BLE requests
+var packetStopwatch = Date();
 
 class BLEConnectionTableViewController: UITableViewController, CBCentralManagerDelegate, CBPeripheralDelegate
 {
@@ -52,6 +54,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         // A timer to introduce a delay for older hardware
     var delayTimer = Timer();
+    
+    
     
         // Whether or not the demo device can show up (if there are no "real" devices)
     var canShowDemoDevice = false;
@@ -560,7 +564,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             let rxInt = Int(receivedArray[0]);
             
             // TODO: enable this for debugging; removing for performance
-            print("Received \(receivedArray) from \(String(describing: peripheral.name))");
+            //print("Received \(receivedArray) from \(String(describing: peripheral.name))");
             
             
                 // stopping "active request" flag, because a response has been received
@@ -587,37 +591,37 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // Get Battery
                 else if (rxString?.prefix(1) == "B")
                 {
-                    print("Receiving battery level")
+                    //print("Receiving battery level")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL;
                 }
                     // Get Limits
                 else if (rxString?.prefix(1) == "L")
                 {
-                    print("Receiving limits")
+                    //print("Receiving limits")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_LIMITS;
                 }
                     // Get Mode
                 else if (rxString?.prefix(1) == "M")
                 {
-                    print("Receiving a mode's data")
+                    //print("Receiving a mode's data")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_MODE;
                 }
                     // Get Name
                 else if (rxString?.prefix(1) == "\"")
                 {
-                    print("Receiving a mode's name")
+                    //print("Receiving a mode's name")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_NAME;
                 }
                     // Get Brightness
                 else if (rxString?.prefix(1) == "G")
                 {
-                    print("Receiving a brightness value")
+                    //print("Receiving a brightness value")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS;
                 }
                     // Get Version
                 else if (rxString?.prefix(1) == "V")
                 {
-                    print("Receiving a hardware version")
+                    //print("Receiving a hardware version")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_VERSION;
                 }
                 else if (rxInt == 1)
@@ -632,7 +636,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 }
                 else
                 {
-                    print("Unable to parse response")
+                    //print("Unable to parse response")
                     return
                 }
                 
@@ -643,12 +647,38 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             {
                     // evaluating based on packet type whether the packet is complete
                 let completePacket = Constants.PACKET_REQUIREMENTS[currentPacketType]!(currentPacketContents);
-                print("Received complete packet? \(completePacket)")
+                //print("Received complete packet? \(completePacket)")
                     // if we didn't receive a complete packet, we want to return and wait for the next part of it
                 incompletePacketReceived = !completePacket;
                 if (!completePacket)
                 {
+                        // MARK: profiling: receiving incomplete message
+                    if (Device.profiling && Device.currentlyProfiling)
+                    {
+                            // 'type' is 1, an incomplete message
+                        let commandString = "rx: \(currentPacketType) (partial)";
+                        let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(1)\n";
+                        Device.csvText.append(contentsOf: newLine);
+                    }
+                    
+                    
+                    print("incomplete message: waiting for rest of message")
                     return;
+                }
+                else
+                {
+                        // MARK: profiling: receiving complete message
+                    if (Device.profiling && Device.currentlyProfiling)
+                    {
+                            // 'type' is 2, a complete message
+                        let commandString = "rx: \(currentPacketType) (complete)";
+                        let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(2)\n";
+                        Device.csvText.append(contentsOf: newLine);
+                    }
+                    
+                    
+                    let diff = Date().timeIntervalSince(packetStopwatch);
+                    print("Received complete packet in \(diff) seconds")
                 }
             }
             else
@@ -670,7 +700,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // conversion from https://stackoverflow.com/questions/32830866/how-in-swift-to-convert-int16-to-two-uint8-bytes
                 let ADCValue = Int16(rxValue[1]) << 8 | Int16(rxValue[2]);
                 
-                print("Received a complete battery level packet, parsing: " + rxString!.prefix(1), Int(ADCValue));
+                //print("Received a complete battery level packet, parsing: " + rxString!.prefix(1), Int(ADCValue));
                 //print("Value Recieved: " + ;
                 let voltage = (Float(ADCValue) / 1024) * 16.5;
                     // calculates the battery percentage given the voltage
@@ -680,7 +710,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // MARK: Get Limits
             case EnlightedBLEProtocol.ENL_BLE_GET_LIMITS:
                 
-                print("Received a complete limits packet, parsing: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
+                //print("Received a complete limits packet, parsing: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
                 //print(Int(rxValue[1]));
                 Device.connectedDevice?.currentModeIndex = Int(rxValue[1]);
                 Device.connectedDevice?.maxNumModes = Int(rxValue[2]);
@@ -709,14 +739,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     if (usesBitmap)
                     {
                         //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
-                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                        //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
                             // clamping to min/max
                         let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
                         Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil])!];
                     }
                     else
                     {
-                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                        //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
                         
                         let color1 = UIColor(displayP3Red: CGFloat(Float(rxValue[2]) / 255), green: CGFloat(Float(rxValue[3]) / 255), blue: CGFloat(Float(rxValue[4]) / 255), alpha: 1)
                         let color2 = UIColor(displayP3Red: CGFloat(Float(rxValue[5]) / 255), green: CGFloat(Float(rxValue[6]) / 255), blue: CGFloat(Float(rxValue[7]) / 255), alpha: 1)
@@ -727,7 +757,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // if we're currently reverting the mode
                 else if ((Device.connectedDevice?.currentlyRevertingMode)!)
                 {
-                    print("Recieved a mode we want to use for reversion");
+                    //print("Recieved a mode we want to use for reversion");
                     
                     Device.connectedDevice?.mode?.usesBitmap = usesBitmap;
                     
@@ -760,7 +790,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // MARK: Get Name
             case EnlightedBLEProtocol.ENL_BLE_GET_NAME:
                 
-                print("Received a complete name packet: " + rxString!);
+                //print("Received a complete name packet: " + rxString!);
                     // if the end quote is in this string, the whole name was sent in one packet
                 if (rxString!.suffix(1) == "\"")
                 {
@@ -776,7 +806,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // MARK: Get Thumbnail
             case EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL:
                 
-                print("Received a complete thumbnail row, parsing")
+                //print("Received a complete thumbnail row, parsing")
                 bitmapPixelRow = [Pixel]();
                 for i in 0...19
                 {
@@ -831,14 +861,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // MARK: Get Brightness
             case EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS:
                 
-                print("Received a complete brightness level packet, parsing: " + rxString!.prefix(1), Int(rxValue[1]));
+                //print("Received a complete brightness level packet, parsing: " + rxString!.prefix(1), Int(rxValue[1]));
                 Device.connectedDevice?.brightness = Int(rxValue[1]);
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BRIGHTNESS_VALUE), object: nil);
                 
                     // MARK: Get Version
             case EnlightedBLEProtocol.ENL_BLE_GET_VERSION:
                 
-                print("Received a hardware version packet: " + rxString!.prefix(2));
+                //print("Received a hardware version packet: " + rxString!.prefix(2));
                 //(rxString!.prefix(2).suffix(1);
                 Device.connectedDevice?.hardwareVersion = .NRF51822;
                 
@@ -850,8 +880,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // we need to know if a "change mode" was just done, so that we can apply user settings
                 if ((Device.connectedDevice?.requestedModeChange)!)
                 {
+                    print("Since the command to set the mode succeeded, we are going to change the mode settings now.")
                     Device.connectedDevice?.requestedModeChange = false;
                     NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil);
+                }
+                
+                    // we need to know when the first color was changed so we can change the second
+                else if ((Device.connectedDevice!.requestedFirstOfTwoColorsChanged))
+                {
+                    print("Since the command to set the first color succeeded, we are going to set the second one now.")
+                    Device.connectedDevice?.requestedFirstOfTwoColorsChanged = false;
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil);
+                                
                 }
                 
                     // we need to know if the standby was set, in order to do other things in the setup loop
@@ -865,13 +905,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     Device.connectedDevice?.requestedStandbyDeactivated = false;
                     Device.connectedDevice?.isInStandby = false;
                 }
-                    // we need to know when the first color was changed so we can change the second
-                else if ((Device.connectedDevice!.requestedFirstOfTwoColorsChanged))
-                {
-                    print("Since the command to set the first color succeeded, we are going to set the second one now.")
-                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil);
-                    Device.connectedDevice?.requestedFirstOfTwoColorsChanged = false;
-                }
+                
                 
                     // and likewise for the standby brightness change
                 if ((Device.connectedDevice?.requestedBrightnessChange)!)
@@ -926,20 +960,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
                     // FIXME: trying to see what went wrong on the nRF8001
                     // if it's the nRF8001, we need to introduce a bit of delay, otherwise, do this instantly
-                if (Device.connectedDevice?.hardwareVersion == .NRF8001)
-                {
-                    delayTimer.invalidate();
-                    os_log("Since we're using older hardware, delaying message", log: OSLog.default, type: .debug);
-                    delayTimer = Timer.scheduledTimer(withTimeInterval: 0.025, repeats: false)
-                    { timer in
-                        os_log("Sending message", log: OSLog.default, type: .debug);
-                        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
-                    }
-                }
-                else
-                {
-                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
-                }
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
             }
             
 //                // check for the end of a name first, because the first letter could be "L" or "M", etc.
@@ -1436,6 +1457,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             
             print("We disconnected from our connected primary peripheral.");
             print("\(error?.localizedDescription ?? "unknown error")");
+            
             // error popup
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
             let ok = UIAlertAction(title: "OK", style: UIAlertActionStyle.default, handler:
@@ -1452,7 +1474,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     self.deviceTableView.deselectRow(at: index, animated: true);
                 }
                 
-                // scanning again, using the shorter scan time to quickly and roughly update the list
+                // scanning again
                 self.startScan();
                 
             })
@@ -1969,6 +1991,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print("     Sending \(valueData) to primary peripheral");
         print(" ");
         
+            // setting stopwatch
+        packetStopwatch = Date();
+        
+        
         if Device.connectedDevice!.hasDiscoveredCharacteristics
         {
             
@@ -2085,20 +2111,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // tell the ModeTableViewController setup loop to get the thumbnails again
         Device.connectedDevice?.requestedThumbnail = false;
         // FIXME: trying to figure out what went wrong with the nRF8001
-        if (Device.connectedDevice?.hardwareVersion == .NRF8001)
-        {
-            delayTimer.invalidate();
-            os_log("Since we're using older hardware, delaying clear message", log: OSLog.default, type: .debug);
-            delayTimer = Timer.scheduledTimer(withTimeInterval: 0.025, repeats: false)
-            { timer in
-                os_log("Sending message", log: OSLog.default, type: .debug);
-                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
-            }
-        }
-        else
-        {
-            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
-        }
+        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
     }
     
         // credit to https://stackoverflow.com/questions/30958427/pixel-array-to-uiimage-in-swift

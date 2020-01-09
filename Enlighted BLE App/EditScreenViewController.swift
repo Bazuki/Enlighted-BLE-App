@@ -945,7 +945,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     {
         print(" ");
         print(" ");
-        print("About to send BLE command \(inputString) with potential inputs \(inputInts)")
+        print("About to send BLE command \(inputString) with arguments \(inputInts)")
         
         if (!(Device.connectedDevice?.isConnected)!)
         {

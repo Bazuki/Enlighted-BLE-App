@@ -35,6 +35,21 @@ class Device: NSObject, NSCoding
     static let DocumentsDirectory = FileManager().urls(for: .documentDirectory, in: .userDomainMask).first!
     static let ArchiveURL = DocumentsDirectory.appendingPathComponent("devices")
     
+    // MARK: Profiling
+    
+        // toggle to enable/disable profiling (maybe should be in constants folder?)
+    static let profiling = false;
+    
+    static var currentlyProfiling = false;
+    
+    static let fileName = "\(Date().timeIntervalSince1970).csv";
+    static let profilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName);
+    
+        // for type: 3 is tx, 2 is rx complete packet, 1 is thumbnail (besides the final one)
+    static var csvText = "Action,Timestamp,Type\n"
+    
+    static var profilerStopwatch = Date();
+    
     var name: String;
     var nickname = "";
     var RSSI: Int;
@@ -348,7 +363,7 @@ class Device: NSObject, NSCoding
     {
         //print(" ");
         //print(" ");
-        //print("Formatting BLE command \(inputString) with potential inputs \(inputInts)")
+        //print("Formatting BLE command \(inputString) with arguments \(inputInts)")
         
         
             // formatting the string part of the packet
@@ -372,15 +387,8 @@ class Device: NSObject, NSCoding
             {
                     // the nRF51822 protocol requires special formatting
                     // FIXME: temporary exception for nRF51822's Set Standby, as that doesn't take a char currently
-                if (!inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_STANDBY))
-                {
-                    uInt8Array51822 += (formatForNRF51822(intsToParse[0], numExpectedDigits: digitsPerInput));
-                }
-                else
-                {
-                    uInt8Array51822.append(UInt8(intsToParse[0]));
-                }
-                
+                uInt8Array51822 += (formatForNRF51822(intsToParse[0], numExpectedDigits: digitsPerInput));
+               
                 uInt8Array8001.append(UInt8(intsToParse[0]));
                 
                 intsToParse.remove(at: 0);
@@ -393,6 +401,17 @@ class Device: NSObject, NSCoding
         
         let outputArray51822 = stringArray + uInt8Array51822;
         let outputData51822 = NSData(bytes: outputArray51822, length: outputArray51822.count);
+        
+            // MARK: profiling: sending message
+        if (Device.profiling && Device.currentlyProfiling)
+        {
+                // 'type' is 3, a sent message
+            var commandString = "tx: \(inputString)";
+            commandString += (inputInts.map { String($0) }.joined(separator: " "));
+            let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(3)\n";
+            Device.csvText.append(contentsOf: newLine);
+        }
+        
             // returning formatted data
         return [outputData8001, outputData51822];
     }
