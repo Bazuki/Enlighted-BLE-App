@@ -35,6 +35,33 @@ class Device: NSObject, NSCoding
     static let DocumentsDirectory = FileManager().urls(for: .documentDirectory, in: .userDomainMask).first!
     static let ArchiveURL = DocumentsDirectory.appendingPathComponent("devices")
     
+    
+    // MARK: Profiling
+    
+        // toggle to enable/disable profiling (maybe should be in constants folder?)
+    static let profiling = true;
+    
+    static var currentlyProfiling = false;
+    
+    static let mainProfilerFileName = "main_\(Date().timeIntervalSince1970).csv";
+    static let mainProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(mainProfilerFileName);
+    
+    static let rxProfilerFileName = "rx_\(Date().timeIntervalSince1970).csv"
+    static let rxProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(rxProfilerFileName);
+    
+    static let txProfilerFileName = "tx_\(Date().timeIntervalSince1970).csv"
+    static let txProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(txProfilerFileName);
+    
+    static var lastTimestamp = 0.0;
+
+    
+        // for type: 3 is tx, 2 is rx complete packet, 1 is thumbnail/name (besides the final one)
+    static var mainCsvText = "Action,Timestamp,Type,Duration\n"
+    static var rxCsvText = "Rx Action,Timestamp,Type,Rx Duration\n"
+    static var txCsvText = "Tx Action,Timestamp,Type,Tx Duration\n"
+    
+    static var profilerStopwatch = Date();
+    
     var name: String;
     var nickname = "";
     var RSSI: Int;

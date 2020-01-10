@@ -241,6 +241,13 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // disabling user interaction with the empty TableView until loading is complete
         modeTableView.isUserInteractionEnabled = false;
         
+        // MARK: profiling stopwatch
+        if (Device.profiling && !deviceHasModes && !Device.currentlyProfiling)
+        {
+            Device.profilerStopwatch = Date();
+            Device.currentlyProfiling = true;
+        }
+        
         print("Setting timer");
         // Set the timer that governs the setup of the mode table
         self.timer = Timer.scheduledTimer(timeInterval: 0.04, target: self, selector: #selector(self.setUpTable), userInfo: nil, repeats: true);
@@ -325,6 +332,52 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             
             // setting the inital mode of the Device
             Device.connectedDevice?.mode = modes[(Device.connectedDevice?.currentModeIndex)! - 1];
+            
+            // MARK: profiling: completing file
+            if (Device.profiling && Device.currentlyProfiling)
+            {
+                Device.currentlyProfiling = false;
+                do
+                {
+                    try Device.mainCsvText.write(to: Device.mainProfilerPath!, atomically: true, encoding: String.Encoding.utf8)
+                    
+                    try Device.rxCsvText.write(to: Device.rxProfilerPath!, atomically: true, encoding: String.Encoding.utf8)
+                    
+                    try Device.txCsvText.write(to: Device.txProfilerPath!, atomically: true, encoding: String.Encoding.utf8)
+                    
+                    let vc = UIActivityViewController(activityItems: [Device.mainProfilerPath!, Device.rxProfilerPath!, Device.txProfilerPath!], applicationActivities: [])
+                    present(vc, animated: true, completion: nil)
+                }
+                catch
+                {
+                    print("Failed to create main file")
+                    print("\(error)")
+                }
+                
+//                do
+//                {
+//                    try Device.rxCsvText.write(to: Device.rxProfilerPath!, atomically: true, encoding: String.Encoding.utf8)
+//                    let vc = UIActivityViewController(activityItems: [Device.rxProfilerPath!], applicationActivities: [])
+//                    present(vc, animated: true, completion: nil)
+//                }
+//                catch
+//                {
+//                    print("Failed to create rx file")
+//                    print("\(error)")
+//                }
+//
+//                do
+//                {
+//                    try Device.txCsvText.write(to: Device.txProfilerPath!, atomically: true, encoding: String.Encoding.utf8)
+//                    let vc = UIActivityViewController(activityItems: [Device.txProfilerPath!], applicationActivities: [])
+//                    present(vc, animated: true, completion: nil)
+//                }
+//                catch
+//                {
+//                    print("Failed to create tx file")
+//                    print("\(error)")
+//                }
+            }
             
             let indexPath = IndexPath(row:(Device.connectedDevice?.currentModeIndex)! - 1, section:0);
             
@@ -900,6 +953,26 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             return;
         }
         
+        // MARK: profiling: sending message
+        if (Device.profiling && Device.currentlyProfiling)
+        {
+                    // 'type' is 3, a sent message
+            var commandString = "tx: \(inputString)";
+            if (inputInt != -1)
+            {
+                commandString += ("\(inputInt)");
+                if (secondInputInt != -1)
+                {
+                    commandString += ("\(secondInputInt)");
+                }
+            }
+            let duration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTimestamp) * 1000;
+            let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(3),\(duration)\n";
+            Device.lastTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
+            Device.mainCsvText.append(contentsOf: newLine);
+            Device.txCsvText.append(contentsOf: newLine);
+            
+        }
         
         
             // if an input value was specified, especially for the getName/getMode commands, add it to the package

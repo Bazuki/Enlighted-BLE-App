@@ -524,6 +524,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 return;
             }
             
+                // profiling string
+            var commandString = "rx: ";
+                // profiling type
+            var profilerMessageType = 2;
+            
             
             var receivedArray: [UInt8] = [];
             
@@ -552,7 +557,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             {
                 if (rxString?.suffix(1) == "\"")
                 {
-                    
+                        // profiler command
+                    commandString.append(contentsOf: "!GN (complete)");
                     Device.connectedDevice?.currentlyParsingName = false;
                     parsedName = parsedName + rxString!.filter { $0 != "\"" };
                 //Device.connectedDevice?.requestedName = false;
@@ -586,6 +592,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // if we just finished a row of 20 pixels, we can go on to the next one
                 if (bitmapPixelRow.count == 20)
                 {
+                     commandString.append(contentsOf: "!GT (complete)");
+                    
                     // if this command was interrupted, we need to make sure it ends, but we don't want it to leave a remnant in the pixel array
                     if ((Device.connectedDevice?.currentlyBuildingThumbnails)!)
                     {
@@ -609,6 +617,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     
                     Device.connectedDevice?.requestedThumbnail = false;
                 }
+                else
+                {
+                    commandString.append(contentsOf: "!GT (partial)");
+                    profilerMessageType = 1;
+                }
                 // if the 20x20 grid is finished, turn it into a UIImage and go on to the next one
                 if (bitmapPixels.count >= 400)
                 {
@@ -630,6 +643,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // if the first letter is "L", we're getting the current mode, max number of modes, and max number of bitmaps.
             else if (rxString?.prefix(1) == "L") //[(rxString?.startIndex)!] == "L")
             {
+                commandString.append(contentsOf: "!GL (complete)");
+                
                 print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
                 //print(Int(rxValue[1]));
                 Device.connectedDevice?.currentModeIndex = Int(rxValue[1]);
@@ -648,6 +663,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // if the first letter is "G", we're getting the brightness, on a scale from 0-255;
             else if (rxString?.prefix(1) == "G") //[(rxString?.startIndex)!] == "G")
             {
+                commandString.append(contentsOf: "!GG (complete)");
+
                 print("Value Recieved: " + rxString!.prefix(1), Int(rxValue[1]));
                 Device.connectedDevice?.brightness = Int(rxValue[1]);
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BRIGHTNESS_VALUE), object: nil);
@@ -655,7 +672,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // if the first letter is "B", we're getting the battery, which must be manipulated to give percentage
             else if (rxString?.prefix(1) == "B")
             {
-                
+                commandString.append(contentsOf: "!GB (complete)");
+
                     // conversion from https://stackoverflow.com/questions/32830866/how-in-swift-to-convert-int16-to-two-uint8-bytes
                 let ADCValue = Int16(rxValue[1]) << 8 | Int16(rxValue[2]);
                 print("Value Recieved: " + rxString!.prefix(1), Int(ADCValue));
@@ -667,6 +685,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // if the first letter is "M", we're getting details about a mode, and need to add it to the Device.connectedDevice's list
             else if (rxString?.prefix(1) == "M")
             {
+                commandString.append(contentsOf: "!GM (complete)");
+
                     // the first value after "M" determines whether or not it's a bitmap-type mode
                 let usesBitmap = (rxValue[1] == 0);
                 
@@ -734,6 +754,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // if the end quote is in this string, the whole name was sent in one packet
                 if (rxString!.suffix(1) == "\"")
                 {
+                    commandString.append(contentsOf: "!GN (complete)");
+
                     let receivedName = rxString!;
                         // taking off quotes
                     parsedName = receivedName.filter { $0 != "\"" }
@@ -745,6 +767,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // otherwise we have to wait for the second half
                 else
                 {
+                    commandString.append(contentsOf: "!GN (partial)");
+
+                    profilerMessageType = 1;
                     Device.connectedDevice?.currentlyParsingName = true;
                     parsedName = rxString!.filter { $0 != "\"" };
                 }
@@ -752,6 +777,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             else if (rxInt == 1)
             {
                 print("Command succeeded.");
+                
+                commandString.append(contentsOf: "Success (complete)");
+
                 
                     // we need to know if a "change mode" was just done, so that we can apply user settings
                 if ((Device.connectedDevice?.requestedModeChange)!)
@@ -793,6 +821,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             }
             else if (rxInt == 0)
             {
+                commandString.append(contentsOf: "Failure (complete)");
+
                 print("Command failed.");
                     // vibrate if command failed
                 AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
@@ -809,6 +839,17 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     print("String recieved: " + (rxString ?? "ERROR"));
                 }
             }
+            
+            // MARK: profiling: receiving message
+            if (Device.profiling && Device.currentlyProfiling)
+            {
+                let duration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTimestamp) * 1000;
+                let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(profilerMessageType),\(duration)\n";
+                Device.lastTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
+                Device.mainCsvText.append(contentsOf: newLine);
+                Device.rxCsvText.append(contentsOf: newLine);
+            }
+                            
             //NotificationCenter.default.post(name:NSNotification.Name(rawValue: "Notify"), object: nil)
         }
             // receiving from other characteristics, most likely the mimic devices' rxCharacteristics
