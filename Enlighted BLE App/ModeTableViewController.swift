@@ -380,8 +380,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 Device.currentlyProfiling = false;
                 do
                 {
-                    try Device.csvText.write(to: Device.profilerPath!, atomically: true, encoding: String.Encoding.utf8)
-                    let vc = UIActivityViewController(activityItems: [Device.profilerPath!], applicationActivities: [])
+                    try Device.mainCsvText.write(to: Device.mainProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
+                    try Device.rxCsvText.write(to: Device.rxProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
+                    try Device.txCsvText.write(to: Device.txProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
+                    let vc = UIActivityViewController(activityItems: [Device.mainProfilerPath!, Device.rxProfilerPath!, Device.txProfilerPath!], applicationActivities: []);
                     present(vc, animated: true, completion: nil)
                 }
                 catch

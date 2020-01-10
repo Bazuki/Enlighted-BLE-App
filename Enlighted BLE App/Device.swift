@@ -42,11 +42,21 @@ class Device: NSObject, NSCoding
     
     static var currentlyProfiling = false;
     
-    static let fileName = "\(Date().timeIntervalSince1970).csv";
-    static let profilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName);
+    static let mainProfilerFileName = "main_\(Date().timeIntervalSince1970).csv";
+    static let mainProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(mainProfilerFileName);
+    
+    static let rxProfilerFileName = "rx_\(Date().timeIntervalSince1970).csv";
+    static let rxProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(rxProfilerFileName);
+    
+    static let txProfilerFileName = "tx_\(Date().timeIntervalSince1970).csv";
+    static let txProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(txProfilerFileName);
+    
+    static var lastTimestamp = 0.0;
     
         // for type: 3 is tx, 2 is rx complete packet, 1 is thumbnail (besides the final one)
-    static var csvText = "Action,Timestamp,Type\n"
+    static var mainCsvText = "Action,Timestamp,Type,Duration\n";
+    static var rxCsvText = "Rx Action,Rx Duration\n";
+    static var txCsvText = "Tx Action,Tx Duration\n";
     
     static var profilerStopwatch = Date();
     
@@ -407,9 +417,13 @@ class Device: NSObject, NSCoding
         {
                 // 'type' is 3, a sent message
             var commandString = "tx: \(inputString)";
+            let duration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTimestamp) * 1000;
+            Device.lastTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
             commandString += (inputInts.map { String($0) }.joined(separator: " "));
-            let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(3)\n";
-            Device.csvText.append(contentsOf: newLine);
+            let newMainLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(3),\(duration)\n";
+            let newTxLine = "\(commandString),\(duration)\n";
+            Device.mainCsvText.append(contentsOf: newMainLine);
+            Device.txCsvText.append(contentsOf: newTxLine);
         }
         
             // returning formatted data

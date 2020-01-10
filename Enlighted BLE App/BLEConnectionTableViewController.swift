@@ -656,9 +656,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     if (Device.profiling && Device.currentlyProfiling)
                     {
                             // 'type' is 1, an incomplete message
+                        let duration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTimestamp) * 1000;
+                        Device.lastTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
                         let commandString = "rx: \(currentPacketType) (partial)";
-                        let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(1)\n";
-                        Device.csvText.append(contentsOf: newLine);
+                        let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(1),\(duration)\n";
+                        let newRxLine = "\(commandString),\(duration)\n";
+                        Device.mainCsvText.append(contentsOf: newLine);
+                        Device.rxCsvText.append(contentsOf: newRxLine);
                     }
                     
                     
@@ -671,9 +675,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     if (Device.profiling && Device.currentlyProfiling)
                     {
                             // 'type' is 2, a complete message
+                        let duration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTimestamp) * 1000;
+                        Device.lastTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
                         let commandString = "rx: \(currentPacketType) (complete)";
-                        let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(2)\n";
-                        Device.csvText.append(contentsOf: newLine);
+                        let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(2),\(duration)\n";
+                        let newRxLine = "\(commandString),\(duration)\n";
+                        Device.mainCsvText.append(contentsOf: newLine);
+                        Device.rxCsvText.append(contentsOf: newRxLine);
                     }
                     
                     
