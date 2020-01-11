@@ -112,6 +112,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         {
             for _ in 0...maxNumBitmaps - 1
             {
+                // FIXME: needs error reporting
+                Device.reportError(Constants.NOT_ENOUGH_STORED_BITMAPS_FOUND)
                 bitmaps += [errorBitmap];
             }
         }
@@ -299,6 +301,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellIdentifier, for: indexPath) as? BitmapPickerCollectionViewCell else
         {
+            // FIXME: needs error reporting
+            Device.reportError(Constants.FAILED_TO_DEQUEUE_COLLECTION_CELLS_FOR_BITMAP_PICKER);
             fatalError("Unable to dequeue collectionViewCell as BitmapPickerCollectionViewCell");
         }
         

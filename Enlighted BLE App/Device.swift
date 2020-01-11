@@ -108,6 +108,12 @@ class Device: NSObject, NSCoding
     var isConnecting: Bool = false;
     var hasDiscoveredCharacteristics: Bool = false;
     
+        // quasi-"handshaking" error check
+    var expectedPacketType = "";
+    
+        // if a message fails/gives an improper response, we can send it again
+    var lastUnsentMessage = [NSData]();
+    
         // flags for parsing individual packets
     var requestedLimits = false;
     var requestedBrightness = false;
@@ -396,7 +402,6 @@ class Device: NSObject, NSCoding
             while (intsToParse.count > 0)
             {
                     // the nRF51822 protocol requires special formatting
-                    // FIXME: temporary exception for nRF51822's Set Standby, as that doesn't take a char currently
                 uInt8Array51822 += (formatForNRF51822(intsToParse[0], numExpectedDigits: digitsPerInput));
                
                 uInt8Array8001.append(UInt8(intsToParse[0]));
@@ -424,6 +429,18 @@ class Device: NSObject, NSCoding
             let newTxLine = "\(commandString),\(duration)\n";
             Device.mainCsvText.append(contentsOf: newMainLine);
             Device.txCsvText.append(contentsOf: newTxLine);
+        }
+        
+            // "handshaking" error tracking;
+            // if we did a set command, we expect the "success" response
+        if (inputString.prefix(2).lowercased().elementsEqual("!s"))
+        {
+            Device.connectedDevice!.expectedPacketType = "Success";
+        }
+            // while if we did a get command, we expect an appropriate response
+        else
+        {
+            Device.connectedDevice!.expectedPacketType = inputString;
         }
         
             // returning formatted data
@@ -479,6 +496,23 @@ class Device: NSObject, NSCoding
         let blueInt = formatAsLegalInt(Int(blue));
         
         return [redInt] + [greenInt] + [blueInt];
+    }
+    
+        // a function for reporting errors, whose function can be determined later
+    public static func reportError(_ error: ENL_ERROR, additionalInfo: String = "")
+    {
+        print("");
+        print("*************************************************************************");
+        print("");
+        os_log("Received an error with error code:", log: OSLog.default, type: .debug);
+        print("                         \(error.errorCode)               ")
+        print("                     Name: \(error.name)");
+        print("                 \(additionalInfo)");
+        print("");
+        print("*************************************************************************");
+        print("");
+        
+        
     }
     
     // MARK: - NSCoding

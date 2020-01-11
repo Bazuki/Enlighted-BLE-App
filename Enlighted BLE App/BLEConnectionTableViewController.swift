@@ -541,13 +541,15 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // if there's an error, it shouldn't keep going
             if let e = error
             {
-                print("ERROR didUpdateValueFor \(e.localizedDescription)");
+                //print("ERROR didUpdateValueFor \(e.localizedDescription)");
+                Device.reportError(Constants.CALLBACK_ERROR_FROM_DID_UPDATE_VALUE_FOR_RX, additionalInfo: e.localizedDescription);
                 return;
             }
             
             if (characteristic.value!.count < 1)
             {
-                print("Empty characteristic value returned")
+                //print("Empty characteristic value returned")
+                Device.reportError(Constants.RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE);
                 return;
             }
             
@@ -567,11 +569,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             //print("Received \(receivedArray) from \(String(describing: peripheral.name))");
             
             
-                // stopping "active request" flag, because a response has been received
-            if ((Device.connectedDevice?.requestWithoutResponse)!)
-            {
-                Device.connectedDevice?.requestWithoutResponse = false;
-            }
+            
             
                 // if we have received more of an incomplete response, add it to what we already have
             if ((incompletePacketReceived) && currentPacketType != "")
@@ -583,7 +581,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 currentPacketType = "";
                 currentPacketContents = rxValue;
                     // Get Thumbnail
-                if ((Device.connectedDevice?.requestedThumbnail)!)
+                if (Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL))
                 {
                     //print("Receiving a Thumbnail")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL;
@@ -636,7 +634,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 }
                 else
                 {
-                    //print("Unable to parse response")
+                    print("Unable to parse response")
                     return
                 }
                 
@@ -666,7 +664,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     }
                     
                     
-                    print("incomplete message: waiting for rest of message")
+                    //print("incomplete message: waiting for rest of message")
                     return;
                 }
                 else
@@ -691,10 +689,51 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             }
             else
             {
-                print("Unable to identify received packet")
+                //print("Unable to identify received packet")
+                Device.reportError(Constants.UNABLE_TO_PARSE_PACKET, additionalInfo: "Received \(receivedArray) from \(String(describing: peripheral.name))");
                 incompletePacketReceived = false;
+                currentPacketType = "";
+                currentPacketContents = [UInt8]();
                 return;
             }
+            
+                // checking to make sure we were expecting this type of packet
+            if (!(currentPacketType == Device.connectedDevice!.expectedPacketType) && !(Device.connectedDevice!.expectedPacketType.elementsEqual("Success") && currentPacketType.elementsEqual("Failure")))
+            {
+                Device.reportError(Constants.UNEXPECTED_PACKET_TYPE, additionalInfo: "Received a packet of type \(currentPacketType), but expected a packet of type \(Device.connectedDevice!.expectedPacketType)");
+                //print("");
+                //print("Received a packet we didn't expect: ");
+                //print("received a packet of type \(currentPacketType), but expected a packet of type \(Device.connectedDevice!.expectedPacketType)");
+                //print("");
+                currentPacketContents = [UInt8]();
+                currentPacketType = "";
+                Device.connectedDevice!.expectedPacketType = "";
+                
+                Device.connectedDevice!.requestWithoutResponse = false;
+                    // if we already have limits but are reading modes/bitmaps/etc from hardware, we want to go back to that loop when we parse a packet
+                if (!Device.connectedDevice!.readyToShowModes && Device.connectedDevice!.maxNumModes > 0)
+                {
+                    //print("Finished parsing packet, going back to loop")
+                    
+                    //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+                        // FIXME: trying to see what went wrong on the nRF8001
+                        // if it's the nRF8001, we need to introduce a bit of delay, otherwise, do this instantly
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+                }
+                
+                return;
+            }
+            else
+            {
+                // stopping "active request" flag, because a response has been received
+                if ((Device.connectedDevice?.requestWithoutResponse)!)
+                {
+                    Device.connectedDevice?.requestWithoutResponse = false;
+                    //print("packet matches requested packet, allowing next packet");
+                }
+                
+            }
+            Device.connectedDevice!.expectedPacketType = "";
             
             rxValue = currentPacketContents;
             rxString = String(bytes: currentPacketContents, encoding: .ascii);
@@ -792,14 +831,15 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_MODE_VALUE), object: nil);
                 }
                 
-                Device.connectedDevice?.requestedName = false;
-                Device.connectedDevice?.requestedMode = false;
+                //Device.connectedDevice!.expectedPacketType = "";
+                //Device.connectedDevice?.requestedName = false;
+                //Device.connectedDevice?.requestedMode = false;
                 
                     // MARK: Get Name
             case EnlightedBLEProtocol.ENL_BLE_GET_NAME:
                 
                 //print("Received a complete name packet: " + rxString!);
-                    // if the end quote is in this string, the whole name was sent in one packet
+                    // if the end quote is in this string, the whole name was sent in one packet (which should always happen, as it's only parsing complete packets
                 if (rxString!.suffix(1) == "\"")
                 {
                     let receivedName = rxString!;
@@ -825,7 +865,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // if we just finished a row of 20 pixels, we can go on to the next one
                 if (bitmapPixelRow.count == 20)
                 {
-                    // if this command was interrupted, we need to make sure it ends, but we don't want it to leave a remnant in the pixel array
+                        // if this command was interrupted, we need to make sure it ends, but we don't want it to leave a remnant in the pixel array
                     if ((Device.connectedDevice?.currentlyBuildingThumbnails)!)
                     {
                         // adding this row to the whole thing
@@ -846,7 +886,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         
                     }
                     
-                    Device.connectedDevice?.requestedThumbnail = false;
+                    //Device.connectedDevice!.expectedPacketType = "";
+                    //Device.connectedDevice?.requestedThumbnail = false;
                 }
                 // if the 20x20 grid is finished, turn it into a UIImage and go on to the next one
                 if (bitmapPixels.count >= 400)
@@ -901,6 +942,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil);
                                 
                 }
+                        // if there's an unsent "set mode" message
+                else if (Device.connectedDevice!.lastUnsentMessage.count > 0)
+                {
+                    print("Since there's an unsent 'Set Mode' request, we are going to send that now.");
+                    BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals( valueData: Device.connectedDevice!.lastUnsentMessage, sendToMimicDevices: true, settingMode: true)
+                }
                 
                     // we need to know if the standby was set, in order to do other things in the setup loop
                 if ((Device.connectedDevice?.requestedStandbyActivated)!)
@@ -940,19 +987,21 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             case "Failure":
                 
                 print("Command failed.");
-                    // vibrate if command failed
-                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
                 
+                Device.reportError(Constants.RECEIVED_FAILURE_RESPONSE);
+                Device.connectedDevice!.requestWithoutResponse = false;
+                Device.connectedDevice!.expectedPacketType = "";
                     // MARK: Unidentifiable Packet
             default:
-                print("unable to parse response, might be unimplemented");
+                
+                //print("unable to parse response, might be unimplemented");
                 if (rxString == nil)
                 {
-                    print("Recieved \(rxValue)");
+                    Device.reportError(Constants.UNABLE_TO_PARSE_PACKET, additionalInfo: "Recieved \(rxValue)");
                 }
                 else
                 {
-                    print("String recieved: " + (rxString ?? "ERROR"));
+                    Device.reportError(Constants.UNABLE_TO_PARSE_PACKET, additionalInfo: "String recieved: " + (rxString ?? "ERROR"));
                 }
             }
             
@@ -1357,10 +1406,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
 //        }
 //    }
     
-        // listening for a response after we write to txCharacteristic
+        // listening for a response after we write to txCharacteristic, though this should never happen, since we use the withoutResponse write type
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard error == nil else {
-            print("Error discovering services: \(error!.localizedDescription)")
+        guard error == nil else
+        {
+            //print("Error receiving reponse: \(error!.localizedDescription)")
+            Device.reportError(Constants.BAD_RESPONSE_TO_WRITE_WITH_RESPONSE, additionalInfo: error!.localizedDescription);
             return
         }
         print("Message sent")
@@ -1438,7 +1489,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?)
     {
-        print("Failed to connect to peripheral, \(error?.localizedDescription)");
+        //print("Failed to connect to peripheral, \()");
+        Device.reportError(Constants.FAILED_TO_CONNECT_TO_PERIPHERAL, additionalInfo: error?.localizedDescription ?? "");
         
         let alertVC = UIAlertController(title: "Failed to connect to device", message: "Please select that device again, or select a different device.", preferredStyle: UIAlertControllerStyle.alert);
         let action = UIAlertAction(title: "ok", style: UIAlertActionStyle.default, handler: { (action: UIAlertAction) -> Void in
@@ -1463,8 +1515,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             BLEConnectionTableViewController.CBCentralState = .UNCONNECTED_SCANNING_FOR_PRIMARY;
             print(BLEConnectionTableViewController.CBCentralState);
             
-            print("We disconnected from our connected primary peripheral.");
-            print("\(error?.localizedDescription ?? "unknown error")");
+            //print("We disconnected from our connected primary peripheral.");
+            //print("\(error?.localizedDescription ?? "unknown error")");
+            Device.reportError(Constants.DISCONNECTED_FROM_PRIMARY_PERIPHERAL_UNEXPECTEDLY, additionalInfo: error?.localizedDescription ?? "unknown error");
             
             // error popup
             let dialogMessage = UIAlertController(title:"Disconnected", message: "The BLE device is no longer connected. Return to the connection page and reconnect, or connect to a different device.", preferredStyle: .alert);
@@ -1497,6 +1550,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         print("Disconnected from " + peripheral.name!);
         print("\(error?.localizedDescription ?? "unknown error")");
+        Device.reportError(Constants.DISCONNECTED_FROM_MIMIC_PERIPHERAL_UNEXPECTEDLY, additionalInfo: "Disconnected from \(peripheral.name!); \(error?.localizedDescription ?? "unknown error")");
         
             // if it's not the primary, it still might be one of the mimic devices
         if (Device.connectedDevice!.connectedMimicDevices.count > 0)
@@ -1534,7 +1588,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         if ((error) != nil)
         {
-            print("Error discovering services: \(error!.localizedDescription)");
+            //print("Error discovering services: \(error!.localizedDescription)");
+            Device.reportError(Constants.FAILED_TO_DISCOVER_SERVICES, additionalInfo: error!.localizedDescription);
             return;
         }
         
@@ -1558,7 +1613,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         if ((error) != nil)
         {
-            print("Error discovering characteristics: \(error!.localizedDescription)");
+            //print("Error discovering characteristics: \(error!.localizedDescription)");
+            Device.reportError(Constants.FAILED_TO_DISCOVER_CHARACTERISTICS, additionalInfo: error!.localizedDescription);
             return;
         }
         
@@ -1658,7 +1714,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     peripheral.setNotifyValue(true, for: characteristic)
                     
                     peripheral.readValue(for: characteristic);
-                    print("Rx Characteristic of mimic device \(mimicDevice?.name): \(characteristic.uuid)");
+                    //print("Rx Characteristic of mimic device \(mimicDevice?.name): \(characteristic.uuid)");
                 }
             }
         }
@@ -1668,8 +1724,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
         print("*******************************************************")
         
-        if error != nil {
-            print("\(error.debugDescription)")
+        if error != nil
+        {
+            //print("\(error.debugDescription)")
+            Device.reportError(Constants.FAILED_TO_DISCOVER_CHARACTERISTIC_DESCRIPTORS, additionalInfo: error!.localizedDescription);
             return
         }
         if ((characteristic.descriptors) != nil) {
@@ -1690,8 +1748,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         if (error != nil)
         {
-            print("Error changing notification state:\(String(describing: error?.localizedDescription))");
-            
+            //print("Error changing notification state:\(String(describing: error?.localizedDescription))");
+            Device.reportError(Constants.FAILED_TO_UPDATE_CHARACTERISTIC_NOTIFICATION_STATE, additionalInfo: error!.localizedDescription);
         }
         else
         {
@@ -1709,7 +1767,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         if (error != nil)
         {
-            print("Error reading RSSI of connected peripheral:\(String(describing: error?.localizedDescription))");
+            //print("Error reading RSSI of connected peripheral:\(String(describing: error?.localizedDescription))");
+            Device.reportError(Constants.FAILED_TO_READ_RSSI, additionalInfo: error!.localizedDescription);
         }
         else
         {
@@ -1854,6 +1913,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         guard let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier, for: indexPath) as? BLEConnectionTableViewCell else
         {
+            Device.reportError(Constants.FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_CONNECTION_TABLE);
             fatalError("The dequeued cell is not an instance of BLEConnectionTableViewCell.");
         }
 
@@ -1874,6 +1934,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         }
         else
         {
+            Device.reportError(Constants.NO_DEVICE_FOR_DEQUEUED_CONNECTION_TABLE_CELL);
             fatalError("There is no device to fill this cell.");
         }
         
@@ -1978,8 +2039,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     // MARK: - Public Methods
     
-        // takes two data objects in an array, the first for the nRF8001 and the second for the nRF51822
-    static func sendBLEPacketToConnectedPeripherals( valueData: [NSData], sendToMimicDevices: Bool)
+        // takes two data objects in an array, the first for the nRF8001 and the second for the nRF51822, and if the "settingMode" is specified, it can "store" a mode to set later
+    static func sendBLEPacketToConnectedPeripherals( valueData: [NSData], sendToMimicDevices: Bool, settingMode: Bool = false)
     {
         if (Device.connectedDevice!.isDemoDevice)
         {
@@ -1990,6 +2051,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         if (Device.connectedDevice!.requestWithoutResponse)
         {
             print("Still waiting on a response");
+                // vibrate if command failed
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+            Device.reportError(Constants.FAILED_TO_SEND_PACKET);
+            if (settingMode)
+            {
+                Device.connectedDevice!.lastUnsentMessage = valueData;
+            }
             return;
         }
             // TODO: useful debug messages, disable for performance (?)
@@ -1998,6 +2066,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         print(" ");
         print("     Sending \(valueData) to primary peripheral");
         print(" ");
+        
+        if (settingMode)
+        {
+            Device.connectedDevice?.requestedModeChange = true;
+        }
         
             // setting stopwatch
         packetStopwatch = Date();
@@ -2017,10 +2090,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             }
             
             Device.connectedDevice!.requestWithoutResponse = true;
+            Device.connectedDevice!.lastUnsentMessage = [NSData]();
         }
         else
         {
-            print("The primary has not yet discovered the txCharacteristic, not sending packet");
+            Device.reportError(Constants.ATTEMPTED_TO_SEND_PACKET_WITHOUT_DISCOVERING_CHARACTERISTIC, additionalInfo: "The primary has not yet discovered the txCharacteristic, not sending packet");
+            //print("The primary has not yet discovered the txCharacteristic, not sending packet");
         }
         
         // if there are mimic devices connected, and this command should be sent to them
@@ -2037,7 +2112,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 }
                 else
                 {
-                    print("The mimic device \(Device.connectedDevice!.connectedMimicDevices[i].name) has not yet discovered the txCharacteristic, not sending packet");
+                    Device.reportError(Constants.ATTEMPTED_TO_SEND_PACKET_WITHOUT_DISCOVERING_CHARACTERISTIC, additionalInfo: "The mimic device \(Device.connectedDevice!.connectedMimicDevices[i].name) has not yet discovered the txCharacteristic, not sending packet");
+                    //print("The mimic device \(Device.connectedDevice!.connectedMimicDevices[i].name) has not yet discovered the txCharacteristic, not sending packet");
                 }
             }
         }
@@ -2117,7 +2193,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         currentPacketType = "";
         currentPacketContents = [UInt8]();
             // tell the ModeTableViewController setup loop to get the thumbnails again
-        Device.connectedDevice?.requestedThumbnail = false;
+        Device.connectedDevice?.expectedPacketType = "";
         // FIXME: trying to figure out what went wrong with the nRF8001
         NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
     }
@@ -2127,12 +2203,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         guard (width > 0) else
         {
-            print("Insufficient width");
+            Device.reportError(Constants.ATTEMPTED_TO_CREATE_THUMBNAIL_WITH_ZERO_WIDTH);
+            //print("Insufficient width");
             return nil;
         }
         guard (pixels.count % width == 0) else
         {
-            print("Pixel count isn't evenly divisible by the width");
+            Device.reportError(Constants.BITMAP_PIXELS_ARE_NOT_EVENLY_DIVISIBLE_BY_WIDTH);
+            //print("Pixel count isn't evenly divisible by the width");
             return nil;
         }
         
@@ -2146,6 +2224,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         var data = pixels;
         guard let providerRef = CGDataProvider(data: NSData(bytes: &data, length: data.count * MemoryLayout<Pixel>.size)) else
         {
+            Device.reportError(Constants.UNABLE_TO_CREATE_DATAPROVIDER_FOR_THUMBNAIL);
             print("Unable to create dataprovider");
             return nil;
         }
@@ -2166,6 +2245,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         )
         else
         {
+            Device.reportError(Constants.UNABLE_TO_CREATE_THUMBNAIL_CGIMAGE_FROM_BITMAP_PIXELS);
             print("Unable to create CGImage");
             return nil;
         }

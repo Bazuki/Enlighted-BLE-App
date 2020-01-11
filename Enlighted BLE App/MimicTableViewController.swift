@@ -75,6 +75,7 @@ class MimicTableViewController: UITableViewController
         
         guard let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier, for: indexPath) as? MimicTableViewCell else
         {
+            Device.reportError(Constants.FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MIMIC_TABLE);
             fatalError("The dequeued cell is not an instance of MimicTableViewCell.");
         }
 

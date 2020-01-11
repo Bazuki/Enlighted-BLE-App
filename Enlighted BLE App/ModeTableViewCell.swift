@@ -93,6 +93,7 @@ class ModeTableViewCell: UITableViewCell
             }
             else
             {
+                Device.reportError(Constants.CURRENT_MODE_THUMBNAIL_INDEX_EXCEEDS_STORED_THUMBNAILS)
                 modeBitmap.image = errorBitmap
             }
             

@@ -103,16 +103,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // Uncomment the following line to preserve selection between presentations
         self.clearsSelectionOnViewWillAppear = false;
         
-    }
-
-    override func viewWillAppear(_ animated: Bool)
-    {
-        super.viewWillAppear(animated);
-        
-        
-        
-        
-            // getLimits for this device, though not if it's a demo device
+        // getLimits for this device, though not if it's a demo device
         if !(Device.connectedDevice!.isDemoDevice)
         {
             formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_LIMITS);
@@ -125,13 +116,36 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             Device.connectedDevice?.maxBitmaps = 20;
             if (Device.connectedDevice!.currentModeIndex < 1 || Device.connectedDevice!.currentModeIndex > 20)
             {
-               Device.connectedDevice?.currentModeIndex = 1;
+                Device.connectedDevice?.currentModeIndex = 1;
             }
-            
-            
+                
             NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil);
         }
-        //progress += 0.04
+        
+    }
+
+    override func viewWillAppear(_ animated: Bool)
+    {
+        super.viewWillAppear(animated);
+        
+            // reset progress bar, and show
+        progress = 0;
+        loadingProgressView.setProgress(0, animated: false);
+            // configuring the style of the progress bar
+        loadingProgressView.progressViewStyle = UIProgressView.Style.bar;
+        loadingProgressView.isHidden = false;
+        
+        if (Device.connectedDevice!.maxNumModes > 0)
+        {
+            deviceHasModes = (Device.connectedDevice!.modes.count >= Device.connectedDevice!.maxNumModes) && (Device.connectedDevice!.thumbnails.count >= Device.connectedDevice!.maxBitmaps);
+            
+                // if we're reverting the modes
+            if !(deviceHasModes)
+            {
+                prepareForSetup();
+            }
+        }
+        
     }
     
     override func viewWillDisappear(_ animated: Bool)
@@ -155,12 +169,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // making sure we only setup after we have getLimits done, since that determines whether we need to go into standby mode
     @objc func prepareForSetup()
     {
-            // reset progress bar, and show
-        progress = 0;
-        loadingProgressView.setProgress(0, animated: false);
-            // configuring the style of the progress bar
-        loadingProgressView.progressViewStyle = UIProgressView.Style.bar;
-        loadingProgressView.isHidden = false;
+        
         
         loadingLabel.text = "";
         loadingLabel.isHidden = false;
@@ -234,7 +243,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         
         // clearing table data
-        print("Wasn't ready to show modes, restarting getting data");
+        //print("Wasn't ready to show modes, restarting getting data");
         
         modes = [Mode]();
         modeTableView.reloadData();
@@ -251,6 +260,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         else
         {
             // reset the flags, so we get all items
+            Device.connectedDevice!.expectedPacketType = "";
+            
             Device.connectedDevice?.requestedName = false;
             Device.connectedDevice?.currentlyBuildingThumbnails = false;
             Device.connectedDevice?.requestedStandbyActivated = false;
@@ -388,8 +399,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 }
                 catch
                 {
-                    print("Failed to create file")
-                    print("\(error)")
+                    // FIXME: needs error reporting
+                    Device.reportError(Constants.FAILED_TO_SAVE_PROFILER_CSV_FILES, additionalInfo: "\(error)");
+                    //print("Failed to create file")
+                    //print("\(error)")
                 }
             }
             
@@ -406,7 +419,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             
         }
             // otherwise do preparatory steps, as long as a multi-message response isn't currently happening
-        else if (Device.connectedDevice?.requestedThumbnail == false && Device.connectedDevice?.currentlyParsingName == false && Device.connectedDevice?.requestWithoutResponse == false)
+        else if (Device.connectedDevice!.expectedPacketType.elementsEqual("") && Device.connectedDevice?.requestWithoutResponse == false)
         {
             // FIX-ME: debugging bad ASCII characters for the nRF51822
 //            if Device.connectedDevice!.brightness >= 255
@@ -440,13 +453,14 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
             }
+                // MARK: Hardware Version
             else if (((Device.connectedDevice?.hardwareVersion)! == .UNKNOWN))
             {
                 // if we haven't already, get the hardware version for this device
-                if (!(Device.connectedDevice?.requestedVersion)!)
+                if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_VERSION)))
                 {
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_VERSION);
-                    Device.connectedDevice?.requestedVersion = true;
+                    //Device.connectedDevice?.requestedVersion = true;
                     progress += 1 / Float(totalPacketsForSetup);
                     BLEVersionTimer.invalidate();
                     BLEVersionTimer = Timer.scheduledTimer(timeInterval: Constants.VERSION_TIMEOUT_TIME, target: self, selector: #selector(versionTimeout), userInfo: nil, repeats: false);
@@ -457,10 +471,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             else if (((Device.connectedDevice?.brightness)! < 0))
             {
                 // if we haven't already, getBrightness for this device, so that we'll know it when we change it on the settings screen
-                if (!(Device.connectedDevice?.requestedBrightness)!)
+                if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS)))
                 {
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS);
-                    Device.connectedDevice?.requestedBrightness = true;
+                    //Device.connectedDevice?.requestedBrightness = true;
                     progress += 1 / Float(totalPacketsForSetup);
                 }
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
@@ -496,10 +510,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             else if ((Device.connectedDevice?.batteryPercentage)! < 0)
             {
                 // if we haven't already, getBatteryLevel for this device, so that we'll know it when we change it on the settings screen
-                if (!(Device.connectedDevice?.requestedBattery)!)
+                if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL)))
                 {
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL);
-                    Device.connectedDevice?.requestedBattery = true;
+                    //Device.connectedDevice?.requestedBattery = true;
                     progress += 1 / Float(totalPacketsForSetup);
                 }
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
@@ -526,25 +540,25 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 //                    }
 //                }
                 
+                    // if we're done getting the name but have not yet asked for the mode
+                if ((Device.connectedDevice?.receivedName)! && (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_MODE))))
+                {
+                                    // getting the details about the next Mode
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInts: [(Device.connectedDevice?.modes.count)! + 1]);
+                    //Device.connectedDevice?.requestedMode = true;
+                    progress += 1 / Float(totalPacketsForSetup);
+                }
                     // if we haven't yet, request the name of the first mode we need
-                if (!(Device.connectedDevice?.requestedName)!)
+                else if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_NAME)))
                 {
                         // getting the name of the next Mode
                     loadingLabel.text = "Reading Mode \((Device.connectedDevice?.modes.count)! + 1) of \(Device.connectedDevice!.maxNumModes) from hardware";
                     
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInts: [(Device.connectedDevice?.modes.count)! + 1]);
-                    Device.connectedDevice?.requestedName = true;
+                    //Device.connectedDevice?.requestedName = true;
                     Device.connectedDevice?.receivedName = false;
                     progress += progressValue;
                     //print("increasing progress by \(progressValue)");
-                }
-                    // if we're done getting the name but have not yet asked for the mode
-                else if ((Device.connectedDevice?.receivedName)! && !(Device.connectedDevice?.requestedMode)!)
-                {
-                        // getting the details about the next Mode
-                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInts: [(Device.connectedDevice?.modes.count)! + 1]);
-                    Device.connectedDevice?.requestedMode = true;
-                    progress += 1 / Float(totalPacketsForSetup);
                 }
                 
                 return;
@@ -570,7 +584,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 //                }
                 
                     // if we haven't already
-                if (!(Device.connectedDevice?.requestedThumbnail)!)
+                if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL)))
                 {
                     // if it's past the max, reset
                     if ((Device.connectedDevice?.thumbnailRowIndex)! >= 20)
@@ -582,13 +596,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     
                         // request the current thumbnail at the current row
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL, inputInts:  [(Device.connectedDevice?.thumbnails.count)! + 1, (Device.connectedDevice?.thumbnailRowIndex)!]);
-                    Device.connectedDevice?.requestedThumbnail = true;
+                    //Device.connectedDevice?.requestedThumbnail = true;
                     
                     progress += progressValue;
                     //print("increasing progress by \(progressValue)");
                     
-                    BLETimeoutTimer.invalidate();
-                    BLETimeoutTimer = Timer.scheduledTimer(timeInterval: Constants.THUMBNAIL_ROW_TIMEOUT_TIME, target: self, selector: #selector(thumbnailTimeout), userInfo: nil, repeats: false);
+                    
                 }
                 return;
             }
@@ -651,9 +664,11 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
     }
     
-    @objc func thumbnailTimeout()
+    @objc func bleMessageTimeout()
     {
-        if ((Device.connectedDevice?.requestedThumbnail)!)
+        Device.reportError(Constants.TIMEOUT_BEFORE_RECEIVING_COMPLETE_MESSAGE);
+            // if we were loading a bitmap row (the most common time this occurs)
+        if (Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL))
         {
             print(" ")
             print(" ^   ^   ^   ^   ^   ^   ^   ^   ^   ^   ^   ^   ^")
@@ -662,8 +677,23 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             let progressValue: Float = 4 / Float(totalPacketsForSetup);
             progress -= progressValue;
             NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RESEND_THUMBNAIL_ROW), object: nil);
+        }
+            // otherwise, if we were loading modes/bitmaps
+        else if (!Device.connectedDevice!.readyToShowModes && Device.connectedDevice!.maxNumModes > 0)
+        {
+            print("Last request timed out.")
+                // decrementing the progress bar
+            let progressValue: Float = 1 / Float(totalPacketsForSetup);
             
+                // since a name is worth two "packets" in the eyes of the progress bar, we have to set it back an additional packet
+            if (Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_NAME))
+            {
+                progress -= progressValue;
+            }
+            progress -= progressValue;
             
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+            Device.connectedDevice!.expectedPacketType = "";
         }
     }
     
@@ -671,10 +701,11 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     @objc func versionTimeout()
     {
         //print("Reached version timeout function, and currently the version has been requested: \((Device.connectedDevice?.requestedVersion)!) and the hardware is unknown: \(Device.connectedDevice!.hardwareVersion == .UNKNOWN)")
-        if ((Device.connectedDevice?.requestedVersion)! && Device.connectedDevice!.hardwareVersion == .UNKNOWN)
+        if ((Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_VERSION)) && Device.connectedDevice!.hardwareVersion == .UNKNOWN)
         {
             Device.connectedDevice?.hardwareVersion = .NRF8001;
             Device.connectedDevice?.requestWithoutResponse = false;
+            Device.connectedDevice!.expectedPacketType = "";
             NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
             //print("Changed device's hardware version variable to \(String(describing: Device.connectedDevice?.hardwareVersion))")
         }
@@ -727,6 +758,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         guard let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier, for: indexPath) as? ModeTableViewCell else
         {
+            // FIXME: needs error reporting
+            Device.reportError(Constants.FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MODE_TABLE);
             fatalError("The dequeued cell is not an instance of ModeTableViewCell");
         }
 
@@ -795,7 +828,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     @objc func updateModeOnHardware()
     {
         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_MODE, inputInts: [Device.connectedDevice!.currentModeIndex])
-        Device.connectedDevice?.requestedModeChange = true;
+        
     }
 //        if (!(Device.connectedDevice?.isConnected)!)
 //        {
@@ -868,9 +901,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // since "Set Colors" has to be sent in two packets on the nRF51822
     @objc func setSecondColorOnNRF51822()
     {
-        setColor(colorIndex: 2, color: (Device.connectedDevice?.mode?.color2)!)
-        
-        saveDevice();
+        if (!Device.connectedDevice!.mode!.usesBitmap)
+        {
+            setColor(colorIndex: 2, color: (Device.connectedDevice?.mode?.color2)!)
+            
+            saveDevice();
+        }
     }
     
         // needs to be done on selection so that it can match the phone
@@ -1175,6 +1211,16 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // formatting data
         let outputData = Device.formatPacket(inputString, inputInts: inputInts, digitsPerInput: digitsPerInput)
         
+            // if we're getting data from hardware, we want look for timeouts
+        if (!Device.connectedDevice!.readyToShowModes && Device.connectedDevice!.maxNumModes > 0)
+        {
+                // setting timeout timer
+            BLETimeoutTimer.invalidate();
+            BLETimeoutTimer = Timer.scheduledTimer(timeInterval: Constants.BLE_MESSAGE_TIMEOUT_TIME, target: self, selector: #selector(bleMessageTimeout), userInfo: nil, repeats: false);
+        }
+        
+        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: sendToMimicDevices, settingMode: inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_MODE));
+    }
 //            // formatting the string part of the packet
 //        var intsToParse = inputInts;
 //        let stringArray: [UInt8] = Array(inputString.utf8);
@@ -1203,8 +1249,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 //        let outputArray = stringArray + uInt8Array;
 //        let outputData = NSData(bytes: outputArray, length: outputArray.count);
             // sending to peripheral(s)
-        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: sendToMimicDevices)
-    }
+
 //
 //            // if an input value was specified, especially for the getName/getMode commands, add it to the package
 //        if (inputInt != -1)
@@ -1356,11 +1401,13 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         let isSuccessfulSave = NSKeyedArchiver.archiveRootObject(cachedDevices, toFile: Device.ArchiveURL.path);
         if isSuccessfulSave
         {
-            os_log("Devices successfully saved.", log: OSLog.default, type: .debug)
+            //os_log("Devices successfully saved.", log: OSLog.default, type: .debug)
         }
         else
         {
-            os_log("Failed to save devices...", log: OSLog.default, type: .error)
+            // FIXME: needs error reporting
+            Device.reportError(Constants.FAILED_TO_SAVE_DEVICES_IN_CACHE);
+            //os_log("Failed to save devices...", log: OSLog.default, type: .error)
         }
     }
     
