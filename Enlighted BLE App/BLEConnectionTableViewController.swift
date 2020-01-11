@@ -664,7 +664,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     }
                     
                     
-                    //print("incomplete message: waiting for rest of message")
+                    print("incomplete message: waiting for rest of message")
                     return;
                 }
                 else
@@ -2185,7 +2185,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // if we receive a timeout error after requesting a thumbnail row, we have to
     @objc private func resetThumbnailRow()
     {
-        //print("Timed out, clearing row");
+        print("Timed out, clearing row");
             // clear the half-baked row
         bitmapPixelRow = [Pixel]();
         //thumbnailRow = [UInt8]();
@@ -2194,6 +2194,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         currentPacketContents = [UInt8]();
             // tell the ModeTableViewController setup loop to get the thumbnails again
         Device.connectedDevice?.expectedPacketType = "";
+        Device.connectedDevice!.requestWithoutResponse = false;
         // FIXME: trying to figure out what went wrong with the nRF8001
         NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
     }

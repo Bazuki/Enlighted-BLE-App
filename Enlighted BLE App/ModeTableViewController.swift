@@ -311,6 +311,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // once loading of modes/thumbnails is done, save that Device
             saveDevice();
             
+                // deactivate the timeout timer
+            BLETimeoutTimer.invalidate();
+            
             // if we have a mimic list already, and we haven't asked what the user wants to do with it yet, ask what the user wants to do with it
             if (deviceHasMimicList && !Device.connectedDevice!.promptedMimicListSettings)
             {
@@ -399,7 +402,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 }
                 catch
                 {
-                    // FIXME: needs error reporting
                     Device.reportError(Constants.FAILED_TO_SAVE_PROFILER_CSV_FILES, additionalInfo: "\(error)");
                     //print("Failed to create file")
                     //print("\(error)")
@@ -545,6 +547,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 {
                                     // getting the details about the next Mode
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_MODE, inputInts: [(Device.connectedDevice?.modes.count)! + 1]);
+                    Device.connectedDevice?.receivedName = false;
+                    
                     //Device.connectedDevice?.requestedMode = true;
                     progress += 1 / Float(totalPacketsForSetup);
                 }
@@ -556,7 +560,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInts: [(Device.connectedDevice?.modes.count)! + 1]);
                     //Device.connectedDevice?.requestedName = true;
-                    Device.connectedDevice?.receivedName = false;
+                    //Device.connectedDevice?.receivedName = false;
                     progress += progressValue;
                     //print("increasing progress by \(progressValue)");
                 }
@@ -691,6 +695,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 progress -= progressValue;
             }
             progress -= progressValue;
+            Device.connectedDevice!.requestWithoutResponse = false;
             
             NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
             Device.connectedDevice!.expectedPacketType = "";
@@ -717,10 +722,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         if (Device.connectedDevice!.hardwareVersion == .NRF8001)
         {
             delayTimer.invalidate();
-            os_log("Since we're using older hardware, delaying message", log: OSLog.default, type: .debug);
-            delayTimer = Timer.scheduledTimer(withTimeInterval: 0.025, repeats: false)
+            //os_log("Since we're using older hardware, delaying message", log: OSLog.default, type: .debug);
+            delayTimer = Timer.scheduledTimer(withTimeInterval: Constants.NRF8001_DELAY_TIME, repeats: false)
             { timer in
-                os_log("Sending message", log: OSLog.default, type: .debug);
+                //os_log("Sending message", log: OSLog.default, type: .debug);
                 self.requestNextData();
             }
         }
@@ -758,7 +763,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         guard let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier, for: indexPath) as? ModeTableViewCell else
         {
-            // FIXME: needs error reporting
             Device.reportError(Constants.FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MODE_TABLE);
             fatalError("The dequeued cell is not an instance of ModeTableViewCell");
         }
@@ -1405,7 +1409,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         }
         else
         {
-            // FIXME: needs error reporting
             Device.reportError(Constants.FAILED_TO_SAVE_DEVICES_IN_CACHE);
             //os_log("Failed to save devices...", log: OSLog.default, type: .error)
         }

@@ -56,8 +56,11 @@ class Constants
         // the time (in seconds) between scans of the battery level on the settings screen (as of 1.0.2, no longer used)
     //static let BATTERY_SCAN_INTERVAL = 0.33;
     
+        // the time (in seconds) the app waits before requesting new data from the nRF8001 after receiving it.
+    static let NRF8001_DELAY_TIME = 0.025;
+    
         // the time (in seconds) before the app decides to scrap and re-send a row of thumbnail pixels
-    static let BLE_MESSAGE_TIMEOUT_TIME = 0.5;
+    static let BLE_MESSAGE_TIMEOUT_TIME = 0.25;
     
         // the time (in seconds) before the app stops looking for a version response (as the nRF8001 does not provide one)
     static let VERSION_TIMEOUT_TIME = 0.2;
