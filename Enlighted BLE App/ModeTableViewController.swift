@@ -128,6 +128,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         super.viewWillAppear(animated);
         
+        print("View will appear is called");
+        
             // reset progress bar, and show
         progress = 0;
         loadingProgressView.setProgress(0, animated: false);
@@ -137,13 +139,13 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         if (Device.connectedDevice!.maxNumModes > 0)
         {
-            deviceHasModes = (Device.connectedDevice!.modes.count >= Device.connectedDevice!.maxNumModes) && (Device.connectedDevice!.thumbnails.count >= Device.connectedDevice!.maxBitmaps);
+            //deviceHasModes = (Device.connectedDevice!.modes.count >= Device.connectedDevice!.maxNumModes) && (Device.connectedDevice!.thumbnails.count >= Device.connectedDevice!.maxBitmaps);
             
                 // if we're reverting the modes
-            if !(deviceHasModes)
-            {
-                prepareForSetup();
-            }
+            //if (!(deviceHasModes) || Device.connectedDevice!.isDemoDevice)
+            //{
+            prepareForSetup();
+            //}
         }
         
     }
@@ -170,6 +172,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     @objc func prepareForSetup()
     {
         
+        print("preparing for setup");
         
         loadingLabel.text = "";
         loadingLabel.isHidden = false;

@@ -369,6 +369,7 @@ class Device: NSObject, NSCoding
         var devices = NSKeyedUnarchiver.unarchiveObject(with: demoDeviceData!.data) as? [Device];
         var output = devices![0];
         output.isDemoDevice = true;
+        output.hardwareVersion = .DEMO;
         output.name = Constants.DEMO_DEVICE_NAME;
         
         return output;

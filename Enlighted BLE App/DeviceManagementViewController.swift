@@ -211,7 +211,15 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
             if (Device.connectedDevice!.isDemoDevice)
             {
                     // basically, creating a new demo device without any user changes
+                //print("creating new demo device as replacement");
                 Device.setConnectedDevice(newDevice: Device.createDemoDevice());
+                // we have to fake getLimits if it's a demo device, based on the application saved data
+                Device.connectedDevice?.maxNumModes = 20;
+                Device.connectedDevice?.maxBitmaps = 20;
+                if (Device.connectedDevice!.currentModeIndex < 1 || Device.connectedDevice!.currentModeIndex > 20)
+                {
+                    Device.connectedDevice?.currentModeIndex = 1;
+                }
             }
                 // otherwise, clear everything and let the app get it all back from the hardware
             else
@@ -299,7 +307,12 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         print(" ");
         print("About to send BLE command \(inputString) with arguments \(inputInts)")
         
-        if (!(Device.connectedDevice?.isConnected)!)
+        if (Device.connectedDevice!.isDemoDevice)
+        {
+            print("Not sending to demo devices");
+            return;
+        }
+        else if (!(Device.connectedDevice?.isConnected)!)
         {
             print("Device is not connected");
             return;

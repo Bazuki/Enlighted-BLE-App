@@ -543,6 +543,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             {
                 //print("ERROR didUpdateValueFor \(e.localizedDescription)");
                 Device.reportError(Constants.CALLBACK_ERROR_FROM_DID_UPDATE_VALUE_FOR_RX, additionalInfo: e.localizedDescription);
+                
+                    // if we're currently loading the modes, we should try again
+                if (!Device.connectedDevice!.readyToShowModes && Device.connectedDevice!.maxNumModes > 0)
+                {
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+                }
                 return;
             }
             
@@ -1015,7 +1021,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 //print("Finished parsing packet, going back to loop")
                 
                 //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
-                    // FIXME: trying to see what went wrong on the nRF8001
+                    // FIX-ME: trying to see what went wrong on the nRF8001
                     // if it's the nRF8001, we need to introduce a bit of delay, otherwise, do this instantly
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
             }
