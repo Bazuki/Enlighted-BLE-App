@@ -34,6 +34,8 @@ class EnlightedBLEProtocol
     // MARK: Setters
     static let ENL_BLE_SET_MODE = "!SM"
     static let ENL_BLE_SET_COLOR = "!SC"
+        // because of packet size concerns, the set color command was shortened to !C
+    static let ENL_BLE_SET_COLOR_NRF51822 = "!C"
     static let ENL_BLE_SET_BRIGHTNESS = "!SG"
     static let ENL_BLE_SET_BITMAP = "!SB"
     static let ENL_BLE_SET_STANDBY = "!SS"

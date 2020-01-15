@@ -675,6 +675,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 }
                 else
                 {
+                    
                         // MARK: profiling: receiving complete message
                     if (Device.profiling && Device.currentlyProfiling)
                     {
@@ -937,17 +938,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 {
                     print("Since the command to set the mode succeeded, we are going to change the mode settings now.")
                     Device.connectedDevice?.requestedModeChange = false;
-                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil);
+                    let identifier = [0: peripheral.identifier as NSUUID];
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil, userInfo: identifier);
                 }
                 
-                    // we need to know when the first color was changed so we can change the second
-                else if ((Device.connectedDevice!.requestedFirstOfTwoColorsChanged))
-                {
-                    print("Since the command to set the first color succeeded, we are going to set the second one now.")
-                    Device.connectedDevice?.requestedFirstOfTwoColorsChanged = false;
-                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil);
-                                
-                }
+                    // we need to know when the first color was changed so we can change the second (as of 1.0.33, both protocols change color in 1 packet)
+//                else if ((Device.connectedDevice!.requestedFirstOfTwoColorsChanged))
+//                {
+//                    print("Since the command to set the first color succeeded, we are going to set the second one now.")
+//                    Device.connectedDevice?.requestedFirstOfTwoColorsChanged = false;
+//                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil);
+//
+//                }
                         // if there's an unsent "set mode" message
                 else if (Device.connectedDevice!.lastUnsentMessage.count > 0)
                 {
@@ -1364,11 +1366,69 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
 //                }
 //            }
         }
-            // receiving from other characteristics, most likely the mimic devices' rxCharacteristics
+            // receiving from other characteristics, most likely the mimic devices' rxCharacteristics (the only thing we expect here is the hardware version)
         else
         {
+                // MARK: Mimic Device rx parsing
+            if let e = error
+            {
+                //print("ERROR didUpdateValueFor \(e.localizedDescription)");
+                Device.reportError(Constants.CALLBACK_ERROR_FROM_DID_UPDATE_VALUE_FOR_RX, additionalInfo: e.localizedDescription);
+                
+                return;
+            }
+            
+            if (characteristic.value!.count < 1)
+            {
+                //print("Empty characteristic value returned")
+                Device.reportError(Constants.RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE);
+                return;
+            }
+            
+            var receivedArray: [UInt8] = [];
+            
+            var rxValue = [UInt8](characteristic.value!);
+            
+            receivedArray = Array(characteristic.value!);
+            
+                // converting data to a string
+            var rxString = String(bytes: receivedArray, encoding: .ascii);
+            
+            let rxInt = Int(receivedArray[0]);
+            
+                // if we get a "V" back, we're getting a version response
+            if (rxString?.prefix(1).lowercased().elementsEqual("v") ?? false)
+            {
+                for mimicDevice in Device.connectedDevice!.connectedMimicDevices
+                {
+                    if mimicDevice.peripheral.identifier as NSUUID == peripheral.identifier as NSUUID
+                    {
+                        mimicDevice.hardwareVersion = .NRF51822;
+                    }
+                }
+            }
+                // if we got the success response
+            else if (rxInt == 1)
+            {
+                print("Received a success response from a mimic!");
+                for mimicDevice in Device.connectedDevice!.connectedMimicDevices
+                {
+                    if mimicDevice.peripheral.identifier as NSUUID == peripheral.identifier as NSUUID
+                    {
+                        if (mimicDevice.requestedModeChange)
+                        {
+                            print("Since the command to set the mode on \(mimicDevice.name) succeeded, we are going to change the mode settings now.")
+                            mimicDevice.requestedModeChange = false;
+                            let identifier = [0: peripheral.identifier as NSUUID];
+                            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil, userInfo: identifier);
+                        }
+                    }
+                }
+                    
+            }
+            
                 // print the value and source
-            print(" \(String(describing: characteristic.value)) received from \(String(describing: peripheral.name))");
+            print(" \(String(describing: rxString))) received from \(String(describing: peripheral.name))");
         }
     }
     
@@ -1705,7 +1765,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         mimicDevice?.setTXCharacteristic(characteristic);
                         mimicDevice?.hasDiscoveredCharacteristics = true;
                         print("Tx Characteristic of mimic device \(String(describing: mimicDevice?.name)): \(characteristic.uuid)");
-                        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.DISCOVERED_MIMIC_CHARACTERISTICS), object: nil);
+                            // getting the mimic device's hardware version
+                        getHardwareVersionForMimicDevice(peripheral.identifier as NSUUID);
                     }
                     
                 }
@@ -2046,26 +2107,52 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     // MARK: - Public Methods
     
         // takes two data objects in an array, the first for the nRF8001 and the second for the nRF51822, and if the "settingMode" is specified, it can "store" a mode to set later
-    static func sendBLEPacketToConnectedPeripherals( valueData: [NSData], sendToMimicDevices: Bool, settingMode: Bool = false)
+    static func sendBLEPacketToConnectedPeripherals( valueData: [NSData], sendToMimicDevices: Bool, settingMode: Bool = false, toSingleDevice: Device? = nil)
     {
         if (Device.connectedDevice!.isDemoDevice)
         {
-            print("Not sending BLE packets to a mimic device");
+            print("Not sending BLE packets to a demo device");
             return;
         }
             // if we're still waiting on a response, don't send a new message
-        if (Device.connectedDevice!.requestWithoutResponse)
+        if ((toSingleDevice == nil || toSingleDevice == Device.connectedDevice!) && Device.connectedDevice!.requestWithoutResponse)
         {
             print("Still waiting on a response");
                 // vibrate if command failed
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
             Device.reportError(Constants.FAILED_TO_SEND_PACKET);
-            if (settingMode)
+            if (settingMode && !(toSingleDevice != nil))
             {
                 Device.connectedDevice!.lastUnsentMessage = valueData;
             }
             return;
         }
+        
+            // if toSingleDevice is specified, only send to that specific peripheral
+        if (toSingleDevice != nil)
+        {
+            print(" ");
+            print("*********************************************************************");
+            print(" ");
+            print("     Sending \(valueData) to specific peripheral");
+            print(" ");
+            if (settingMode)
+            {
+                toSingleDevice!.requestedModeChange = true;
+            }
+            if (toSingleDevice!.hardwareVersion == .UNKNOWN || toSingleDevice!.hardwareVersion == .NRF8001)
+            {
+                    // since the "Get Version" command is the same for both protocols, we can use the nRF8001 version (valueData[0]) blind
+                toSingleDevice!.peripheral.writeValue(valueData[0] as Data, for: toSingleDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+            }
+            else if (toSingleDevice!.hardwareVersion == .NRF51822)
+            {
+                toSingleDevice!.peripheral.writeValue(valueData[1] as Data, for: toSingleDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+            }
+            
+            return;
+        }
+        
             // TODO: useful debug messages, disable for performance (?)
         print(" ");
         print("*********************************************************************");
@@ -2075,7 +2162,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         if (settingMode)
         {
-            Device.connectedDevice?.requestedModeChange = true;
+            Device.connectedDevice?.requestedModeChange = true;                
         }
         
             // setting stopwatch
@@ -2111,10 +2198,26 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             {
                 if (Device.connectedDevice!.connectedMimicDevices[i].hasDiscoveredCharacteristics)
                 {
-                        // FIXME: need to differentiate between nRF8001 and nRF51822 mimics
-                    print("sending \(valueData) to mimic peripheral #\(i + 1) ");
+                    if (settingMode)
+                    {
+                        Device.connectedDevice!.connectedMimicDevices[i].requestedModeChange = true;
+                    }
+                    if (Device.connectedDevice!.connectedMimicDevices[i].hardwareVersion == .NRF51822)
+                    {
+                        print("sending \(valueData[1]) to nRF51822 mimic peripheral #\(i + 1) ");
+                        Device.connectedDevice!.connectedMimicDevices[i].peripheral.writeValue(valueData[1] as Data, for: Device.connectedDevice!.connectedMimicDevices[i].txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+                    }
+                    else if (Device.connectedDevice!.connectedMimicDevices[i].hardwareVersion == .NRF8001)
+                    {
+                        print("sending \(valueData[0]) to nRF8001 mimic peripheral #\(i + 1) ");
+                        Device.connectedDevice!.connectedMimicDevices[i].peripheral.writeValue(valueData[0] as Data, for: Device.connectedDevice!.connectedMimicDevices[i].txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+                    }
+                    else
+                    {
+                        print("Have not yet discovered what hardware this mimic device is running, not sending packets yet");
+                    }
                     
-                    Device.connectedDevice!.connectedMimicDevices[i].peripheral.writeValue(valueData[0] as Data, for: Device.connectedDevice!.connectedMimicDevices[i].txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
+                    
                 }
                 else
                 {
@@ -2204,6 +2307,20 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // FIXME: trying to figure out what went wrong with the nRF8001
         NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
     }
+    
+    func getHardwareVersionForMimicDevice( _ id: NSUUID)
+    {
+        for mimicDevice in Device.connectedDevice!.connectedMimicDevices
+        {
+            if mimicDevice.peripheral.identifier as NSUUID == id
+            {
+                mimicDevice.setGetMimicVersionTimer();
+                BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: Device.formatPacket(EnlightedBLEProtocol.ENL_BLE_GET_VERSION), sendToMimicDevices: false, toSingleDevice: mimicDevice)
+                
+            }
+        }
+    }
+    
     
         // credit to https://stackoverflow.com/questions/30958427/pixel-array-to-uiimage-in-swift
     private func UIImageFromBitmap(pixels: [Pixel], width: Int) -> UIImage?

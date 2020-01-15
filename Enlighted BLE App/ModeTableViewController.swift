@@ -73,12 +73,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // making sure observers are only added once
         NotificationCenter.default.addObserver(self, selector: #selector(updateModeSettings), name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil)
         
-        NotificationCenter.default.addObserver(self, selector: #selector(setSecondColorOnNRF51822), name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil)
+        //NotificationCenter.default.addObserver(self, selector: #selector(setSecondColorOnNRF51822), name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_FIRST_COLOR), object: nil)
         
         NotificationCenter.default.addObserver(self, selector: #selector(prepareForSetup), name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil)
         
             // when we connect to a new device (like a mimic), send the current mode settings
-        NotificationCenter.default.addObserver(self, selector: #selector(updateModeOnHardware), name: Notification.Name(rawValue:  Constants.MESSAGES.DISCOVERED_MIMIC_CHARACTERISTICS), object: nil)
+        //NotificationCenter.default.addObserver(self, selector: #selector(updateModeOnHardware), name: Notification.Name(rawValue:  Constants.MESSAGES.DISCOVERED_MIMIC_CHARACTERISTICS), object: nil)
         
         NotificationCenter.default.addObserver(self, selector: #selector(requestNextDataWithDelay), name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil)
         
@@ -834,7 +834,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     @objc func updateModeOnHardware()
     {
-        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_MODE, inputInts: [Device.connectedDevice!.currentModeIndex])
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_MODE, inputInts: [Device.connectedDevice!.currentModeIndex], sendToMimicDevices: true)
         
     }
 //        if (!(Device.connectedDevice?.isConnected)!)
@@ -893,33 +893,69 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 //    }
     
         // because changes like bitmaps aren't saved to the hardware, we have to re-set them from our memory once the mode has changed
-    @objc func updateModeSettings()
+    @objc func updateModeSettings(_ notification: Notification)
     {
-        if ((Device.connectedDevice?.mode?.usesBitmap)!)
+        if let data = notification.userInfo as? [Int: NSUUID]
         {
-            setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
+            print("Received peripheral data from NotificationCenter");
+            let id = data[0];
+            for mimicDevice in Device.connectedDevice!.connectedMimicDevices
+            {
+                if mimicDevice.peripheral.identifier as NSUUID == id
+                {
+                    if ((Device.connectedDevice?.mode?.usesBitmap)!)
+                    {
+                        setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!, toSingleDevice: mimicDevice);
+                    }
+                    else
+                    {
+                        setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!, toSingleDevice: mimicDevice);
+                    }
+                    return;
+                }
+            }
+            
+                // otherwise if it's the primary device
+            if (Device.connectedDevice!.peripheral.identifier as NSUUID == id)
+            {
+                if ((Device.connectedDevice?.mode?.usesBitmap)!)
+                {
+                    setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!, toSingleDevice: Device.connectedDevice!);
+                }
+                else
+                {
+                    setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!, toSingleDevice: Device.connectedDevice!)
+                }
+            }
         }
         else
         {
-            setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!)
+            if ((Device.connectedDevice?.mode?.usesBitmap)!)
+            {
+                setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
+            }
+            else
+            {
+                setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!)
+            }
         }
     }
     
-        // since "Set Colors" has to be sent in two packets on the nRF51822
-    @objc func setSecondColorOnNRF51822()
-    {
-        if (!Device.connectedDevice!.mode!.usesBitmap)
-        {
-            setColor(colorIndex: 2, color: (Device.connectedDevice?.mode?.color2)!)
-            
-            saveDevice();
-        }
-    }
+        // since "Set Colors" has to be sent in two packets on the nRF51822 (as of 1.0.33, no longer necessary)
+//    @objc func setSecondColorOnNRF51822()
+//    {
+//        if (!Device.connectedDevice!.mode!.usesBitmap)
+//        {
+//            setColor(colorIndex: 2, color: (Device.connectedDevice?.mode?.color2)!)
+//
+//            saveDevice();
+//        }
+//    }
     
         // needs to be done on selection so that it can match the phone
-    func setBitmap(_ bitmapIndex: Int)
+    func setBitmap(_ bitmapIndex: Int, toSingleDevice: Device? = nil)
     {
-        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_BITMAP, inputInts: [bitmapIndex], sendToMimicDevices: true)
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_BITMAP, inputInts: [bitmapIndex], sendToMimicDevices: false, toSingleDevice: toSingleDevice)
     }
         
 //        if (!(Device.connectedDevice?.isConnected)!)
@@ -963,32 +999,25 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 //
 //    }
         // the setColor command for the nRF51822, which can only set one at a time
-    func setColor(colorIndex: Int, color: UIColor, setBothColors: Bool = false)
-    {
-        if (setBothColors)
-        {
-            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: [1] + convertUIColorToIntArray(color), digitsPerInput: 3, sendToMimicDevices: true)
-                // setting flag
-            Device.connectedDevice?.requestedFirstOfTwoColorsChanged = true;
-        }
-        else
-        {
-            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: [colorIndex] + convertUIColorToIntArray(color), digitsPerInput: 3, sendToMimicDevices: true)
-        }
-        
-    }
+//    func setColor(colorIndex: Int, color: UIColor, setBothColors: Bool = false)
+//    {
+//        if (setBothColors)
+//        {
+//            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: [1] + convertUIColorToIntArray(color), digitsPerInput: 3, sendToMimicDevices: true)
+//                // setting flag
+//            Device.connectedDevice?.requestedFirstOfTwoColorsChanged = true;
+//        }
+//        else
+//        {
+//            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: [colorIndex] + convertUIColorToIntArray(color), digitsPerInput: 3, sendToMimicDevices: true)
+//        }
+//
+//    }
     
         // the setColors command for the nRF8001, which can set both simultaneously
-    func setColors(color1: UIColor, color2: UIColor)
+    func setColors(color1: UIColor, color2: UIColor, toSingleDevice: Device? = nil)
     {
-        if (Device.connectedDevice!.hardwareVersion == .NRF51822)
-        {
-            setColor(colorIndex: 1, color: color1, setBothColors: true)
-        }
-        else
-        {
-            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: convertUIColorToIntArray(color1) + convertUIColorToIntArray(color2), digitsPerInput: 3, sendToMimicDevices: true)
-        }
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: convertUIColorToIntArray(color1) + convertUIColorToIntArray(color2), digitsPerInput: 3, sendToMimicDevices: false, toSingleDevice: toSingleDevice)
         
     }
 //
@@ -1183,7 +1212,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     }
     
         // sends commands to the hardware, using the protocol as the inputString (and an optional few ints at the end, for certain commands)
-    private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int](), digitsPerInput: Int = 2, sendToMimicDevices: Bool = false)
+    private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int](), digitsPerInput: Int = 2, sendToMimicDevices: Bool = false, toSingleDevice: Device? = nil)
     {
         print(" ");
         print(" ");
@@ -1226,7 +1255,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             BLETimeoutTimer = Timer.scheduledTimer(timeInterval: Constants.BLE_MESSAGE_TIMEOUT_TIME, target: self, selector: #selector(bleMessageTimeout), userInfo: nil, repeats: false);
         }
         
-        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: sendToMimicDevices, settingMode: inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_MODE));
+        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: sendToMimicDevices, settingMode: inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_MODE), toSingleDevice: toSingleDevice);
     }
 //            // formatting the string part of the packet
 //        var intsToParse = inputInts;

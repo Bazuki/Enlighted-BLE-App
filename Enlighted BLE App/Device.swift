@@ -145,6 +145,9 @@ class Device: NSObject, NSCoding
     
     var readyToShowModes = false;
     
+        // a timer to tell if it's an nRF8001 or nRF51822
+    var getMimicVersionTimer = Timer();
+    
     // MARK: Singleton
     
         // initializing as nil
@@ -358,6 +361,20 @@ class Device: NSObject, NSCoding
         self.rxCharacteristic = rxCharacteristic;
     }
     
+        // setting the timer 
+    func setGetMimicVersionTimer()
+    {
+        getMimicVersionTimer.invalidate();
+        getMimicVersionTimer = Timer.scheduledTimer(withTimeInterval: Constants.VERSION_TIMEOUT_TIME, repeats: false)
+        { timer in
+            //os_log("Sending message", log: OSLog.default, type: .debug);
+            if (self.hardwareVersion == .UNKNOWN)
+            {
+                self.hardwareVersion = .NRF8001;
+            }
+        }
+    }
+    
     public static func setConnectedDevice(newDevice: Device)
     {
         connectedDevice = newDevice;
@@ -391,13 +408,14 @@ class Device: NSObject, NSCoding
             // formatting ints, if any
         if (intsToParse.count > 0)
         {
+                // No longer the case:
                 // Set color for the nRF51822 has its first index byte be one digit, while the RGB values themselves are 3 bytes per channel.
-            if (inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_COLOR))
-            {
-                uInt8Array51822 += formatForNRF51822(intsToParse[0], numExpectedDigits: 1)
-                uInt8Array8001.append(UInt8(intsToParse[0]));
-                intsToParse.remove(at: 0);
-            }
+//            if (inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_COLOR))
+//            {
+//                uInt8Array51822 += formatForNRF51822(intsToParse[0], numExpectedDigits: 1)
+//                uInt8Array8001.append(UInt8(intsToParse[0]));
+//                intsToParse.remove(at: 0);
+//            }
             
             
             while (intsToParse.count > 0)
@@ -415,7 +433,13 @@ class Device: NSObject, NSCoding
         let outputArray8001 = stringArray + uInt8Array8001;
         let outputData8001 = NSData(bytes: outputArray8001, length: outputArray8001.count);
         
-        let outputArray51822 = stringArray + uInt8Array51822;
+        var outputArray51822 = stringArray + uInt8Array51822;
+            // in order to fit both colors in one packet on the nRF51822 protocol, "Set Color" is actually !C, not !SC, and so requires a special string
+        if (inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_COLOR))
+        {
+            let nRF51822StringArray: [UInt8] = Array(EnlightedBLEProtocol.ENL_BLE_SET_COLOR_NRF51822.utf8);
+            outputArray51822 = nRF51822StringArray + uInt8Array51822;
+        }
         let outputData51822 = NSData(bytes: outputArray51822, length: outputArray51822.count);
         
             // MARK: profiling: sending message

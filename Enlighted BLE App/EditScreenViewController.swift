@@ -112,7 +112,6 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         {
             for _ in 0...maxNumBitmaps - 1
             {
-                // FIXME: needs error reporting
                 Device.reportError(Constants.NOT_ENOUGH_STORED_BITMAPS_FOUND)
                 bitmaps += [errorBitmap];
             }
@@ -301,7 +300,6 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellIdentifier, for: indexPath) as? BitmapPickerCollectionViewCell else
         {
-            // FIXME: needs error reporting
             Device.reportError(Constants.FAILED_TO_DEQUEUE_COLLECTION_CELLS_FOR_BITMAP_PICKER);
             fatalError("Unable to dequeue collectionViewCell as BitmapPickerCollectionViewCell");
         }
@@ -388,35 +386,28 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
 //
 //    }
 //
-    
-    private func setColor(colorIndex: Int, color: UIColor, setBothColors: Bool = false)
-    {
-        if (setBothColors)
-        {
-            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: [1] + Device.convertUIColorToIntArray(color), digitsPerInput: 3, sendToMimicDevices: true)
-                // setting flag
-            Device.connectedDevice?.requestedFirstOfTwoColorsChanged = true;
-        }
-        else
-        {
-            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: [colorIndex] + Device.convertUIColorToIntArray(color), digitsPerInput: 3, sendToMimicDevices: true);
-        }
-        
-            // saving cache
-        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
-    }
+            // FIXME: in order to have the
+//    private func setColor(colorIndex: Int, color: UIColor, setBothColors: Bool = true)
+//    {
+//        if (setBothColors)
+//        {
+//            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: [1] + Device.convertUIColorToIntArray(color), digitsPerInput: 3, sendToMimicDevices: true)
+//                // setting flag
+//            Device.connectedDevice?.requestedFirstOfTwoColorsChanged = true;
+//        }
+//        else
+//        {
+//            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: [colorIndex] + Device.convertUIColorToIntArray(color), digitsPerInput: 3, sendToMimicDevices: true);
+//        }
+//
+//            // saving cache
+//        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
+//    }
     
         // the setColors command for the nRF8001, which can set both simultaneously
     private func setColors(color1: UIColor, color2: UIColor)
     {
-        if (Device.connectedDevice!.hardwareVersion == .NRF51822)
-        {
-            setColor(colorIndex: 1, color: color1, setBothColors: true);
-        }
-        else
-        {
-            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: Device.convertUIColorToIntArray(color1) + Device.convertUIColorToIntArray(color2), digitsPerInput: 3, sendToMimicDevices: true);
-        }
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: Device.convertUIColorToIntArray(color1) + Device.convertUIColorToIntArray(color2), digitsPerInput: 3, sendToMimicDevices: true);
             // saving cache
         NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
     }
@@ -580,14 +571,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             
             
                 // update the colors on the hardware
-            if (Device.connectedDevice!.hardwareVersion == .NRF51822)
-            {
-                setColor(colorIndex: currentColorIndex, color: newColor)
-            }
-            else
-            {
-               setColors(color1: (Device.connectedDevice?.mode?.color1) ?? UIColor.black, color2: (Device.connectedDevice?.mode?.color2) ?? UIColor.black);
-            }
+            setColors(color1: (Device.connectedDevice?.mode?.color1) ?? UIColor.black, color2: (Device.connectedDevice?.mode?.color2) ?? UIColor.black);
             
         }
             // otherwise it's from selecting a color, and so we want to enable and set the sliders
@@ -718,14 +702,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                     // removing history
                 color1History.removeLast();
                     // updating colors on the hardware
-                if (Device.connectedDevice!.hardwareVersion == .NRF51822)
-                {
-                    setColor(colorIndex: 1, color: (Device.connectedDevice?.mode?.color1)!);
-                }
-                else
-                {
-                    setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
-                }
+                setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
+                
                 
                     // have to do both, because it isn't coming from the picker or the preview
                 updateColorPicker((Device.connectedDevice?.mode?.color1)!, fromPicker: false);
@@ -750,14 +728,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 // removing history
                 color2History.removeLast();
                 // updating colors on the hardware
-                if (Device.connectedDevice!.hardwareVersion == .NRF51822)
-                {
-                    setColor(colorIndex: 2, color: (Device.connectedDevice?.mode?.color2)!);
-                }
-                else
-                {
-                    setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
-                }
+                setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
+                
                 
                 // have to do both, because it isn't coming from the picker or the preview
                 updateColorPicker((Device.connectedDevice?.mode?.color2)!, fromPicker: false);
