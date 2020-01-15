@@ -15,6 +15,8 @@ class BLEConnectionTableViewCell: UITableViewCell
     // MARK: Properties
     
     @IBOutlet weak var deviceNameLabel: UILabel!
+    @IBOutlet weak var nicknameLabel: UILabel!
+    @IBOutlet weak var nicknameLabelHeight: NSLayoutConstraint!
     @IBOutlet weak var RSSIValue: UILabel!
     @IBOutlet weak var RSSILabel: UILabel!
     @IBOutlet weak var connectionImage: UIImageView!
@@ -94,6 +96,7 @@ class BLEConnectionTableViewCell: UITableViewCell
         {
             backgroundColor = UIColor(named: "SelectedModeBackground");
             connectionImage.tintColor = UIColor(named: "Title");
+            nicknameLabel.textColor = UIColor(named: "Subtitle");
             deviceNameLabel.textColor = UIColor(named: "SelectedText");
             RSSILabel.textColor = UIColor(named: "Title");
             RSSIValue.textColor = UIColor(named: "Title");
@@ -103,9 +106,23 @@ class BLEConnectionTableViewCell: UITableViewCell
             backgroundColor = UIColor.clear;
             connectionImage.tintColor = UIColor(named: "NonSelectedText");
             deviceNameLabel.textColor = UIColor(named: "Title");
+            nicknameLabel.textColor = UIColor(named: "Subtitle");
             RSSILabel.textColor = UIColor(named: "NonSelectedText");
             RSSIValue.textColor = UIColor(named: "NonSelectedText");
         }
+    }
+    
+    func setNickname(_ newNickname: String)
+    {
+        if (newNickname.elementsEqual(""))
+        {
+            nicknameLabelHeight.constant = 0;
+        }
+        else
+        {
+            nicknameLabelHeight.constant = 13;
+        }
+        nicknameLabel.text = newNickname;
     }
     
     func updateRSSIValue(_ newRSSI: Int)

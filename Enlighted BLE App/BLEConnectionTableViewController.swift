@@ -2009,14 +2009,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         var deviceDisplayName = device.name;
         
-            // if there's a nickname, use that as well
-        
-        if (device.nickname != "")
-        {
-            deviceDisplayName = deviceDisplayName + " – " + device.nickname;
-        }
         
         cell.deviceNameLabel.text = deviceDisplayName;
+        cell.setNickname(device.nickname);
         cell.updateRSSIValue(device.RSSI);
         
         return cell;

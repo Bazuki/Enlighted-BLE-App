@@ -701,8 +701,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 Device.connectedDevice?.mode?.color1 = color1History[color1History.count - 2];
                     // removing history
                 color1History.removeLast();
-                    // updating colors on the hardware
-                setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
+                    // updating colors on the hardware (unneccesary because it's done in updateColorPicker(fromPicker: true))
+                // setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
                 
                 
                     // have to do both, because it isn't coming from the picker or the preview
@@ -727,8 +727,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
                 Device.connectedDevice?.mode?.color2 = color2History[color2History.count - 2];
                 // removing history
                 color2History.removeLast();
-                // updating colors on the hardware
-                setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
+                // updating colors on the hardware (no longer necessary - see above)
+                //setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!);
                 
                 
                 // have to do both, because it isn't coming from the picker or the preview
