@@ -42,13 +42,16 @@ class Device: NSObject, NSCoding
     
     static var currentlyProfiling = false;
     
-    static let mainProfilerFileName = "main_\(Date().timeIntervalSince1970).csv";
+    static let fileTimeStamp = (Date());
+    
+    
+    static let mainProfilerFileName = "main_\(formatFilenameTimestamp(fileTimeStamp)).csv";
     static let mainProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(mainProfilerFileName);
     
-    static let rxProfilerFileName = "rx_\(Date().timeIntervalSince1970).csv";
+    static let rxProfilerFileName = "rx_\(formatFilenameTimestamp(fileTimeStamp)).csv";
     static let rxProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(rxProfilerFileName);
     
-    static let txProfilerFileName = "tx_\(Date().timeIntervalSince1970).csv";
+    static let txProfilerFileName = "tx_\(formatFilenameTimestamp(fileTimeStamp)).csv";
     static let txProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(txProfilerFileName);
     
     static var lastTimestamp = 0.0;
@@ -538,6 +541,15 @@ class Device: NSObject, NSCoding
         print("");
         
         
+    }
+    
+    private static func formatFilenameTimestamp(_ timestamp: Date) -> String
+    {
+        let date = Date()
+        let format = DateFormatter()
+        format.dateFormat = "yyyy-MM-dd_HH:mm:ss"
+        let formattedDate = format.string(from: date)
+        return formattedDate
     }
     
     // MARK: - NSCoding

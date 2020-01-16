@@ -674,6 +674,20 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     @objc func bleMessageTimeout()
     {
         Device.reportError(Constants.TIMEOUT_BEFORE_RECEIVING_COMPLETE_MESSAGE);
+        
+            // MARK: logging timeouts
+        if (Device.profiling && Device.currentlyProfiling)
+        {
+            var commandString = "TIMEOUT";
+            let duration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTimestamp) * 1000;
+            //Device.lastTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
+            //commandString += (inputInts.map { String($0) }.joined(separator: " "));
+            let newMainLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(4),\(duration)\n";
+            //let newTxLine = "\(commandString),\(duration)\n";
+            Device.mainCsvText.append(contentsOf: newMainLine);
+            //Device.txCsvText.append(contentsOf: newTxLine);
+        }
+        
             // if we were loading a bitmap row (the most common time this occurs)
         if (Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL))
         {
@@ -722,13 +736,16 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // FIXME: adding a delay to requesting packets from the nRF8001
     @objc func requestNextDataWithDelay()
     {
+        //requestNextData();
+        //return;
+        
         if (Device.connectedDevice!.hardwareVersion == .NRF8001)
         {
             delayTimer.invalidate();
-            //os_log("Since we're using older hardware, delaying message", log: OSLog.default, type: .debug);
+            os_log("Since we're using older hardware, delaying message", log: OSLog.default, type: .debug);
             delayTimer = Timer.scheduledTimer(withTimeInterval: Constants.NRF8001_DELAY_TIME, repeats: false)
             { timer in
-                //os_log("Sending message", log: OSLog.default, type: .debug);
+                os_log("Sending message", log: OSLog.default, type: .debug);
                 self.requestNextData();
             }
         }
