@@ -292,9 +292,23 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         //print("Setting timer");
         reloadStopwatch = Date();
         
-            // MARK: profiling stopwatch
+            // MARK: Starting profiling / BLE Log stopwatch
         if (Device.profiling && !deviceHasModes && !Device.currentlyProfiling)
         {
+            Device.fileTimeStamp = (Date());
+            
+            
+            Device.mainProfilerFileName = "main_\(Device.formatFilenameTimestamp(Device.fileTimeStamp)).csv";
+            Device.mainProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(Device.mainProfilerFileName);
+            
+            Device.rxProfilerFileName = "rx_\(Device.formatFilenameTimestamp(Device.fileTimeStamp)).csv";
+            Device.rxProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(Device.rxProfilerFileName);
+            
+            Device.txProfilerFileName = "tx_\(Device.formatFilenameTimestamp(Device.fileTimeStamp)).csv";
+            Device.txProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(Device.txProfilerFileName);
+            
+            Device.lastTimestamp = 0.0;
+            Device.numTimeouts = 0;
             Device.profilerStopwatch = Date();
             Device.currentlyProfiling = true;
         }

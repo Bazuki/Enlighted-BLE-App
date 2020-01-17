@@ -43,17 +43,17 @@ class Device: NSObject, NSCoding
     
     static var currentlyProfiling = false;
     
-    static let fileTimeStamp = (Date());
+    static var fileTimeStamp = (Date());
     
     
-    static let mainProfilerFileName = "main_\(formatFilenameTimestamp(fileTimeStamp)).csv";
-    static let mainProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(mainProfilerFileName);
+    static var mainProfilerFileName = "main_\(formatFilenameTimestamp(fileTimeStamp)).csv";
+    static var mainProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(mainProfilerFileName);
     
-    static let rxProfilerFileName = "rx_\(formatFilenameTimestamp(fileTimeStamp)).csv";
-    static let rxProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(rxProfilerFileName);
+    static var rxProfilerFileName = "rx_\(formatFilenameTimestamp(fileTimeStamp)).csv";
+    static var rxProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(rxProfilerFileName);
     
-    static let txProfilerFileName = "tx_\(formatFilenameTimestamp(fileTimeStamp)).csv";
-    static let txProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(txProfilerFileName);
+    static var txProfilerFileName = "tx_\(formatFilenameTimestamp(fileTimeStamp)).csv";
+    static var txProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(txProfilerFileName);
     
     static var lastTimestamp = 0.0;
     
@@ -554,7 +554,7 @@ class Device: NSObject, NSCoding
     }
     
     
-    private static func formatFilenameTimestamp(_ timestamp: Date) -> String
+    public static func formatFilenameTimestamp(_ timestamp: Date) -> String
     {
         let date = Date()
         let format = DateFormatter()
