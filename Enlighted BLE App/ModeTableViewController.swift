@@ -397,15 +397,22 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 Device.currentlyProfiling = false;
                 do
                 {
+                        // adding a summary to the main BLE log
                     let newTitleLine = "Hardware:,nRf8001 Delay (ms):,Total Duration,Number Of Timeouts:\n";
                     Device.mainCsvText.append(newTitleLine);
                     let newSummaryLine = "\(Device.connectedDevice!.hardwareVersion),\(Constants.NRF8001_DELAY_TIME * 1000),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(Device.numTimeouts)\n"
                     Device.mainCsvText.append(newSummaryLine)
+                    
                     try Device.mainCsvText.write(to: Device.mainProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
                     try Device.rxCsvText.write(to: Device.rxProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
                     try Device.txCsvText.write(to: Device.txProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
                     let vc = UIActivityViewController(activityItems: [Device.mainProfilerPath!, Device.rxProfilerPath!, Device.txProfilerPath!], applicationActivities: []);
                     present(vc, animated: true, completion: nil)
+                    
+                        // resetting BLE log contents for the next log
+                    Device.mainCsvText = "Action,Timestamp,Type,Duration\n";
+                    Device.rxCsvText = "Rx Action,Rx Duration\n";
+                    Device.txCsvText = "Tx Action,Tx Duration\n";
                 }
                 catch
                 {
@@ -738,19 +745,19 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         }
     }
     
-        // FIXME: adding a delay to requesting packets from the nRF8001
     @objc func requestNextDataWithDelay()
     {
-        //requestNextData();
-        //return;
+
+            // resetting the timeout timer so it doesn't count the delay time
+        BLETimeoutTimer.invalidate();
         
         if (Device.connectedDevice!.hardwareVersion == .NRF8001)
         {
             delayTimer.invalidate();
-            os_log("Since we're using older hardware, delaying message", log: OSLog.default, type: .debug);
+            //os_log("Since we're using older hardware, delaying message", log: OSLog.default, type: .debug);
             delayTimer = Timer.scheduledTimer(withTimeInterval: Constants.NRF8001_DELAY_TIME, repeats: false)
             { timer in
-                os_log("Sending message", log: OSLog.default, type: .debug);
+                //os_log("Sending message", log: OSLog.default, type: .debug);
                 self.requestNextData();
             }
         }
@@ -758,7 +765,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         {
             requestNextData();
         }
-        
     }
     
     
