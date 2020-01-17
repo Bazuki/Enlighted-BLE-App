@@ -79,7 +79,13 @@ class Constants
         // relatedly, but independently to the above, whether to dim the brightness to STANDBY_BRIGHTNESS when loading modes.
     static let USE_STANDBY_BRIGHTNESS = true;
     
-        // the number of packets that must be received before a mode is fully retrieved from hardware (1 for GetMode, 2 for GetName)
+        // whether or not to prompt an email error report
+    static let SEND_EMAIL_ERROR_REPORTS = true;
+    
+        // the email address to send error reports to
+    static let ERROR_REPORT_EMAIL_RECIPIENTS = ["janet@enlighted.com"];
+    
+        // the number of packets that must be received before a mode is fully retrieved from hardware (1 for GetMode, 2 for GetName), used to help calculate progress bar
     static let BLE_PACKETS_PER_MODE = 3;
     
         // the number of packets that must be received before a bitmap/thumbnail is fully retrieved from hardware (4 per row, 20 rows)
@@ -146,69 +152,69 @@ class Constants
         // callback from CoreBluetooth when the Central Manager fails to connect to a selected peripheral
     static let FAILED_TO_CONNECT_TO_PERIPHERAL = ENL_ERROR("FAILED_TO_CONNECT_TO_PERIPHERAL", 101);
         // callback from CoreBluetooth when the Central Manager fails to discover a connected peripheral's services
-    static let FAILED_TO_DISCOVER_SERVICES = ENL_ERROR("FAILED_TO_DISCOVER_SERVICES", 102);
+    static let FAILED_TO_DISCOVER_SERVICES = ENL_ERROR("FAILED_TO_DISCOVER_SERVICES", 102, promptPopup: true);
         // callback from CoreBluetooth when the Central Manager fails to discover a connected peripheral's services' characteristics
-    static let FAILED_TO_DISCOVER_CHARACTERISTICS = ENL_ERROR("FAILED_TO_DISCOVER_CHARACTERISTICS", 103);
+    static let FAILED_TO_DISCOVER_CHARACTERISTICS = ENL_ERROR("FAILED_TO_DISCOVER_CHARACTERISTICS", 103, promptPopup: true);
         // callback from CoreBluetooth when the Central Manager fails to discover a connected peripheral's descriptors
-    static let FAILED_TO_DISCOVER_CHARACTERISTIC_DESCRIPTORS = ENL_ERROR("FAILED_TO_DISCOVER_CHARACTERISTIC_DESCRIPTORS", 104);
+    static let FAILED_TO_DISCOVER_CHARACTERISTIC_DESCRIPTORS = ENL_ERROR("FAILED_TO_DISCOVER_CHARACTERISTIC_DESCRIPTORS", 104, promptPopup: true);
         // callback from CoreBluetooth when we are unexpectedly disconnected from our "primary" peripheral, prompting the "disconnected" popup
     static let DISCONNECTED_FROM_PRIMARY_PERIPHERAL_UNEXPECTEDLY = ENL_ERROR("DISCONNECTED_FROM_PRIMARY_PERIPHERAL_UNEXPECTEDLY", 105);
         // callback from CoreBluetooth when we are unexpectedly disconnected from one of our mimic peripherals.  The peripheral is then removed from the list of connected mimic peripherals.
     static let DISCONNECTED_FROM_MIMIC_PERIPHERAL_UNEXPECTEDLY = ENL_ERROR("DISCONNECTED_FROM_MIMIC_PERIPHERAL_UNEXPECTEDLY", 106);
         // callback from CoreBluetooth when updating a characteristic's notification state (usually, the rx characteristic to the "Notify" state) fails
-    static let FAILED_TO_UPDATE_CHARACTERISTIC_NOTIFICATION_STATE = ENL_ERROR("FAILED_TO_UPDATE_CHARACTERISTIC_NOTIFICATION_STATE", 107);
+    static let FAILED_TO_UPDATE_CHARACTERISTIC_NOTIFICATION_STATE = ENL_ERROR("FAILED_TO_UPDATE_CHARACTERISTIC_NOTIFICATION_STATE", 107, promptPopup: true);
         // callback from CoreBluetooth when reading the RSSI of a connected peripheral fails (generally only done on the "Choose Device" screen, for the currently connected peripheral)
     static let FAILED_TO_READ_RSSI = ENL_ERROR("FAILED_TO_READ_RSSI", 108);
     
             // Error codes starting with "2" relate to receiving/parsing the rx values we get from the hardware
         // Thrown when the complete message we receive is not the same type as the one we expect given our most recent message.  This message is ignored, and new requests are sent if necessary.
-    static let UNEXPECTED_PACKET_TYPE = ENL_ERROR("UNEXPECTED_PACKET_TYPE", 201);
+    static let UNEXPECTED_PACKET_TYPE = ENL_ERROR("UNEXPECTED_PACKET_TYPE", 201, promptPopup: true);
         // Thrown if a received packet is unidentifiable, based on the BLE protocols.
-    static let UNABLE_TO_PARSE_PACKET = ENL_ERROR("UNABLE_TO_PARSE_PACKET", 202);
+    static let UNABLE_TO_PARSE_PACKET = ENL_ERROR("UNABLE_TO_PARSE_PACKET", 202, promptPopup: true);
         // Thrown if the BLE timeout timer fires before a completed message is received.  This triggers requestNextData() to re-request that data, if necessary.
     static let TIMEOUT_BEFORE_RECEIVING_COMPLETE_MESSAGE = ENL_ERROR("TIMEOUT_BEFORE_RECEIVING_COMPLETE_MESSAGE", 203);
         // callback from CoreBluetooth if an error occured in reading the value of the rx characteristic.
     static let CALLBACK_ERROR_FROM_DID_UPDATE_VALUE_FOR_RX = ENL_ERROR("CALLBACK_ERROR_FROM_DID_UPDATE_VALUE_FOR_RX", 204);
         // Thrown if the received value from the rx characteristic is empty.
-    static let RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE = ENL_ERROR("RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE", 205);
+    static let RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE = ENL_ERROR("RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE", 205, promptPopup: true);
     
             // Error codes starting with "3" relate to sending tx messages
         // Thrown when the app attempts to send a packet over the tx characteristic while we are still waiting for a response from a different characteristic.
-    static let FAILED_TO_SEND_PACKET = ENL_ERROR("FAILED_TO_SEND_PACKET", 301);
+    static let COULD_NOT_TX_BLE_BECAUSE_WAITING_FOR_RESPONSE = ENL_ERROR("COULD_NOT_TX_BLE_BECAUSE_WAITING_FOR_RESPONSE", 301);
         // callback from CoreBluetooth if an error occurs from a BLECharacteristicWriteType.withResponse message. Should never occur, as we use BLECharacteristicWriteType.withoutResponse.
-    static let BAD_RESPONSE_TO_WRITE_WITH_RESPONSE = ENL_ERROR("BAD_RESPONSE_TO_WRITE_WITH_RESPONSE", 302);
+    static let BAD_RESPONSE_TO_WRITE_WITH_RESPONSE = ENL_ERROR("BAD_RESPONSE_TO_WRITE_WITH_RESPONSE", 302, promptPopup: true);
         // Thrown when the app somehow attempts to send data on a characteristic it has not discovered
-    static let ATTEMPTED_TO_SEND_PACKET_WITHOUT_DISCOVERING_CHARACTERISTIC = ENL_ERROR("ATTEMPTED_TO_SEND_PACKET_WITHOUT_DISCOVERING_CHARACTERISTIC", 303);
+    static let ATTEMPTED_TO_SEND_PACKET_WITHOUT_DISCOVERING_CHARACTERISTIC = ENL_ERROR("ATTEMPTED_TO_SEND_PACKET_WITHOUT_DISCOVERING_CHARACTERISTIC", 303, promptPopup: true);
         // Thrown when a message sent over the tx characteristic is met with a failure response from the firmware ("0").
     static let RECEIVED_FAILURE_RESPONSE = ENL_ERROR("RECEIVED_FAILURE_RESPONSE", 304);
     
             // Error codes starting with "4" are app-related-only.
         // callback from TableViewDelegate when an error occurs dequeueing a reusable cell
-    static let FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_CONNECTION_TABLE = ENL_ERROR("FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_CONNECTION_TABLE", 401);
+    static let FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_CONNECTION_TABLE = ENL_ERROR("FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_CONNECTION_TABLE", 401, promptPopup: true);
         // callback from TableViewDelegate when an error occurs dequeueing a reusable cell
-    static let FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MODE_TABLE = ENL_ERROR("FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MODE_TABLE", 402);
+    static let FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MODE_TABLE = ENL_ERROR("FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MODE_TABLE", 402, promptPopup: true);
         // callback from CollectionViewDelegate when an error occurs dequeueing a reusable cell
-    static let FAILED_TO_DEQUEUE_COLLECTION_CELLS_FOR_BITMAP_PICKER = ENL_ERROR("FAILED_TO_DEQUEUE_COLLECTION_CELLS_FOR_BITMAP_PICKER", 403);
+    static let FAILED_TO_DEQUEUE_COLLECTION_CELLS_FOR_BITMAP_PICKER = ENL_ERROR("FAILED_TO_DEQUEUE_COLLECTION_CELLS_FOR_BITMAP_PICKER", 403, promptPopup: true);
         // callback from TableViewDelegate when an error occurs dequeueing a reusable cell
-    static let FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MIMIC_TABLE = ENL_ERROR("FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MIMIC_TABLE", 404);
+    static let FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MIMIC_TABLE = ENL_ERROR("FAILED_TO_DEQUEUE_TABLE_CELLS_FOR_MIMIC_TABLE", 404, promptPopup: true);
         // Thrown when a connection table view cell is set to be initialized, but there is no device to fill it.
-    static let NO_DEVICE_FOR_DEQUEUED_CONNECTION_TABLE_CELL = ENL_ERROR("NO_DEVICE_FOR_DEQUEUED_CONNECTION_TABLE_CELL", 405);
+    static let NO_DEVICE_FOR_DEQUEUED_CONNECTION_TABLE_CELL = ENL_ERROR("NO_DEVICE_FOR_DEQUEUED_CONNECTION_TABLE_CELL", 405, promptPopup: true);
         // Thrown when saving the cache fails.
-    static let FAILED_TO_SAVE_DEVICES_IN_CACHE = ENL_ERROR("FAILED_TO_SAVE_DEVICES_IN_CACHE", 406);
+    static let FAILED_TO_SAVE_DEVICES_IN_CACHE = ENL_ERROR("FAILED_TO_SAVE_DEVICES_IN_CACHE", 406, promptPopup: true);
         // Thrown when saving profiler .csv files fails.  Should only have a chance of occuring if the app is run with the profiling flag enabled.
-    static let FAILED_TO_SAVE_PROFILER_CSV_FILES = ENL_ERROR("FAILED_TO_SAVE_PROFILER_CSV_FILES", 407);
+    static let FAILED_TO_SAVE_PROFILER_CSV_FILES = ENL_ERROR("FAILED_TO_SAVE_PROFILER_CSV_FILES", 407, promptPopup: true);
         // Thrown when the "pixels to thumbnail UIImage" function is passed a "width" argument of 0.
-    static let ATTEMPTED_TO_CREATE_THUMBNAIL_WITH_ZERO_WIDTH = ENL_ERROR("ATTEMPTED_TO_CREATE_THUMBNAIL_WITH_ZERO_WIDTH", 408);
+    static let ATTEMPTED_TO_CREATE_THUMBNAIL_WITH_ZERO_WIDTH = ENL_ERROR("ATTEMPTED_TO_CREATE_THUMBNAIL_WITH_ZERO_WIDTH", 408, promptPopup: true);
         // Thrown when the number of pixels passed to the "pixels to thumbnail UIImage" function is not evenly divisible by the width argument.
-    static let BITMAP_PIXELS_ARE_NOT_EVENLY_DIVISIBLE_BY_WIDTH = ENL_ERROR("BITMAP_PIXELS_ARE_NOT_EVENLY_DIVISIBLE_BY_WIDTH", 409);
+    static let BITMAP_PIXELS_ARE_NOT_EVENLY_DIVISIBLE_BY_WIDTH = ENL_ERROR("BITMAP_PIXELS_ARE_NOT_EVENLY_DIVISIBLE_BY_WIDTH", 409, promptPopup: true);
         // Thrown when an error occurs initializing the dataprovider to convert the pixels to a CGImage.
-    static let UNABLE_TO_CREATE_DATAPROVIDER_FOR_THUMBNAIL = ENL_ERROR("UNABLE_TO_CREATE_DATAPROVIDER_FOR_THUMBNAIL", 410);
+    static let UNABLE_TO_CREATE_DATAPROVIDER_FOR_THUMBNAIL = ENL_ERROR("UNABLE_TO_CREATE_DATAPROVIDER_FOR_THUMBNAIL", 410, promptPopup: true);
         // Thrown when an error occurs converting pixels into a CGImage.
-    static let UNABLE_TO_CREATE_THUMBNAIL_CGIMAGE_FROM_BITMAP_PIXELS = ENL_ERROR("UNABLE_TO_CREATE_THUMBNAIL_CGIMAGE_FROM_BITMAP_PIXELS", 411);
+    static let UNABLE_TO_CREATE_THUMBNAIL_CGIMAGE_FROM_BITMAP_PIXELS = ENL_ERROR("UNABLE_TO_CREATE_THUMBNAIL_CGIMAGE_FROM_BITMAP_PIXELS", 411, promptPopup: true);
         // Thrown when a mode is set to use a thumbnail index greater than the number of thumbnails the app has stored;  For example, a mode that uses bitmap "32" when the max number of bitmaps is "20".
-    static let CURRENT_MODE_THUMBNAIL_INDEX_EXCEEDS_STORED_THUMBNAILS = ENL_ERROR("CURRENT_MODE_THUMBNAIL_INDEX_EXCEEDS_STORED_THUMBNAILS", 412);
+    static let CURRENT_MODE_THUMBNAIL_INDEX_EXCEEDS_STORED_THUMBNAILS = ENL_ERROR("CURRENT_MODE_THUMBNAIL_INDEX_EXCEEDS_STORED_THUMBNAILS", 412, promptPopup: true);
         // Thrown when there are fewer bitmaps stored than the max number of bitmaps found by the "Get Limits" request
-    static let NOT_ENOUGH_STORED_BITMAPS_FOUND = ENL_ERROR("NOT_ENOUGH_STORED_BITMAPS_FOUND", 413);
+    static let NOT_ENOUGH_STORED_BITMAPS_FOUND = ENL_ERROR("NOT_ENOUGH_STORED_BITMAPS_FOUND", 413, promptPopup: true);
     
             // a dictionary of functions that will test if a packet is "complete" according to varying standards
     static let PACKET_REQUIREMENTS =
@@ -276,6 +282,8 @@ class Constants
         
         static let CHANGED_MODE_VALUE = "changedModeValue";
         static let CHANGED_FIRST_COLOR = "changedFirstColor";
+        
+        static let SEND_ERROR_LOG_EMAIL = "sendErrorLogEmail";
     }
     
 }
@@ -284,9 +292,12 @@ class ENL_ERROR
 {
     var errorCode: Int
     var name: String
-    init(_ name: String, _ errorCode: Int)
+        // whether or not this error prompts a user alert, and allows them to send it to us over email
+    var promptPopup: Bool;
+    init(_ name: String, _ errorCode: Int, promptPopup: Bool = false)
     {
         self.errorCode = errorCode;
         self.name = name;
+        self.promptPopup = promptPopup;
     }
 }

@@ -9,6 +9,7 @@
 import UIKit;
 import CoreBluetooth;
 import os.log;
+import MessageUI;
 
 class Device: NSObject, NSCoding
 {
@@ -38,7 +39,7 @@ class Device: NSObject, NSCoding
     // MARK: Profiling
     
         // toggle to enable/disable profiling (maybe should be in constants folder?)
-    static let profiling = false;
+    static let profiling = true;
     
     static var currentlyProfiling = false;
     
@@ -55,6 +56,8 @@ class Device: NSObject, NSCoding
     static let txProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(txProfilerFileName);
     
     static var lastTimestamp = 0.0;
+    
+    static var numTimeouts = 0;
     
         // for type: 3 is tx, 2 is rx complete packet, 1 is thumbnail (besides the final one)
     static var mainCsvText = "Action,Timestamp,Type,Duration\n";
@@ -529,6 +532,13 @@ class Device: NSObject, NSCoding
         // a function for reporting errors, whose function can be determined later
     public static func reportError(_ error: ENL_ERROR, additionalInfo: String = "")
     {
+        
+        if (Constants.SEND_EMAIL_ERROR_REPORTS && error.promptPopup)
+        {
+            let emailContents = [0: "<p>Received an error with error code \(error.errorCode) named \(error.name). </p>  <p>\(additionalInfo)</p>    <p>Timestamp: \(formatFilenameTimestamp(fileTimeStamp))</p>   <p> Software version: \(( Bundle.main.infoDictionary?["CFBundleShortVersionString"] as! String?) ?? "unknown") </p> <p> iOS version: \(UIDevice.current.systemVersion) </p> <p>     Hardware name: \(Device.connectedDevice!.name) \(Device.connectedDevice!.nickname) </p><p>     Hardware type: \(Device.connectedDevice!.hardwareVersion) </p> ", 1: "\(error.errorCode)"];
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SEND_ERROR_LOG_EMAIL), object: nil, userInfo: emailContents);
+        }
+        
         print("");
         print("*************************************************************************");
         print("");
@@ -542,6 +552,7 @@ class Device: NSObject, NSCoding
         
         
     }
+    
     
     private static func formatFilenameTimestamp(_ timestamp: Date) -> String
     {

@@ -397,6 +397,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 Device.currentlyProfiling = false;
                 do
                 {
+                    let newTitleLine = "Hardware:,nRf8001 Delay (ms):,Total Duration,Number Of Timeouts:\n";
+                    Device.mainCsvText.append(newTitleLine);
+                    let newSummaryLine = "\(Device.connectedDevice!.hardwareVersion),\(Constants.NRF8001_DELAY_TIME * 1000),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(Device.numTimeouts)\n"
+                    Device.mainCsvText.append(newSummaryLine)
                     try Device.mainCsvText.write(to: Device.mainProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
                     try Device.rxCsvText.write(to: Device.rxProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
                     try Device.txCsvText.write(to: Device.txProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
@@ -685,6 +689,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             let newMainLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(4),\(duration)\n";
             //let newTxLine = "\(commandString),\(duration)\n";
             Device.mainCsvText.append(contentsOf: newMainLine);
+            Device.numTimeouts += 1;
             //Device.txCsvText.append(contentsOf: newTxLine);
         }
         

@@ -10,6 +10,7 @@ import UIKit
 import CoreBluetooth
 import AVFoundation
 import os.log;
+import MessageUI;
 
 var txCharacteristic : CBCharacteristic?;
 var rxCharacteristic : CBCharacteristic?;
@@ -22,7 +23,7 @@ var rxCharacteristicValue = String();//NSData();
 // a timer to see how long the BLE board takes to respond to BLE requests
 var packetStopwatch = Date();
 
-class BLEConnectionTableViewController: UITableViewController, CBCentralManagerDelegate, CBPeripheralDelegate
+class BLEConnectionTableViewController: UITableViewController, CBCentralManagerDelegate, CBPeripheralDelegate, MFMailComposeViewControllerDelegate
 {
         // MARK: Properties
     
@@ -33,6 +34,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     static var advertisingRSSIs = [NSNumber]();
     
     static var nicknames = [String]();
+    
+    //static var navController = self.navigationController;
     
         // The devices that show up on the connection screen.
     var visibleDevices = [Device]();
@@ -121,6 +124,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         NotificationCenter.default.addObserver(self, selector: #selector(updateMimicDevicesAndCentralState), name: Notification.Name(rawValue: Constants.MESSAGES.UPDATE_CBCENTRAL_STATE), object: nil)
         
         NotificationCenter.default.addObserver(self, selector: #selector(startScan), name: Notification.Name(rawValue: Constants.MESSAGES.START_SCAN), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(createErrorLogPopup(_:)), name: Notification.Name(rawValue: Constants.MESSAGES.SEND_ERROR_LOG_EMAIL), object: nil)
 
         
         
@@ -1381,7 +1386,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             if (characteristic.value!.count < 1)
             {
                 //print("Empty characteristic value returned")
-                Device.reportError(Constants.RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE);
+                //Device.reportError(Constants.RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE);
                 return;
             }
             
@@ -2115,7 +2120,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             print("Still waiting on a response");
                 // vibrate if command failed
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-            Device.reportError(Constants.FAILED_TO_SEND_PACKET);
+            
+                // converting data to a string
+            let failedPacketString = String(data: valueData[1] as Data, encoding: .ascii);
+            Device.reportError(Constants.COULD_NOT_TX_BLE_BECAUSE_WAITING_FOR_RESPONSE, additionalInfo: "Unable to send packet \(failedPacketString ?? "(inconvertible)") because the app was already waiting for a response to a different packet.  ");
             if (settingMode && !(toSingleDevice != nil))
             {
                 Device.connectedDevice!.lastUnsentMessage = valueData;
@@ -2285,6 +2293,61 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     }
     
     // MARK: - Private Methods
+    
+    @objc private func createErrorLogPopup(_ notification: Notification)
+    {
+        var message = "An error occurred.  Would you like to email Enlighted an error log? ";
+        if let data = notification.userInfo as? [Int: String]
+        {
+            message.append(contentsOf: "(Error code: \(data[1]!))");
+        }
+        let dialogMessage = UIAlertController(title:"Error occurred", message: message, preferredStyle: .alert);
+        let dismiss = UIAlertAction(title: "No", style: .destructive, handler:
+        {(action) -> Void in
+            print("User declined to send error email.");
+        })
+        let sendLog = UIAlertAction(title: "Send Log", style: UIAlertActionStyle.default, handler:
+        {(action) -> Void in
+            
+            if let data = notification.userInfo as? [Int: String]
+            {
+                print("Received error email contents");
+                let contents = data[0];
+                self.sendErrorEmail(contents!)
+            }
+            else
+            {
+                print("Unable to parse notificationData");
+            }
+            
+        })
+        
+        dialogMessage.addAction(dismiss);
+        dialogMessage.addAction(sendLog);
+        
+            // presenting this view controller over the current screen, whatever that may be
+        self.navigationController?.topViewController?.present(dialogMessage, animated: true, completion: nil);
+    }
+    
+    func sendErrorEmail(_ contents: String)
+    {
+        // based on https://www.hackingwithswift.com/example-code/uikit/how-to-send-an-email
+        if MFMailComposeViewController.canSendMail()
+        {
+            let mail = MFMailComposeViewController();
+            mail.mailComposeDelegate = self;
+            mail.setSubject("Enlighted BLE App Error Report")
+            mail.setToRecipients(Constants.ERROR_REPORT_EMAIL_RECIPIENTS);
+            mail.setMessageBody(contents, isHTML: true);
+            
+            present(mail, animated: true);
+        }
+    }
+    
+    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
+    {
+        controller.dismiss(animated: true)
+    }
     
         // if we receive a timeout error after requesting a thumbnail row, we have to
     @objc private func resetThumbnailRow()
