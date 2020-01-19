@@ -668,13 +668,13 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         let duration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTimestamp) * 1000;
                         Device.lastTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
                         let commandString = "rx: \(currentPacketType) (partial)";
-                        let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(1),\(duration)\n";
-                        let newRxLine = "\(commandString),\(duration)\n";
+                        let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(1),\(duration),\n";
+                        let newRxLine = "\(commandString),\(duration),\n";
                         Device.mainCsvText.append(contentsOf: newLine);
                         Device.rxCsvText.append(contentsOf: newRxLine);
                     }
                     
-                    
+                    //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RESTART_BLE_RX_TIMEOUT_TIMER), object: nil);
                     print("incomplete message: waiting for rest of message")
                     return;
                 }
@@ -686,14 +686,18 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     {
                             // 'type' is 2, a complete message
                         let duration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTimestamp) * 1000;
+                        let completeMessageDuration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTxTimestamp) * 1000;
                         Device.lastTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
                         let commandString = "rx: \(currentPacketType) (complete)";
-                        let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(2),\(duration)\n";
-                        let newRxLine = "\(commandString),\(duration)\n";
+                        let newLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(2),\(duration),\(completeMessageDuration)\n";
+                        let newRxLine = "\(commandString),\(duration),\(completeMessageDuration)\n";
                         Device.mainCsvText.append(contentsOf: newLine);
                         Device.rxCsvText.append(contentsOf: newRxLine);
                     }
                     
+                        // resetting BLE Rx timeout timer
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.STOP_BLE_RX_TIMEOUT_TIMER), object: nil);
+
                     
                     let diff = Date().timeIntervalSince(packetStopwatch);
                     print("Received complete packet in \(diff) seconds")
@@ -710,7 +714,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             }
             
                 // checking to make sure we were expecting this type of packet
-            if (!(currentPacketType == Device.connectedDevice!.expectedPacketType) && !(Device.connectedDevice!.expectedPacketType.elementsEqual("Success") && currentPacketType.elementsEqual("Failure")))
+            if (!(currentPacketType == Device.connectedDevice!.expectedPacketType) && !(Device.connectedDevice!.expectedPacketType.elementsEqual("Success") && currentPacketType.elementsEqual("Failure")) && !currentPacketType.elementsEqual("Success"))
             {
                 Device.reportError(Constants.UNEXPECTED_PACKET_TYPE, additionalInfo: "Received a packet of type \(currentPacketType), but expected a packet of type \(Device.connectedDevice!.expectedPacketType)");
                 //print("");
@@ -728,7 +732,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     //print("Finished parsing packet, going back to loop")
                     
                     //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
-                        // FIXME: trying to see what went wrong on the nRF8001
+                        // FIX-ME: trying to see what went wrong on the nRF8001
                         // if it's the nRF8001, we need to introduce a bit of delay, otherwise, do this instantly
                     NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
                 }
@@ -740,6 +744,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // stopping "active request" flag, because a response has been received
                 if ((Device.connectedDevice?.requestWithoutResponse)!)
                 {
+                    //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.STOP_BLE_RX_TIMEOUT_TIMER), object: nil);
+
                     Device.connectedDevice?.requestWithoutResponse = false;
                     //print("packet matches requested packet, allowing next packet");
                 }
@@ -1583,6 +1589,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     {
         guard (peripheral.identifier as NSUUID != Device.connectedDevice?.UUID) else
         {
+            Device.connectedDevice!.isConnected = false;
             BLEConnectionTableViewController.CBCentralState = .UNCONNECTED_SCANNING_FOR_PRIMARY;
             print(BLEConnectionTableViewController.CBCentralState);
             
@@ -1610,8 +1617,44 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 self.startScan();
                 
             })
-            
+            let saveLog = UIAlertAction(title: "Send BLE Log", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                if (Device.profiling && Device.currentlyProfiling)
+                {
+                    if (ModeTableViewController.saveBLELog())
+                    {
+                        let vc = UIActivityViewController(activityItems: [Device.mainProfilerPath!, Device.rxProfilerPath!, Device.txProfilerPath!], applicationActivities: []);
+                        self.present(vc, animated: true, completion:
+                            {
+                                print("Should go to the Connect Screen at this point");
+                                _ = self.navigationController?.popToRootViewController(animated: true);
+                                
+                                // disconnect from the device, if any
+                                self.disconnectFromPrimaryDevice();
+                                
+                                // deselect the currently selected item
+                                if let index = self.deviceTableView.indexPathForSelectedRow
+                                {
+                                    self.deviceTableView.deselectRow(at: index, animated: true);
+                                }
+                                
+                                // scanning again
+                                self.startScan();
+                        });
+                    }
+                }
+                
+                
+                
+            })
+                
+                
             dialogMessage.addAction(ok);
+                // if we disconnect while loading modes (and saving a BLE log), offer to save that log on disconnect
+            if (Device.profiling && Device.currentlyProfiling && !Device.connectedDevice!.readyToShowModes && Device.connectedDevice!.maxNumModes > 0)
+            {
+                dialogMessage.addAction(saveLog);
+            }
             
                 // presenting this view controller over the current screen, whatever that may be
             self.navigationController?.topViewController?.present(dialogMessage, animated: true, completion: nil);
@@ -2362,8 +2405,15 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             // tell the ModeTableViewController setup loop to get the thumbnails again
         Device.connectedDevice?.expectedPacketType = "";
         Device.connectedDevice!.requestWithoutResponse = false;
-        // FIXME: trying to figure out what went wrong with the nRF8001
-        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+        
+        if (Device.connectedDevice!.isConnected)
+        {
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+        }
+        else
+        {
+            print("Since the device is disconnected, we won't ask it for anything anymore");
+        }
     }
     
     func getHardwareVersionForMimicDevice( _ id: NSUUID)

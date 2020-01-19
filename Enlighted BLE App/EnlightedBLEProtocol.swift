@@ -61,11 +61,16 @@ class Constants
         // the time (in seconds) the app waits before requesting new data from the nRF8001 after receiving it.
     static let NRF8001_DELAY_TIME = 0.021;
     
-        // the time (in seconds) before the app decides to scrap and re-send a row of thumbnail pixels
-    static let BLE_MESSAGE_TIMEOUT_TIME = 0.25;
+        // the time (in seconds) before the app decides to scrap and re-send a row of thumbnail pixels, per-device
+    static let BLE_MESSAGE_TIMEOUT_TIME_NRF8001 = 0.50;
+    
+    static let BLE_MESSAGE_TIMEOUT_TIME_NRF51822 = 0.50;
+    
+        // if we have to retry a single tx packet more than this many times, we should alert the user to move closer
+    static let NUM_ALLOWED_RETRIES_PER_PACKET = 5
     
         // the time (in seconds) before the app stops looking for a version response (as the nRF8001 does not provide one)
-    static let VERSION_TIMEOUT_TIME = 0.2;
+    static let VERSION_TIMEOUT_TIME = 0.35;
     
         // the default brightness to set the hardware to if it's at STANDBY_BRIGHTNESS
     static let DEFAULT_BRIGHTNESS = 127;
@@ -187,6 +192,8 @@ class Constants
     static let ATTEMPTED_TO_SEND_PACKET_WITHOUT_DISCOVERING_CHARACTERISTIC = ENL_ERROR("ATTEMPTED_TO_SEND_PACKET_WITHOUT_DISCOVERING_CHARACTERISTIC", 303, promptPopup: true);
         // Thrown when a message sent over the tx characteristic is met with a failure response from the firmware ("0").
     static let RECEIVED_FAILURE_RESPONSE = ENL_ERROR("RECEIVED_FAILURE_RESPONSE", 304);
+        // Caused when the app attempts to send a tx request that's already been sent Constants.NUM_ALLOWED_RETRIES_PER_PACKET times right before.
+    static let REQUESTED_DATA_WITH_NO_RESPONSE_TOO_MANY_TIMES = ENL_ERROR("REQUESTED_DATA_WITH_NO_RESPONSE_TOO_MANY_TIMES", 305);
     
             // Error codes starting with "4" are app-related-only.
         // callback from TableViewDelegate when an error occurs dequeueing a reusable cell
@@ -267,6 +274,8 @@ class Constants
         static let DISCOVERED_NEW_PERIPHERALS = "discoveredNewPeripherals";
         
         static let RESEND_THUMBNAIL_ROW = "resendThumbnailRow";
+        static let RESTART_BLE_RX_TIMEOUT_TIMER = "restartBLERxTimeoutTimer";
+        static let STOP_BLE_RX_TIMEOUT_TIMER = "stopBLERxTimeoutTimer";
         
         static let UPDATE_CBCENTRAL_STATE = "updateCBCentralState";
         static let START_SCAN = "startScan";

@@ -77,6 +77,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         NotificationCenter.default.addObserver(self, selector: #selector(prepareForSetup), name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil)
         
+        NotificationCenter.default.addObserver(self, selector: #selector(restartBLERxTimeoutTimer), name: Notification.Name(rawValue: Constants.MESSAGES.RESTART_BLE_RX_TIMEOUT_TIMER), object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(stopBLERxTimeoutTimer), name: Notification.Name(rawValue: Constants.MESSAGES.STOP_BLE_RX_TIMEOUT_TIMER), object: nil)
             // when we connect to a new device (like a mimic), send the current mode settings
         //NotificationCenter.default.addObserver(self, selector: #selector(updateModeOnHardware), name: Notification.Name(rawValue:  Constants.MESSAGES.DISCOVERED_MIMIC_CHARACTERISTICS), object: nil)
         
@@ -308,6 +311,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             Device.txProfilerPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(Device.txProfilerFileName);
             
             Device.lastTimestamp = 0.0;
+            Device.lastTxTimestamp = 0.0;
             Device.numTimeouts = 0;
             Device.profilerStopwatch = Date();
             Device.currentlyProfiling = true;
@@ -408,31 +412,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // MARK: profiling: completing file
             if (Device.profiling && Device.currentlyProfiling)
             {
-                Device.currentlyProfiling = false;
-                do
+                if (ModeTableViewController.saveBLELog())
                 {
-                        // adding a summary to the main BLE log
-                    let newTitleLine = "Hardware:,nRf8001 Delay (ms):,Total Duration,Number Of Timeouts:\n";
-                    Device.mainCsvText.append(newTitleLine);
-                    let newSummaryLine = "\(Device.connectedDevice!.hardwareVersion),\(Constants.NRF8001_DELAY_TIME * 1000),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(Device.numTimeouts)\n"
-                    Device.mainCsvText.append(newSummaryLine)
-                    
-                    try Device.mainCsvText.write(to: Device.mainProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
-                    try Device.rxCsvText.write(to: Device.rxProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
-                    try Device.txCsvText.write(to: Device.txProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
                     let vc = UIActivityViewController(activityItems: [Device.mainProfilerPath!, Device.rxProfilerPath!, Device.txProfilerPath!], applicationActivities: []);
-                    present(vc, animated: true, completion: nil)
-                    
-                        // resetting BLE log contents for the next log
-                    Device.mainCsvText = "Action,Timestamp,Type,Duration\n";
-                    Device.rxCsvText = "Rx Action,Rx Duration\n";
-                    Device.txCsvText = "Tx Action,Tx Duration\n";
-                }
-                catch
-                {
-                    Device.reportError(Constants.FAILED_TO_SAVE_PROFILER_CSV_FILES, additionalInfo: "\(error)");
-                    //print("Failed to create file")
-                    //print("\(error)")
+                    present(vc, animated: true, completion: nil);
                 }
             }
             
@@ -705,9 +688,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         {
             var commandString = "TIMEOUT";
             let duration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTimestamp) * 1000;
+            let messageDuration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTxTimestamp) * 1000;
             //Device.lastTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
             //commandString += (inputInts.map { String($0) }.joined(separator: " "));
-            let newMainLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(4),\(duration)\n";
+            let newMainLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(4),\(duration),\(messageDuration)\n";
             //let newTxLine = "\(commandString),\(duration)\n";
             Device.mainCsvText.append(contentsOf: newMainLine);
             Device.numTimeouts += 1;
@@ -740,8 +724,18 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             progress -= progressValue;
             Device.connectedDevice!.requestWithoutResponse = false;
             
-            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
             Device.connectedDevice!.expectedPacketType = "";
+            
+            if (Device.connectedDevice!.isConnected)
+            {
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+            }
+            else
+            {
+                print("Since the device is disconnected, we won't ask it for anything anymore");
+            }
+            
+            
         }
     }
     
@@ -1192,6 +1186,44 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
 //        NotificationCenter.default.removeObserver(self);
 //    }
 
+    public static func saveBLELog() -> Bool
+    {
+        Device.currentlyProfiling = false;
+        do
+        {
+                // adding a summary to the main BLE log
+            var newTitleLine = "Hardware:,nRf8001 Delay (ms):,Total Duration (s):,Number Of Timeouts:\n";
+            Device.mainCsvText.append(newTitleLine);
+            var newSummaryLine = "\(Device.connectedDevice!.hardwareVersion),\(Constants.NRF8001_DELAY_TIME * 1000),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(Device.numTimeouts)\n"
+            Device.mainCsvText.append(newSummaryLine)
+            
+                // adding details like software version
+            newTitleLine = "Hardware Name:,Nickname:,Software Version:,iOS Version:\n";
+            Device.mainCsvText.append(newTitleLine);
+            newSummaryLine = "\(Device.connectedDevice!.name),\(Device.connectedDevice!.nickname),\((Bundle.main.infoDictionary?["CFBundleShortVersionString"] as! String?) ?? "unknown"), \(UIDevice.current.systemVersion)\n";
+            Device.mainCsvText.append(newSummaryLine);
+            
+            try Device.mainCsvText.write(to: Device.mainProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
+            try Device.rxCsvText.write(to: Device.rxProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
+            try Device.txCsvText.write(to: Device.txProfilerPath!, atomically: true, encoding: String.Encoding.utf8);
+            
+            
+                // resetting BLE log contents for the next log
+            Device.mainCsvText = "Action,Timestamp,Type,Duration,Complete Message Duration\n";
+            Device.rxCsvText = "Rx Action,Rx Duration,Complete Message Duration\n";
+            Device.txCsvText = "Tx Action,Tx Duration\n";
+            
+            return true;
+        }
+        catch
+        {
+            Device.reportError(Constants.FAILED_TO_SAVE_PROFILER_CSV_FILES, additionalInfo: "\(error)");
+            //print("Failed to create file")
+            //print("\(error)")
+            
+            return false;
+        }
+    }
     
     // MARK: Private Methods
         // FIX-ME: brightness test
@@ -1289,15 +1321,100 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             // formatting data
         let outputData = Device.formatPacket(inputString, inputInts: inputInts, digitsPerInput: digitsPerInput)
         
+            // if we're getting the modes, and if we've asked for this same info too many times, stop
+        
+        if (Device.connectedDevice!.lastFewMessages.count >= Constants.NUM_ALLOWED_RETRIES_PER_PACKET && !Device.connectedDevice!.readyToShowModes && Device.connectedDevice!.maxNumModes > 0)
+        {
+            var hasTriedPacketTooManyTimes = true;
+            for oldData in Device.connectedDevice!.lastFewMessages
+            {
+                    // if we asked for a different packet in the last few packets, we're fine to ask for this one
+                if (oldData != outputData[0])
+                {
+                    hasTriedPacketTooManyTimes = false;
+                }
+            }
+                // don't send the packet again if we already have a bunch of times without response
+            if (hasTriedPacketTooManyTimes)
+            {
+                Device.reportError(Constants.REQUESTED_DATA_WITH_NO_RESPONSE_TOO_MANY_TIMES);
+                alertUserToMoveCloserToHardware()
+                return;
+            }
+        }
+        
+        
             // if we're getting data from hardware, we want look for timeouts
         if (!Device.connectedDevice!.readyToShowModes && Device.connectedDevice!.maxNumModes > 0)
         {
-                // setting timeout timer
-            BLETimeoutTimer.invalidate();
-            BLETimeoutTimer = Timer.scheduledTimer(timeInterval: Constants.BLE_MESSAGE_TIMEOUT_TIME, target: self, selector: #selector(bleMessageTimeout), userInfo: nil, repeats: false);
+            restartBLERxTimeoutTimer();
         }
         
         BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: sendToMimicDevices, settingMode: inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_MODE), toSingleDevice: toSingleDevice);
+        
+            // filling up "last few messages"
+        if (!Device.connectedDevice!.readyToShowModes && Device.connectedDevice!.maxNumModes > 0)
+        {
+                // if we have a full history, remove the last item
+            if (Device.connectedDevice!.lastFewMessages.count >= Constants.NUM_ALLOWED_RETRIES_PER_PACKET)
+            {
+                Device.connectedDevice!.lastFewMessages.remove(at: 0);
+            }
+            Device.connectedDevice!.lastFewMessages.append(outputData[0]);
+            
+        }
+        
+    }
+    
+    func alertUserToMoveCloserToHardware()
+    {
+        // error popup
+        let dialogMessage = UIAlertController(title:"Low connection strength", message: "The app is having trouble receiving data from the BLE device.  Please move closer to your device, and then press \"OK\"", preferredStyle: .alert);
+        let ok = UIAlertAction(title: "Ok", style: UIAlertActionStyle.default, handler:
+        {(action) -> Void in
+            
+            if (!Device.connectedDevice!.isConnected)
+            {
+                print("We disconnected from the peripheral, so we should go to the Connect Screen at this point");
+                _ = self.navigationController?.popToRootViewController(animated: true);
+            }
+                // otherwise, resume loading load data
+            else
+            {
+                self.requestNextDataWithDelay();
+            }
+
+            
+        })
+        
+        dialogMessage.addAction(ok);
+        
+            // presenting this view controller over the current screen, whatever that may be
+        self.navigationController?.topViewController?.present(dialogMessage, animated: true, completion: nil);
+        
+    }
+    
+    @objc func stopBLERxTimeoutTimer()
+    {
+        BLETimeoutTimer.invalidate();
+    }
+    
+    @objc func restartBLERxTimeoutTimer()
+    {
+            // setting timeout timer
+        BLETimeoutTimer.invalidate();
+        var timeoutTime = 0.0;
+        if (Device.connectedDevice!.hardwareVersion == .NRF51822)
+        {
+            timeoutTime = Constants.BLE_MESSAGE_TIMEOUT_TIME_NRF51822;
+        }
+        else
+        {
+            timeoutTime = Constants.BLE_MESSAGE_TIMEOUT_TIME_NRF8001;
+        }
+        
+        BLETimeoutTimer = Timer.scheduledTimer(timeInterval: timeoutTime, target: self, selector: #selector(bleMessageTimeout), userInfo: nil, repeats: false);
+
     }
 //            // formatting the string part of the packet
 //        var intsToParse = inputInts;

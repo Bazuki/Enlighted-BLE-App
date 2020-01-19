@@ -57,11 +57,13 @@ class Device: NSObject, NSCoding
     
     static var lastTimestamp = 0.0;
     
+    static var lastTxTimestamp = 0.0;
+    
     static var numTimeouts = 0;
     
         // for type: 3 is tx, 2 is rx complete packet, 1 is thumbnail (besides the final one)
-    static var mainCsvText = "Action,Timestamp,Type,Duration\n";
-    static var rxCsvText = "Rx Action,Rx Duration\n";
+    static var mainCsvText = "Action,Timestamp,Type,Duration, Complete Message Duration\n";
+    static var rxCsvText = "Rx Action,Rx Duration,Complete Message Duration\n";
     static var txCsvText = "Tx Action,Tx Duration\n";
     
     static var profilerStopwatch = Date();
@@ -119,6 +121,9 @@ class Device: NSObject, NSCoding
     
         // if a message fails/gives an improper response, we can send it again
     var lastUnsentMessage = [NSData]();
+    
+        // if we attempt (and re-attempt) to send the same message a certain number of times in a row without resolution, we want to alert the user
+    var lastFewMessages = [NSData]();
     
         // flags for parsing individual packets
     var requestedLimits = false;
@@ -455,11 +460,15 @@ class Device: NSObject, NSCoding
             var commandString = "tx: \(inputString)";
             let duration = (Date().timeIntervalSince(Device.profilerStopwatch) - Device.lastTimestamp) * 1000;
             Device.lastTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
+            Device.lastTxTimestamp = Date().timeIntervalSince(Device.profilerStopwatch);
             commandString += (inputInts.map { String($0) }.joined(separator: " "));
-            let newMainLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(3),\(duration)\n";
+            let newMainLine = "\(commandString),\(Date().timeIntervalSince(Device.profilerStopwatch)),\(3),\(duration),\n";
             let newTxLine = "\(commandString),\(duration)\n";
             Device.mainCsvText.append(contentsOf: newMainLine);
             Device.txCsvText.append(contentsOf: newTxLine);
+            
+                // timing how long a complete packet takes
+            
         }
         
             // "handshaking" error tracking;
