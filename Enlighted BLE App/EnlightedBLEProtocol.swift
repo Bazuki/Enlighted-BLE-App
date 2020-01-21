@@ -62,7 +62,7 @@ class Constants
     static let NRF8001_DELAY_TIME = 0.021;
     
         // the time (in seconds) before the app decides to scrap and re-send a row of thumbnail pixels, per-device
-    static let BLE_MESSAGE_TIMEOUT_TIME_NRF8001 = 0.50;
+    static let BLE_MESSAGE_TIMEOUT_TIME_NRF8001 = 0.25;
     
     static let BLE_MESSAGE_TIMEOUT_TIME_NRF51822 = 0.50;
     
