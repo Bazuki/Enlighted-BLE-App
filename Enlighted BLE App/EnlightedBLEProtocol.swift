@@ -181,7 +181,7 @@ class Constants
         // callback from CoreBluetooth if an error occured in reading the value of the rx characteristic.
     static let CALLBACK_ERROR_FROM_DID_UPDATE_VALUE_FOR_RX = ENL_ERROR("CALLBACK_ERROR_FROM_DID_UPDATE_VALUE_FOR_RX", 204);
         // Thrown if the received value from the rx characteristic is empty.
-    static let RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE = ENL_ERROR("RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE", 205, promptPopup: true);
+    static let RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE = ENL_ERROR("RECEIVED_EMPTY_RX_CHARACTERISTIC_VALUE", 205, promptPopup: false);
     
             // Error codes starting with "3" relate to sending tx messages
         // Thrown when the app attempts to send a packet over the tx characteristic while we are still waiting for a response from a different characteristic.
