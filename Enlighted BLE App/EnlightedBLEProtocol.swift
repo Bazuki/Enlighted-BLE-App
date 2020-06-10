@@ -173,7 +173,7 @@ class Constants
     
             // Error codes starting with "2" relate to receiving/parsing the rx values we get from the hardware
         // Thrown when the complete message we receive is not the same type as the one we expect given our most recent message.  This message is ignored, and new requests are sent if necessary.
-    static let UNEXPECTED_PACKET_TYPE = ENL_ERROR("UNEXPECTED_PACKET_TYPE", 201, promptPopup: true);
+    static let UNEXPECTED_PACKET_TYPE = ENL_ERROR("UNEXPECTED_PACKET_TYPE", 201, promptPopup: false);
         // Thrown if a received packet is unidentifiable, based on the BLE protocols.
     static let UNABLE_TO_PARSE_PACKET = ENL_ERROR("UNABLE_TO_PARSE_PACKET", 202, promptPopup: true);
         // Thrown if the BLE timeout timer fires before a completed message is received.  This triggers requestNextData() to re-request that data, if necessary.
