@@ -107,7 +107,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         NotificationCenter.default.addObserver(self, selector: #selector(startScan), name: Notification.Name(rawValue: Constants.MESSAGES.START_SCAN), object: nil)
 
-        
+        deviceTableView.separatorStyle = UITableViewCellSeparatorStyle.singleLine;
         
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
