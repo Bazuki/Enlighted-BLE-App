@@ -35,6 +35,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     static var nicknames = [String]();
     
+    
+    
     //static var navController = self.navigationController;
     
         // The devices that show up on the connection screen.
@@ -1894,6 +1896,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     func disconnectFromPrimaryDevice()
     {
+        //BLEConnectionTableViewCell.gHideCarrots = true;
         if Device.connectedDevice?.peripheral != nil
         {
             centralManager?.cancelPeripheralConnection(Device.connectedDevice!.peripheral);
@@ -1969,6 +1972,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             if (Device.connectedDevice!.peripheral != visibleDevices[indexPath.row].peripheral)
             {
                     // disconnect from old devices, if any
+                BLEConnectionTableViewCell.gHideCarrots = true;
                 disconnectFromPrimaryDevice();
                 Device.setConnectedDevice(newDevice: visibleDevices[indexPath.row]);
                 Device.connectedDevice?.isConnected = false;
@@ -2135,6 +2139,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     @IBAction func startScanningForPrimaryAgain(_ sender: UIButton)
     {
             // disconnect from the device, if any
+        BLEConnectionTableViewCell.gHideCarrots = true;
         disconnectFromPrimaryDevice();
         
             // deselect the currently selected item

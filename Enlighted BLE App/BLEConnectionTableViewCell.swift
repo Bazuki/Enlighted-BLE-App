@@ -33,7 +33,11 @@ class BLEConnectionTableViewCell: UITableViewCell
     
     var connectionIcons = [UIImage]();
     
-    var wasSelected = false;
+    //selected history variables
+    private var wasSelected = false;
+    private var wasWasSelected = false;
+    
+    public static var gHideCarrots = false;
     
     override func awakeFromNib()
     {
@@ -51,7 +55,8 @@ class BLEConnectionTableViewCell: UITableViewCell
         connectionIcons[4] = connectionIcons[4].withRenderingMode(UIImageRenderingMode.alwaysTemplate);
         
         
-        wasSelected = false;
+        self.wasSelected = false;
+        BLEConnectionTableViewCell.gHideCarrots = false;
         
         connectButton.isEnabled = false;
         
@@ -61,13 +66,18 @@ class BLEConnectionTableViewCell: UITableViewCell
         //connectButton.imageView?.image = connectButton.imageView?.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
         NotificationCenter.default.addObserver(self, selector: #selector(enableButton), name: Notification.Name(rawValue: Constants.MESSAGES.DISCOVERED_PRIMARY_CHARACTERISTICS), object: nil)
     }
-
+    
+    func setDisconnectPressed(_ pressed: Bool)
+    {
+        BLEConnectionTableViewCell.gHideCarrots = pressed;
+    }
+    
     override func setSelected(_ selected: Bool, animated: Bool)
     {
         super.setSelected(selected, animated: animated)
         
         //print("setSelected(\(selected)) called");
-        
+        var isSelected = selected;
         
         if (isDemoDevice)
         {
@@ -83,11 +93,43 @@ class BLEConnectionTableViewCell: UITableViewCell
 //            connectButton.isEnabled = Device.connectedDevice?.isConnected ?? false;
 //            //timer = Timer.scheduledTimer(timeInterval: TimeInterval(connectTime), target: self, selector: #selector(self.enableButton), userInfo: nil, repeats: true);
 //        }
+        /*
+         Logic Table for wasWasSelected, wasSelected, and isSelected
+         WWS    WS     IS
+         -----------------
+         0      0       0   -not selected
+         0      0       1   -selected for the first time(TURN ON CARROT AFTER DELAY)
+         0      1       0   -alternating OR unselected for the first time
+         0      1       1   -SHOULD NEVER HAPPEN
+         1      0       0   -unselected for the first time(TURN OFF CARROT; THIS CAUSES LATENCY)
+         1      0       1   -alternating
+         1      1       0   -SHOULD NEVER HAPPEN
+         1      1       1   -SHOULD NEVER HAPPEN
+         
+         In addition, gHideCarrots will be set to true by the disconnect button or when a different peripheral is selected, reducing latency
+         */
         
         
-        wasSelected = selected;
+        //print("###" + String(wasWasSelected) + "," + String(wasSelected) + "," + String(selected) + "###");
+        if(BLEConnectionTableViewCell.gHideCarrots){
+            //isSelected = false;
+            //wasSelected = false;
+            self.connectButton.isHidden = true;
+        }
+        else if(!self.wasWasSelected && !self.wasSelected && isSelected){
+            BLEConnectionTableViewCell.gHideCarrots = false;
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1){
+                self.connectButton.isHidden = false;
+            }
+        }
+        else if(!self.wasSelected && !isSelected){
+            self.connectButton.isHidden = true;
+            
+        }
+        self.wasWasSelected = wasSelected;
+        self.wasSelected = isSelected;
         
-        connectButton.isHidden = !selected;
+        
         
         
             // Configure the view for the selected state
