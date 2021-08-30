@@ -39,7 +39,7 @@ class Device: NSObject, NSCoding
     // MARK: Profiling
     
         // toggle to enable/disable profiling (maybe should be in constants folder?)
-    static let profiling = true;
+    static let profiling = false;
     
     static var currentlyProfiling = false;
     
