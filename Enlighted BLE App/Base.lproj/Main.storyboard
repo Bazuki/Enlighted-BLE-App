@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="18122" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="mc7-7A-oND">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="21507" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="mc7-7A-oND">
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="18093"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21505"/>
         <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -44,7 +44,7 @@
                         </view>
                         <prototypes>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="BLEConnectionTableViewCell" rowHeight="75" id="qYO-Jp-PkV" customClass="BLEConnectionTableViewCell" customModule="Enlighted_BLE_App" customModuleProvider="target">
-                                <rect key="frame" x="0.0" y="54.5" width="375" height="75"/>
+                                <rect key="frame" x="0.0" y="80" width="375" height="75"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMinY="YES" flexibleMaxY="YES"/>
                                 <tableViewCellContentView key="contentView" autoresizesSubviews="NO" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="qYO-Jp-PkV" id="A1h-WJ-tMg">
                                     <rect key="frame" x="0.0" y="0.0" width="375" height="75"/>
@@ -223,8 +223,8 @@
                                 <color key="textColor" name="Title"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 1.0.42" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
-                                <rect key="frame" x="17" y="578" width="344" height="24"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 1.1.0" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
+                                <rect key="frame" x="135" y="578" width="108" height="24"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                 <color key="textColor" name="Subtitle"/>
                                 <nil key="highlightedColor"/>
@@ -239,7 +239,7 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="EnlightedLogo" translatesAutoresizingMaskIntoConstraints="NO" id="7ie-Tg-p73">
-                                <rect key="frame" x="125" y="460" width="125" height="125"/>
+                                <rect key="frame" x="125" y="411" width="125" height="125"/>
                                 <constraints>
                                     <constraint firstAttribute="height" relation="lessThanOrEqual" priority="750" constant="128" id="68d-Cb-RbD"/>
                                     <constraint firstAttribute="width" secondItem="7ie-Tg-p73" secondAttribute="height" multiplier="1:1" id="XkK-Rh-42J"/>
@@ -274,13 +274,13 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="DSr-Os-0T6" userLabel="Settings Buttons">
-                                <rect key="frame" x="16" y="171" width="343" height="153"/>
+                                <rect key="frame" x="16" y="171" width="343" height="104"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Vj8-K3-bAZ" userLabel="Mimic Button Holder">
-                                        <rect key="frame" x="0.0" y="0.0" width="343" height="76.5"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="343" height="52"/>
                                         <subviews>
                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="characterWrap" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jjJ-hW-IO8">
-                                                <rect key="frame" x="0.0" y="19.5" width="343" height="38"/>
+                                                <rect key="frame" x="0.0" y="7" width="343" height="38"/>
                                                 <constraints>
                                                     <constraint firstAttribute="height" constant="38" id="8oO-N6-iNn"/>
                                                 </constraints>
@@ -307,10 +307,10 @@
                                         </constraints>
                                     </view>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Aw7-Om-r1E" userLabel="Revert Button Holder">
-                                        <rect key="frame" x="0.0" y="76.5" width="343" height="76.5"/>
+                                        <rect key="frame" x="0.0" y="52" width="343" height="52"/>
                                         <subviews>
                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="wordWrap" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="KiC-bX-rXI">
-                                                <rect key="frame" x="2" y="19.5" width="339" height="38"/>
+                                                <rect key="frame" x="2" y="7" width="339" height="38"/>
                                                 <state key="normal">
                                                     <attributedString key="attributedTitle">
                                                         <fragment content="Reload All Settings from Hardware">
@@ -362,7 +362,7 @@
                                         </constraints>
                                     </imageView>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="100%" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="r5D-i7-3bl">
-                                        <rect key="frame" x="59" y="0.0" width="50.5" height="45"/>
+                                        <rect key="frame" x="59" y="0.0" width="50" height="45"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                         <color key="textColor" name="Subtitle"/>
                                         <nil key="highlightedColor"/>
@@ -469,7 +469,7 @@
                         </view>
                         <prototypes>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="ModeTableViewCell" rowHeight="75" id="huJ-ER-jN3" customClass="ModeTableViewCell" customModule="Enlighted_BLE_App" customModuleProvider="target">
-                                <rect key="frame" x="0.0" y="54.5" width="375" height="75"/>
+                                <rect key="frame" x="0.0" y="80" width="375" height="75"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="huJ-ER-jN3" id="1Tz-FN-Uen">
                                     <rect key="frame" x="0.0" y="0.0" width="375" height="75"/>
@@ -611,7 +611,7 @@
                                         <color key="textColor" name="Title"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Mode Name Label" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fIb-aO-SVd">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" text="Mode Name Label" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fIb-aO-SVd">
                                         <rect key="frame" x="47" y="0.0" width="248" height="50"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                         <color key="textColor" name="Title"/>
@@ -631,7 +631,7 @@
                                 <rect key="frame" x="20" y="44" width="335" height="574"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="A5h-kJ-JpP" userLabel="Upper Control Holder">
-                                        <rect key="frame" x="0.0" y="65" width="335" height="162"/>
+                                        <rect key="frame" x="0.0" y="70" width="335" height="162"/>
                                         <subviews>
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="mhb-D5-dqx" userLabel="Upper Color Controls">
                                                 <rect key="frame" x="0.0" y="0.0" width="335" height="162"/>
@@ -745,17 +745,17 @@
                                         </constraints>
                                     </view>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="076-Kd-qtA" userLabel="Color Picker">
-                                        <rect key="frame" x="17" y="227" width="301" height="342"/>
+                                        <rect key="frame" x="17" y="232" width="301" height="337"/>
                                         <subviews>
                                             <imageView autoresizesSubviews="NO" clearsContextBeforeDrawing="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="ColorWheel" translatesAutoresizingMaskIntoConstraints="NO" id="gTl-Ts-1ii" userLabel="ColorPickerImage">
-                                                <rect key="frame" x="19.5" y="20" width="262" height="262"/>
+                                                <rect key="frame" x="22" y="20" width="257" height="257"/>
                                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 <constraints>
                                                     <constraint firstAttribute="width" secondItem="gTl-Ts-1ii" secondAttribute="height" multiplier="1:1" id="FbR-Kh-v1l"/>
                                                 </constraints>
                                             </imageView>
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="asT-ot-RIv" userLabel="Color Picker" customClass="ColorWheel" customModule="Enlighted_BLE_App" customModuleProvider="target">
-                                                <rect key="frame" x="-18.5" y="-18" width="338" height="338"/>
+                                                <rect key="frame" x="-16" y="-18" width="333" height="333"/>
                                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 <constraints>
                                                     <constraint firstAttribute="width" secondItem="asT-ot-RIv" secondAttribute="height" multiplier="1:1" id="AgK-a0-QFW"/>
@@ -792,7 +792,7 @@
                                                 </connections>
                                             </slider>
                                             <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" minValue="0.0" maxValue="100" translatesAutoresizingMaskIntoConstraints="NO" id="MVi-Wu-IBE" userLabel="Brightness Slider">
-                                                <rect key="frame" x="-2" y="290" width="305" height="31"/>
+                                                <rect key="frame" x="-2" y="285" width="305" height="31"/>
                                                 <variation key="heightClass=regular-widthClass=compact">
                                                     <nil key="minimumTrackTintColor"/>
                                                 </variation>
@@ -802,7 +802,7 @@
                                                 </connections>
                                             </slider>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Intensity" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Jf3-6h-FoO" userLabel="Brightness Label">
-                                                <rect key="frame" x="118" y="320" width="65" height="21"/>
+                                                <rect key="frame" x="118" y="315" width="65" height="21"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                 <color key="textColor" red="0.83741801979999997" green="0.83743780850000005" blue="0.83742713930000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                 <nil key="highlightedColor"/>
@@ -843,7 +843,7 @@
                                     <constraint firstItem="076-Kd-qtA" firstAttribute="leading" secondItem="Jgb-WK-VRf" secondAttribute="leading" constant="17" id="C7f-JY-4Tw"/>
                                     <constraint firstAttribute="bottom" secondItem="076-Kd-qtA" secondAttribute="bottom" constant="5" id="Tyf-7Q-Fge"/>
                                     <constraint firstItem="076-Kd-qtA" firstAttribute="centerX" secondItem="Jgb-WK-VRf" secondAttribute="centerX" id="UxS-ij-C7Q"/>
-                                    <constraint firstItem="A5h-kJ-JpP" firstAttribute="top" secondItem="Jgb-WK-VRf" secondAttribute="top" multiplier="1.1" constant="65" id="fgW-WU-kfa"/>
+                                    <constraint firstItem="A5h-kJ-JpP" firstAttribute="top" secondItem="Jgb-WK-VRf" secondAttribute="top" multiplier="1.1" constant="70" id="fgW-WU-kfa"/>
                                     <constraint firstItem="A5h-kJ-JpP" firstAttribute="centerX" secondItem="Jgb-WK-VRf" secondAttribute="centerX" id="up7-ep-nJD"/>
                                     <constraint firstItem="076-Kd-qtA" firstAttribute="top" secondItem="A5h-kJ-JpP" secondAttribute="bottom" priority="750" id="wej-90-RoM"/>
                                 </constraints>
@@ -852,7 +852,7 @@
                                 <rect key="frame" x="20" y="64" width="335" height="554"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Xb6-oC-Swn" userLabel="Upper Control Holder">
-                                        <rect key="frame" x="0.0" y="85" width="335" height="100"/>
+                                        <rect key="frame" x="0.0" y="90" width="335" height="100"/>
                                         <subviews>
                                             <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Mfu-Ww-fCp">
                                                 <rect key="frame" x="117" y="0.0" width="100" height="100"/>
@@ -883,10 +883,10 @@
                                         </constraints>
                                     </view>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="myc-Vm-2J0" userLabel="Bitmap Picker Holder">
-                                        <rect key="frame" x="0.0" y="186" width="335" height="368"/>
+                                        <rect key="frame" x="0.0" y="191" width="335" height="363"/>
                                         <subviews>
                                             <collectionView autoresizesSubviews="NO" clipsSubviews="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="A63-5y-Sox">
-                                                <rect key="frame" x="17.5" y="45" width="300" height="313"/>
+                                                <rect key="frame" x="17.5" y="45" width="300" height="308"/>
                                                 <color key="backgroundColor" red="0.26051741839999998" green="0.2605243921" blue="0.260520637" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                                 <constraints>
                                                     <constraint firstAttribute="height" constant="390" id="Rvv-Bu-L0q"/>
@@ -947,7 +947,7 @@
                                     <constraint firstAttribute="bottom" secondItem="myc-Vm-2J0" secondAttribute="bottom" id="cqK-mS-iox"/>
                                     <constraint firstAttribute="trailing" secondItem="Xb6-oC-Swn" secondAttribute="trailing" id="d1W-TM-Rsu"/>
                                     <constraint firstAttribute="bottom" secondItem="myc-Vm-2J0" secondAttribute="bottom" id="fxH-wa-gmd"/>
-                                    <constraint firstItem="Xb6-oC-Swn" firstAttribute="top" secondItem="hlM-Ka-7Ru" secondAttribute="top" multiplier="1.1" constant="85" id="kph-sa-t7H"/>
+                                    <constraint firstItem="Xb6-oC-Swn" firstAttribute="top" secondItem="hlM-Ka-7Ru" secondAttribute="top" multiplier="1.1" constant="90" id="kph-sa-t7H"/>
                                     <constraint firstItem="myc-Vm-2J0" firstAttribute="top" secondItem="Xb6-oC-Swn" secondAttribute="bottom" priority="990" constant="1" id="lyq-zx-OPH"/>
                                     <constraint firstAttribute="trailing" secondItem="myc-Vm-2J0" secondAttribute="trailing" id="vi4-py-J34"/>
                                 </constraints>
@@ -1058,7 +1058,7 @@
                         <color key="sectionIndexBackgroundColor" name="Background"/>
                         <prototypes>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="MimicTableViewCell" rowHeight="75" id="ljh-e5-7g3" userLabel="MimicTableViewCell" customClass="MimicTableViewCell" customModule="Enlighted_BLE_App" customModuleProvider="target">
-                                <rect key="frame" x="0.0" y="24.5" width="375" height="75"/>
+                                <rect key="frame" x="0.0" y="50" width="375" height="75"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMinY="YES" flexibleMaxY="YES"/>
                                 <tableViewCellContentView key="contentView" autoresizesSubviews="NO" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="ljh-e5-7g3" id="EEf-WU-QFy">
                                     <rect key="frame" x="0.0" y="0.0" width="375" height="75"/>
@@ -1144,7 +1144,7 @@
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="aBj-pM-CgY"/>
+        <segue reference="R1l-rV-sgR"/>
     </inferredMetricsTieBreakers>
     <color key="tintColor" name="Button"/>
     <resources>
