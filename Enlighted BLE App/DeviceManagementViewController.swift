@@ -24,6 +24,7 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     @IBOutlet weak var brightnessSlider: UISlider!
     
     @IBOutlet weak var revertSettingsButton: UIButton!
+    @IBOutlet weak var reloadUsingGTT: UIButton!
     
     // the peripheral manager
     var peripheralManager: CBPeripheralManager?;

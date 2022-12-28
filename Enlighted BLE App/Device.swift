@@ -79,7 +79,7 @@ class Device: NSObject, NSCoding
         // whether or not this is a "demo", non-BLE enabled digital device
     var isDemoDevice = false;
     
-        // whether this device uses the nRF8001 ("v1") or nRF51822 ("v2") hardware/firmware
+        // whether this device uses the nRF8001 ("v1"), nRF51822 ("v2"), or fast nRF51822 ("v3") hardware/firmware
     var hardwareVersion = Constants.HARDWARE_VERSION.UNKNOWN;
     
         // a list of all the modes this device has, from Get Mode;

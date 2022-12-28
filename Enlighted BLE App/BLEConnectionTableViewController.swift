@@ -23,6 +23,7 @@ var rxCharacteristicValue = String();//NSData();
 // a timer to see how long the BLE board takes to respond to BLE requests
 var packetStopwatch = Date();
 
+
 class BLEConnectionTableViewController: UITableViewController, CBCentralManagerDelegate, CBPeripheralDelegate, MFMailComposeViewControllerDelegate
 {
         // MARK: Properties
@@ -599,6 +600,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     //print("Receiving a Thumbnail")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL;
                 }
+                else if (Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_TOTAL_THUMBNAIL))
+                {
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_TOTAL_THUMBNAIL;
+                    print("GTT DETECTED");
+                }
                     // Get Battery
                 else if (rxString?.prefix(1) == "B")
                 {
@@ -677,7 +683,9 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     }
                     
                     //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RESTART_BLE_RX_TIMEOUT_TIMER), object: nil);
+                    print(currentPacketContents);
                     print("incomplete message: waiting for rest of message")
+                    
                     return;
                 }
                 else
@@ -761,20 +769,20 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // MARK: Parsing Complete Packets:
             switch currentPacketType
             {
-                    // MARK: Get Battery Level
+                // MARK: Get Battery Level
             case EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL:
                 
-                    // conversion from https://stackoverflow.com/questions/32830866/how-in-swift-to-convert-int16-to-two-uint8-bytes
+                // conversion from https://stackoverflow.com/questions/32830866/how-in-swift-to-convert-int16-to-two-uint8-bytes
                 let ADCValue = Int16(rxValue[1]) << 8 | Int16(rxValue[2]);
                 
                 //print("Received a complete battery level packet, parsing: " + rxString!.prefix(1), Int(ADCValue));
                 //print("Value Recieved: " + ;
                 let voltage = (Float(ADCValue) / 1024) * 16.5;
-                    // calculates the battery percentage given the voltage
+                // calculates the battery percentage given the voltage
                 Device.connectedDevice?.batteryPercentage = calculateBatteryPercentage(voltage);
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BATTERY_VALUE), object: nil);
-
-                    // MARK: Get Limits
+                
+                // MARK: Get Limits
             case EnlightedBLEProtocol.ENL_BLE_GET_LIMITS:
                 
                 //print("Received a complete limits packet, parsing: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
@@ -783,31 +791,31 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 Device.connectedDevice?.maxNumModes = Int(rxValue[2]);
                 Device.connectedDevice?.maxBitmaps = Int(rxValue[3]);
                 
-                    // making sure that the current mode isn't above the max (which can sometimes happen in a sort of "demo" mode)
+                // making sure that the current mode isn't above the max (which can sometimes happen in a sort of "demo" mode)
                 if ((Device.connectedDevice?.currentModeIndex)! > (Device.connectedDevice?.maxNumModes)!)
                 {
-                        // if it is, default to mode 1 on the app
+                    // if it is, default to mode 1 on the app
                     Device.connectedDevice?.currentModeIndex = 1;
                 }
                 
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_LIMITS_VALUE), object: nil);
-                    
-                    // MARK: Get Mode
+                
+                // MARK: Get Mode
             case EnlightedBLEProtocol.ENL_BLE_GET_MODE:
                 
-                    // the first byte after "M" determines whether it's a bitmap or color mode
+                // the first byte after "M" determines whether it's a bitmap or color mode
                 let usesBitmap = (rxValue[1] == 0);
                 
                 let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
                 
                 if (currentIndex <= (Device.connectedDevice?.maxNumModes)!)
                 {
-                // if it's a bitmap mode, we should create one and add it to the Device's list
+                    // if it's a bitmap mode, we should create one and add it to the Device's list
                     if (usesBitmap)
                     {
                         //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
                         //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
-                            // clamping to min/max
+                        // clamping to min/max
                         let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
                         Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil])!];
                     }
@@ -821,7 +829,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         
                     }
                 }
-                    // if we're currently reverting the mode
+                // if we're currently reverting the mode
                 else if ((Device.connectedDevice?.currentlyRevertingMode)!)
                 {
                     //print("Recieved a mode we want to use for reversion");
@@ -855,15 +863,15 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 //Device.connectedDevice?.requestedName = false;
                 //Device.connectedDevice?.requestedMode = false;
                 
-                    // MARK: Get Name
+                // MARK: Get Name
             case EnlightedBLEProtocol.ENL_BLE_GET_NAME:
                 
                 //print("Received a complete name packet: " + rxString!);
-                    // if the end quote is in this string, the whole name was sent in one packet (which should always happen, as it's only parsing complete packets
+                // if the end quote is in this string, the whole name was sent in one packet (which should always happen, as it's only parsing complete packets
                 if (rxString!.suffix(1) == "\"")
                 {
                     let receivedName = rxString!;
-                        // taking off quotes
+                    // taking off quotes
                     parsedName = receivedName.filter { $0 != "\"" }
                     //Device.connectedDevice?.requestedName = false;
                     //print("Received complete name: " + parsedName);
@@ -871,7 +879,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     
                 }
                 
-                    // MARK: Get Thumbnail
+                // MARK: Get Thumbnail
             case EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL:
                 
                 //print("Received a complete thumbnail row, parsing")
@@ -885,7 +893,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // if we just finished a row of 20 pixels, we can go on to the next one
                 if (bitmapPixelRow.count == 20)
                 {
-                        // if this command was interrupted, we need to make sure it ends, but we don't want it to leave a remnant in the pixel array
+                    // if this command was interrupted, we need to make sure it ends, but we don't want it to leave a remnant in the pixel array
                     if ((Device.connectedDevice?.currentlyBuildingThumbnails)!)
                     {
                         // adding this row to the whole thing
@@ -894,14 +902,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         bitmapPixelRow = [Pixel]();
                         Device.connectedDevice?.thumbnailRowIndex += 1;
                     }
-                        // if we get a pixel row at the wrong time, we want to make sure the pixel array is empty for when we really want thumbnails
+                    // if we get a pixel row at the wrong time, we want to make sure the pixel array is empty for when we really want thumbnails
                     else
                     {
-                            // reset the whole thumbnail
+                        // reset the whole thumbnail
                         bitmapPixels = [Pixel]();
-                            // reset the row counter
+                        // reset the row counter
                         Device.connectedDevice?.thumbnailRowIndex = 0;
-                            // reset the individual row
+                        // reset the individual row
                         bitmapPixelRow = [Pixel]();
                         
                     }
@@ -926,6 +934,58 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // reset the row counter
                     Device.connectedDevice?.thumbnailRowIndex = 0;
                 }
+                //MARK: Get Total Thumbnail
+            case EnlightedBLEProtocol.ENL_BLE_GET_TOTAL_THUMBNAIL:
+                print("PARSING GTT");
+                
+                
+                //print("Received a complete thumbnail row, parsing")
+                bitmapPixelRow = [Pixel]();
+                //for j in 0...19
+                //{
+                    //let rowOffset = j * 20;
+                    for i in 0...399
+                    {
+                        let indexOffset = i * 3;
+                        bitmapPixelRow.append(Pixel(r: currentPacketContents[0 + indexOffset], g: currentPacketContents[1 + indexOffset], b: currentPacketContents[2 + indexOffset], a: UInt8(255)));
+                        if(bitmapPixelRow.count == 20){
+                            if ((Device.connectedDevice?.currentlyBuildingThumbnails)!)
+                            {
+                                // adding this row to the whole thing
+                                bitmapPixels += bitmapPixelRow;
+                                // resetting row
+                                bitmapPixelRow = [Pixel]();
+                            }
+                            // if we get a pixel row at the wrong time, we want to make sure the pixel array is empty for when we really want thumbnails
+                            else
+                            {
+                                // reset the whole thumbnail
+                                bitmapPixels = [Pixel]();
+                                // reset the individual row
+                                bitmapPixelRow = [Pixel]();
+                                
+                            }
+                        }
+                    }
+                    
+                // if the 20x20 grid is finished, turn it into a UIImage and go on to the next one
+                if (bitmapPixels.count >= 400)
+                {
+                    //print("Finished bitmap");
+                    // Generate a new UIImage (20x20 is hardcoded)
+                    guard let newThumbnail = UIImageFromBitmap(pixels: bitmapPixels, width: 20) else
+                    {
+                        print("Was unable to generate UIImage thumbnail");
+                        return;
+                    }
+                    // add it to the Device
+                    Device.connectedDevice?.thumbnails.append(newThumbnail);
+                    // clear the Pixel array
+                    bitmapPixels = [Pixel]();
+                    // reset the row counter
+                    Device.connectedDevice?.thumbnailRowIndex = 0;
+                }
+            
                 
                     // MARK: Get Brightness
             case EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS:
@@ -939,8 +999,19 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 
                 //print("Received a hardware version packet: " + rxString!.prefix(2));
                 //(rxString!.prefix(2).suffix(1);
-                Device.connectedDevice?.hardwareVersion = .NRF51822;
                 
+                //Checking if we have access to the faster version of the nRF51822 firmware
+                if(rxString!.suffix(1) == "3")
+                {
+                    Device.connectedDevice?.hardwareVersion = .FASTNRF51822;
+                    print("FIRMWARE VERSION: 3");
+                }
+                //otherwise just set it to the normal nRF51822
+                else if(rxString!.suffix(1) == "2")
+                {
+                    Device.connectedDevice?.hardwareVersion = .NRF51822;
+                    print("FIRMWARE VERSION 2");
+                }
                     // MARK: Success Response
             case "Success":
                 
@@ -2196,7 +2267,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     // since the "Get Version" command is the same for both protocols, we can use the nRF8001 version (valueData[0]) blind
                 toSingleDevice!.peripheral.writeValue(valueData[0] as Data, for: toSingleDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
             }
-            else if (toSingleDevice!.hardwareVersion == .NRF51822)
+            else if (toSingleDevice!.hardwareVersion == .NRF51822 || toSingleDevice!.hardwareVersion == .FASTNRF51822)
             {
                 toSingleDevice!.peripheral.writeValue(valueData[1] as Data, for: toSingleDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
             }
@@ -2224,7 +2295,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         {
             
                 // send differently-formatted data packets depending on hardware type
-            if (Device.connectedDevice!.hardwareVersion == .NRF51822)
+            if (Device.connectedDevice!.hardwareVersion == .NRF51822 || Device.connectedDevice!.hardwareVersion == .FASTNRF51822)
             {
                 Device.connectedDevice!.peripheral.writeValue(valueData[1] as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
             }

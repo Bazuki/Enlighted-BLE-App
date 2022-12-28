@@ -29,6 +29,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     var progress: Float = 0;
     
+    var thumbnailCount: Int = 0;
+    
         // list of modes
     var modes = [Mode]();
     
@@ -52,7 +54,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // used in timing how long reloading modes takes
     var reloadStopwatch = Date()
     
-    
+        // a timer to see how long the Thumbnails take to load
+    var thumbnailStopwatch = Date();
     
         // whether or not the currently selected mode has to be initialized
     var initialModeSelected = false;
@@ -604,16 +607,41 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     // if it's past the max, reset
                     if ((Device.connectedDevice?.thumbnailRowIndex)! >= 20)
                     {
+                        thumbnailStopwatch = Date();
                         Device.connectedDevice?.thumbnailRowIndex = 0;
                     }
                     
+                    // if we've loaded an entire thumbnail, reset the thumbnail stopwatch
+                    if (((Device.connectedDevice?.thumbnails.count)!) > thumbnailCount)
+                    {
+                        thumbnailCount = (Device.connectedDevice?.thumbnails.count)!;
+                        thumbnailStopwatch = Date();
+                    }
+                    
+                    let diff = Date().timeIntervalSince(thumbnailStopwatch);
+                    print("Loading one full thumbnail: \(diff) seconds")
+                    
                     loadingLabel.text = "Reading Bitmap \((Device.connectedDevice?.thumbnails.count)! + 1) of \(Device.connectedDevice!.maxBitmaps) from hardware";
                     
-                        // request the current thumbnail at the current row
-                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL, inputInts:  [(Device.connectedDevice?.thumbnails.count)! + 1, (Device.connectedDevice?.thumbnailRowIndex)!]);
-                    //Device.connectedDevice?.requestedThumbnail = true;
+                    //thumbnailStopwatch = Date();
                     
-                    progress += progressValue;
+                    if(Device.connectedDevice?.hardwareVersion == .FASTNRF51822)
+                    {
+                        print("DETECTED FAST NRF51822");
+                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_TOTAL_THUMBNAIL, inputInts:
+                            [(Device.connectedDevice?.thumbnails.count)! + 1]);
+                        progress += progressValue * 20;
+                    }
+                    else
+                    {
+                        // request the current thumbnail at the current row
+                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL, inputInts:  [(Device.connectedDevice?.thumbnails.count)! + 1, (Device.connectedDevice?.thumbnailRowIndex)!]);
+                            progress += progressValue;
+                        //Device.connectedDevice?.requestedThumbnail = true;
+                    }
+                    thumbnailCount = (Device.connectedDevice?.thumbnails.count)!;
+                    
+                    //progress += progressValue;
                     //print("increasing progress by \(progressValue)");
                     
                     
@@ -1407,6 +1435,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         if (Device.connectedDevice!.hardwareVersion == .NRF51822)
         {
             timeoutTime = Constants.BLE_MESSAGE_TIMEOUT_TIME_NRF51822;
+        }
+        else if (Device.connectedDevice!.hardwareVersion == .FASTNRF51822)
+        {
+            timeoutTime = Constants.BLE_MESSAGE_TIMEOUT_TIME_FASTNRF51822;
         }
         else
         {

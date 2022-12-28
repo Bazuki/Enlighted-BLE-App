@@ -30,6 +30,8 @@ class EnlightedBLEProtocol
     static let ENL_BLE_GET_MODE = "!GM"
         // getting a thumbnail for a bitmap, in multiple messages
     static let ENL_BLE_GET_THUMBNAIL = "!GT"
+        // getting a thumbnail for a bitmap, in one message
+    static let ENL_BLE_GET_TOTAL_THUMBNAIL = "!GTT"
     
     // MARK: Setters
     static let ENL_BLE_SET_MODE = "!SM"
@@ -65,6 +67,8 @@ class Constants
     static let BLE_MESSAGE_TIMEOUT_TIME_NRF8001 = 0.25;
     
     static let BLE_MESSAGE_TIMEOUT_TIME_NRF51822 = 0.50;
+    
+    static let BLE_MESSAGE_TIMEOUT_TIME_FASTNRF51822 = Double(10.0);
     
         // if we have to retry a single tx packet more than this many times, we should alert the user to move closer
     static let NUM_ALLOWED_RETRIES_PER_PACKET = 5
@@ -116,6 +120,7 @@ class Constants
         case DEMO
         case NRF8001
         case NRF51822
+        case FASTNRF51822
     }
     
 //        // MARK: error codes
@@ -246,6 +251,10 @@ class Constants
             // Get Thumbnail should receive a 60-byte row (20 pixels, each with an R, G, and B-value byte).
         EnlightedBLEProtocol.ENL_BLE_GET_THUMBNAIL: {(data: [UInt8]) -> Bool in
             return data.count == 60;
+        },
+            // Get Total Thumbnail should recieve a 1200-byte thumbnail (80 BLE packets of 15 bytes each)
+        EnlightedBLEProtocol.ENL_BLE_GET_TOTAL_THUMBNAIL: {(data: [UInt8]) -> Bool in
+            return data.count == 1200;
         },
             // Get Brightness should receive 2 bytes: [‘G’], [unsigned byte Brightness]
         EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS: {(data: [UInt8]) -> Bool in
