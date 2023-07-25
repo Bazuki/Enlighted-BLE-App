@@ -46,10 +46,10 @@ class EnlightedBLEProtocol
 class Constants
 {
         // the time (in seconds) the device scans before analyzing what it found (and then scanning again)
-    static let SCAN_DURATION = 0.85;
+    static let SCAN_DURATION = 1.5;
     
         // the time (in seconds) after which, if no Enlighted BLE devices are found, a "demo mode" device pops up
-    static let SCAN_TIMEOUT_TIME = 2;
+    static let SCAN_TIMEOUT_TIME = 9;
     
         // the filepath in the default app data to take to find the demo device's data (as of 1.0.5, we use an asset instead)
     //static let DEMO_DEVICE_PATH = FileManager().urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("baseDevice");

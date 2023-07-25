@@ -36,6 +36,7 @@ class BLEConnectionTableViewCell: UITableViewCell
     //selected history variables
     private var wasSelected = false;
     private var wasWasSelected = false;
+    private var oldDevice: Device? = nil;
     
     public static var gHideCarrots = false;
     
@@ -58,7 +59,7 @@ class BLEConnectionTableViewCell: UITableViewCell
         self.wasSelected = false;
         BLEConnectionTableViewCell.gHideCarrots = false;
         
-        connectButton.isEnabled = false;
+        //connectButton.isEnabled = false;
         
             // Formatting the images to allow for recoloration
         connectionImage.image = connectionImage.image?.withRenderingMode(UIImageRenderingMode.alwaysTemplate);
@@ -75,9 +76,11 @@ class BLEConnectionTableViewCell: UITableViewCell
     override func setSelected(_ selected: Bool, animated: Bool)
     {
         super.setSelected(selected, animated: animated)
-        
         //print("setSelected(\(selected)) called");
         var isSelected = selected;
+        //self.wasSelected = false;
+        //self.wasWasSelected = false;
+        
         
         if (isDemoDevice)
         {
@@ -111,23 +114,49 @@ class BLEConnectionTableViewCell: UITableViewCell
         
         
         //print("###" + String(wasWasSelected) + "," + String(wasSelected) + "," + String(selected) + "###");
+        /*
+         This part is being weird, this is what controls when the arrow shows up.  setSelected gets called by UIKit every time a cell is selected, so it seems like we just have to deal with it.  As of 3/6/23, I have it printing the cell device's name and the name of the connected device, and I'm trying to include that in the conditional so that it will only let the cell show it's arrow if that cell represents the device that's connected (using UUID not names), but thats also not working.
+         
+         
+         */
+        
         if(BLEConnectionTableViewCell.gHideCarrots){
             //isSelected = false;
             //wasSelected = false;
             self.connectButton.isHidden = true;
-        }
-        else if(!self.wasWasSelected && !self.wasSelected && isSelected){
             BLEConnectionTableViewCell.gHideCarrots = false;
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1){
-                self.connectButton.isHidden = false;
+            //print("BUTTONSTATE: hiding button");
+        }
+        else if(!self.wasSelected && isSelected){
+            BLEConnectionTableViewCell.gHideCarrots = false;
+            if (((Device.connectedDevice?.isConnected) != nil) && Device.connectedDevice?.UUID == self.device.UUID){
+                //Maybe TODO: make this delay slightly shorter
+                if (self.oldDevice == Device.connectedDevice){
+                    print("Old device reconnected");
+                    self.connectButton.isHidden = false;
+                    self.enableButton()
+                }
+                else{
+                    print("Delaying Button");
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75){
+                        self.connectButton.isHidden = false;
+                        self.enableButton()
+                        //print("cell: ", self.device.name, "Connected to:", Device.connectedDevice?.name ?? "name", " BUTTONSTATE: showing button");
+                    }
+                }
             }
+        }
+        else if(!self.wasSelected && isSelected) {
+            //print("cell: ", self.device.name, "Connected to:", Device.connectedDevice?.name ?? "name", " BUTTONSTATE: alternating");
         }
         else if(!self.wasSelected && !isSelected){
             self.connectButton.isHidden = true;
+            //print(self.deviceNameLabel.text ?? "name", "BUTTONSTATE: unselected");
             
         }
         self.wasWasSelected = wasSelected;
         self.wasSelected = isSelected;
+        self.oldDevice = Device.connectedDevice;
         
         
         

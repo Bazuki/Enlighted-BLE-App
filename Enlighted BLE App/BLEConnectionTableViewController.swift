@@ -2013,6 +2013,16 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
     {
+        switch indexPath.section{
+        case 0:
+            print("0");
+        case 1:
+            print("1");
+        case 2:
+            print("2");
+        default:
+            print("other");
+        }
 //        guard indexPath != nil else
 //        {
 //            print("The selected index doesn't exist");
