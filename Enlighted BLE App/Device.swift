@@ -81,6 +81,8 @@ class Device: NSObject, NSCoding
     
         // whether this device uses the nRF8001 ("v1"), nRF51822 ("v2"), or fast nRF51822 ("v3") hardware/firmware
     var hardwareVersion = Constants.HARDWARE_VERSION.UNKNOWN;
+        // whether this device can use crossfading - set to false by default and then set to true if we get the initial get crossfade response
+    var supportsCrossfade = false;
     
         // a list of all the modes this device has, from Get Mode;
     var modes = [Mode]();
@@ -104,7 +106,9 @@ class Device: NSObject, NSCoding
         // the max number of bitmaps
     var maxBitmaps: Int;
     
+        // LED brightness and crossfade length values
     var brightness: Int;
+    var crossfade: Int;
     
     var peripheral: CBPeripheral!;
     var txCharacteristic: CBCharacteristic?;
@@ -148,6 +152,7 @@ class Device: NSObject, NSCoding
     var isInStandby = false;
     var dimmedBrightnessForStandby = false;
     var storedBrightness = -1;
+    var storedCrossfade = -1;
     
         // flags for parsing multiple packets / unusual cases
     var currentlyParsingName = false;
@@ -180,6 +185,7 @@ class Device: NSObject, NSCoding
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        crossfade = -1;
         
         isConnected = false;
         isConnecting = false;
@@ -206,6 +212,7 @@ class Device: NSObject, NSCoding
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        crossfade = -1;
         
         isConnected = false;
         isConnecting = false;
@@ -230,6 +237,7 @@ class Device: NSObject, NSCoding
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        crossfade = -1;
         
         isConnected = false;
         isConnecting = false;
@@ -254,6 +262,7 @@ class Device: NSObject, NSCoding
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        crossfade = -1;
         
         isConnected = false;
         isConnecting = false;
@@ -285,6 +294,7 @@ class Device: NSObject, NSCoding
         
         // initial value;
         brightness = -1;
+        crossfade = -1;
         
         hardwareVersion = .DEMO;
         
@@ -305,6 +315,7 @@ class Device: NSObject, NSCoding
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        crossfade = -1;
         isConnected = true;
         isConnecting = false
         hasDiscoveredCharacteristics = false;
@@ -321,6 +332,7 @@ class Device: NSObject, NSCoding
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        crossfade = -1;
         isConnected = true;
         isConnecting = false
         hasDiscoveredCharacteristics = false;
@@ -342,6 +354,7 @@ class Device: NSObject, NSCoding
             
             // initial value;
         brightness = -1;
+        crossfade = -1;
             
             // mock declaration without a peripheral, so not connected
         isConnected = false;
@@ -355,6 +368,11 @@ class Device: NSObject, NSCoding
     func setBrightness(value: Int)
     {
         brightness = value;
+    }
+    
+    func setCrossfade(value: Int)
+    {
+        crossfade = value;
     }
     
     func setBatteryPercentage(percentage: Int)

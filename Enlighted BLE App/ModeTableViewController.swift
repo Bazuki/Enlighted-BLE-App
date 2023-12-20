@@ -233,12 +233,16 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             BLEConnectionTableViewController.CBCentralState = .NOT_SCANNING_FOR_MIMICS;
         }
         
-            // if we haven't yet got the battery or brightness (it's still at its default -1), we need to add those packets too
+            // if we haven't yet got the battery, brightness, or crossfade (it's still at its default -1), we need to add those packets too
         if (Device.connectedDevice!.batteryPercentage < 0)
         {
             totalPacketsForSetup += 1;
         }
         if (Device.connectedDevice!.brightness < 0)
+        {
+            totalPacketsForSetup += 1;
+        }
+        if (Device.connectedDevice!.crossfade < 0)
         {
             totalPacketsForSetup += 1;
         }
@@ -263,6 +267,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // since it's a demo device, we have to fake getBattery and getBrightness, and skip all of those "get" steps
             Device.connectedDevice?.batteryPercentage = 100;
             Device.connectedDevice?.brightness = Constants.DEFAULT_BRIGHTNESS;
+            Device.connectedDevice?.crossfade = Constants.DEFAULT_CROSSFADE;
             
             Device.connectedDevice?.readyToShowModes = true;
         }
@@ -494,6 +499,17 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     progress += 1 / Float(totalPacketsForSetup);
                 }
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
+                return;
+            }
+            else if (((Device.connectedDevice?.crossfade)! < 0))
+            {
+                // same for crossfade value
+                if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)))
+                {
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE);
+                    progress += 1 / Float(totalPacketsForSetup);
+                }
+                
                 return;
             }
             else if (Constants.USE_STANDBY_BRIGHTNESS && !deviceHasModes && !(Device.connectedDevice?.dimmedBrightnessForStandby)!)

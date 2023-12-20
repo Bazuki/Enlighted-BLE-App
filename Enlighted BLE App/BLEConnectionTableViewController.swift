@@ -603,7 +603,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 else if (Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_TOTAL_THUMBNAIL))
                 {
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_TOTAL_THUMBNAIL;
-                    print("GTT DETECTED");
+                    //print("GTT DETECTED");
                 }
                     // Get Battery
                 else if (rxString?.prefix(1) == "B")
@@ -634,6 +634,11 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 {
                     //print("Receiving a brightness value")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS;
+                }
+                   // Get Crossfade
+                else if (rxString?.prefix(1) == "X")
+                {
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE;
                 }
                     // Get Version
                 else if (rxString?.prefix(1) == "V")
@@ -805,6 +810,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 
                 // the first byte after "M" determines whether it's a bitmap or color mode
                 let usesBitmap = (rxValue[1] == 0);
+                let usesPalette = (rxValue[1] == 2);
                 
                 let currentIndex = (Device.connectedDevice?.modes.count)! + 1;
                 
@@ -818,6 +824,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         // clamping to min/max
                         let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
                         Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil])!];
+                    }
+                    else if (usesPalette)
+                    {
+                        
                     }
                     else
                     {
@@ -993,6 +1003,15 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 //print("Received a complete brightness level packet, parsing: " + rxString!.prefix(1), Int(rxValue[1]));
                 Device.connectedDevice?.brightness = Int(rxValue[1]);
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BRIGHTNESS_VALUE), object: nil);
+                
+                // MARK: Get Crossfade
+            case EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE:
+                print("Got Crossfade Value: ", Int(rxValue[1]));
+                
+                // if we got a response here, that means our hardware supports crossfading -> lets set the value and flip the boolean so that we know that in the future
+                Device.connectedDevice?.crossfade = Int(rxValue[1]);
+                Device.connectedDevice?.supportsCrossfade = true;
+                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECIEVED_CROSSFADE_VALUE), object: nil);
                 
                     // MARK: Get Version
             case EnlightedBLEProtocol.ENL_BLE_GET_VERSION:

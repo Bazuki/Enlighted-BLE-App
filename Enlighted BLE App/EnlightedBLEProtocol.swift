@@ -32,6 +32,8 @@ class EnlightedBLEProtocol
     static let ENL_BLE_GET_THUMBNAIL = "!GT"
         // getting a thumbnail for a bitmap, in one message
     static let ENL_BLE_GET_TOTAL_THUMBNAIL = "!GTT"
+        // getting the current crossfade length of the hardware
+    static let ENL_BLE_GET_CROSSFADE = "!GX"
     
     // MARK: Setters
     static let ENL_BLE_SET_MODE = "!SM"
@@ -41,6 +43,7 @@ class EnlightedBLEProtocol
     static let ENL_BLE_SET_BRIGHTNESS = "!SG"
     static let ENL_BLE_SET_BITMAP = "!SB"
     static let ENL_BLE_SET_STANDBY = "!SS"
+    static let ENL_BLE_SET_CROSSFADE = "!SX"
 }
 
 class Constants
@@ -78,6 +81,9 @@ class Constants
     
         // the default brightness to set the hardware to if it's at STANDBY_BRIGHTNESS
     static let DEFAULT_BRIGHTNESS = 127;
+    
+        // the default crossfade to set the hardware to
+    static let DEFAULT_CROSSFADE = 7;
     
         // the brightness setting (0-255) that the hardware goes into while in standby mode
     static let STANDBY_BRIGHTNESS = 0;
@@ -260,6 +266,10 @@ class Constants
         EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS: {(data: [UInt8]) -> Bool in
             return data.count == 2;
         },
+        // Get Brightness should receive 2 bytes: [‘G’], [unsigned byte Brightness]
+        EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE: {(data: [UInt8]) -> Bool in
+            return data.count == 2;
+        },
             // Get Version should receive 2 bytes: [‘V’], [ASCII Version]
         EnlightedBLEProtocol.ENL_BLE_GET_VERSION: {(data: [UInt8]) -> Bool in
             return data.count == 2;
@@ -291,6 +301,7 @@ class Constants
         
         static let RECEIVED_LIMITS_VALUE = "receivedLimitsValue";
         static let RECEIVED_BRIGHTNESS_VALUE = "receivedBrightnessValue";
+        static let RECIEVED_CROSSFADE_VALUE = "recievedCrossfadeValue";
         static let RECEIVED_BATTERY_VALUE = "receivedBatteryValue";
         static let RECEIVED_MODE_VALUE = "receivedModeValue";
         

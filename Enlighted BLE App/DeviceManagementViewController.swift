@@ -22,6 +22,8 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     @IBOutlet weak var batteryPercentage: UILabel!
     
     @IBOutlet weak var brightnessSlider: UISlider!
+    @IBOutlet weak var crossfadeLabel: UILabel!
+    @IBOutlet weak var crossfadeSlider: UISlider!
     
     @IBOutlet weak var revertSettingsButton: UIButton!
     @IBOutlet weak var reloadUsingGTT: UIButton!
@@ -90,6 +92,21 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         
         // getting and updating the slider with the device's brightness
         brightnessSlider.value = Float((Device.connectedDevice?.brightness)!);
+        
+        // checking if our hardware can handle crossfading and then showing the appropriate UI elements and updating the slider with the correct value
+        if ((Device.connectedDevice?.supportsCrossfade)!)
+        {
+            crossfadeSlider.isHidden = false;
+            crossfadeLabel.isHidden = false;
+            crossfadeSlider.value = Float((Device.connectedDevice?.crossfade)!);
+        }
+        else
+        {
+            crossfadeSlider.isHidden = true;
+            crossfadeLabel.isHidden = true;
+        }
+        
+        //print("Crossfade Value: ", Float((Device.connectedDevice?.crossfade)!));
         batteryPercentage.text = String((Device.connectedDevice?.batteryPercentage)!) + "%";
         
             // revert settings button is hidden if it's a demo device, since it would be tricky and useless to implement separately (No longer in 1.0.5)
@@ -122,11 +139,18 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
     
     @IBAction func changeBrightness(_ sender: UISlider)
     {
-        print("New slider value: \(sender.value)");
+        print("New Brightness value: \(sender.value)");
             // FIXME: only update these variables if these commands succeed? ("1" response)
         Device.connectedDevice?.brightness = Int(sender.value);
         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInts: [Int(sender.value)], digitsPerInput: 3, sendToMimicDevices: true)
         
+    }
+    
+    @IBAction func changeCrossfade(_ sender: UISlider)
+    {
+        print("New Crossfade value: \(sender.value)");
+        Device.connectedDevice?.crossfade = Int(sender.value);
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_CROSSFADE, inputInts: [Int(sender.value)], digitsPerInput: 3, sendToMimicDevices: true)
     }
 //        // don't send a BLE request if it's a demo device
 //        if (Device.connectedDevice!.isDemoDevice)
