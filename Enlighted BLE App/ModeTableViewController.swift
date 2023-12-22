@@ -416,6 +416,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             print("*********************              Reloading the modes took \(diff) seconds.");
             print("");
             print("");
+            print("Current status of emptyPalettes is: ", Device.connectedDevice?.emptyPalettes ?? [69]);
             
             // MARK: profiling: completing file
             if (Device.profiling && Device.currentlyProfiling)
@@ -662,6 +663,22 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     
                     
                 }
+                return;
+            }
+            // getting the palettes
+            else if ((Device.connectedDevice?.emptyPalettes.count)! > 0)
+            {
+                print("we have empty palettes");
+                print("looking for palettes - expected packet type is: ", Device.connectedDevice!.expectedPacketType);
+                //bookmark
+                // if we aren't already asking for a palette
+                if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_PALETTE)))
+                {
+                    // get the first palette from the list of ones we need - since we need a reference to the index number when parsing the palette out, we'll deal with removing those indexes from the array in the parsing phase
+                    print("asking for a palette");
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_PALETTE, inputInts: [(Device.connectedDevice?.emptyPalettes[0])!]);
+                }
+                // if we're already asking, return and wait for the reponse
                 return;
             }
                 // if the Device is still dimmed, we want to set it back to its original brightness
@@ -1670,7 +1687,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         if (numberOfModes >= 1)
         {
-            guard let mode1 = Mode(name:"SLOW TWINKLE", index: 1, usesBitmap: false, bitmap: nil, colors: colorArray1) else
+            guard let mode1 = Mode(name:"SLOW TWINKLE", index: 1, usesPalette: false, usesBitmap: false, bitmap: nil, colors: colorArray1) else
             {
                 fatalError("unable to instantiate mode1");
             }
@@ -1679,7 +1696,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         if (numberOfModes >= 2)
         {
-            guard let mode2 = Mode(name:"MEDIUM TWINKLE", index: 2, usesBitmap: false, bitmap: nil, colors: colorArray2) else
+            guard let mode2 = Mode(name:"MEDIUM TWINKLE", index: 2, usesPalette: false, usesBitmap: false, bitmap: nil, colors: colorArray2) else
             {
                 fatalError("unable to instantiate mode2");
             }
@@ -1688,7 +1705,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         if (numberOfModes >= 3)
         {
-            guard let mode3 = Mode(name:"FAST TWINKLE", index: 3, usesBitmap: true, bitmap: bitmap1, colors: [nil]) else
+            guard let mode3 = Mode(name:"FAST TWINKLE", index: 3, usesPalette: false, usesBitmap: true, bitmap: bitmap1, colors: [nil]) else
             {
                 fatalError("unable to instantiate mode3");
             }
@@ -1698,7 +1715,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
         if (numberOfModes >= 4)
         {
-            guard let mode4 = Mode(name:"EXTREMELY LONG TEST NAME (2 Lines)", index: 4, usesBitmap: true, bitmap: bitmap2, colors: [nil]) else
+            guard let mode4 = Mode(name:"EXTREMELY LONG TEST NAME (2 Lines)", index: 4, usesPalette: false,  usesBitmap: true, bitmap: bitmap2, colors: [nil]) else
             {
                 fatalError("unable to instantiate mode4");
             }
@@ -1710,7 +1727,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             for index in 5...numberOfModes
             {
                 //let colorArray = [UIColor.black, UIColor.white];
-                guard let mode = Mode(name: "mode\(index)", index: index, usesBitmap: true, bitmap: bitmap2, colors: [nil]) else
+                guard let mode = Mode(name: "mode\(index)", index: index, usesPalette: false, usesBitmap: true, bitmap: bitmap2, colors: [nil]) else
                 {
                     fatalError("unable to instantiate mode\(index)");
                 }

@@ -84,6 +84,9 @@ class Device: NSObject, NSCoding
         // whether this device can use crossfading - set to false by default and then set to true if we get the initial get crossfade response
     var supportsCrossfade = false;
     
+        // a list of all the palettes that we have not gotten yet
+    var emptyPalettes = [Int]();
+    
         // a list of all the modes this device has, from Get Mode;
     var modes = [Mode]();
     

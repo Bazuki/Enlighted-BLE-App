@@ -34,6 +34,8 @@ class EnlightedBLEProtocol
     static let ENL_BLE_GET_TOTAL_THUMBNAIL = "!GTT"
         // getting the current crossfade length of the hardware
     static let ENL_BLE_GET_CROSSFADE = "!GX"
+        // getting the palette for a mode
+    static let ENL_BLE_GET_PALETTE = "!GP"
     
     // MARK: Setters
     static let ENL_BLE_SET_MODE = "!SM"
@@ -261,6 +263,9 @@ class Constants
             // Get Total Thumbnail should recieve a 1200-byte thumbnail (80 BLE packets of 15 bytes each)
         EnlightedBLEProtocol.ENL_BLE_GET_TOTAL_THUMBNAIL: {(data: [UInt8]) -> Bool in
             return data.count == 1200;
+        },
+        EnlightedBLEProtocol.ENL_BLE_GET_PALETTE: {(data: [UInt8]) -> Bool in
+            return data.count == 56;
         },
             // Get Brightness should receive 2 bytes: [‘G’], [unsigned byte Brightness]
         EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS: {(data: [UInt8]) -> Bool in

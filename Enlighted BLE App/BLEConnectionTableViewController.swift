@@ -605,6 +605,12 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_TOTAL_THUMBNAIL;
                     //print("GTT DETECTED");
                 }
+                else if (Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_PALETTE))
+                {
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_PALETTE
+                    print("expecting a palette");
+                    print(Device.connectedDevice!.expectedPacketType);
+                }
                     // Get Battery
                 else if (rxString?.prefix(1) == "B")
                 {
@@ -823,11 +829,15 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
                         // clamping to min/max
                         let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
-                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil])!];
+                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesPalette: usesPalette, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil])!];
                     }
                     else if (usesPalette)
                     {
-                        
+                        //if it's a palette mode, we need to make a mode without any color data so that we can later populate the palette
+                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesPalette: usesPalette, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [UIColor(red: 0, green: 0, blue: 0, alpha: 1.0), UIColor(red: 255, green: 255, blue: 255, alpha: 1.0)])!];
+                        //NOTE: change the array of colors to [nil] once palettes and palette previews work
+                        Device.connectedDevice?.emptyPalettes += [currentIndex];
+                        print("found a palette mode - adding to emptyPalettes");
                     }
                     else
                     {
@@ -835,7 +845,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                         
                         let color1 = UIColor(displayP3Red: CGFloat(Float(rxValue[2]) / 255), green: CGFloat(Float(rxValue[3]) / 255), blue: CGFloat(Float(rxValue[4]) / 255), alpha: 1)
                         let color2 = UIColor(displayP3Red: CGFloat(Float(rxValue[5]) / 255), green: CGFloat(Float(rxValue[6]) / 255), blue: CGFloat(Float(rxValue[7]) / 255), alpha: 1)
-                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [color1, color2])!];
+                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesPalette: usesPalette, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [color1, color2])!];
                         
                     }
                 }
@@ -1012,6 +1022,36 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 Device.connectedDevice?.crossfade = Int(rxValue[1]);
                 Device.connectedDevice?.supportsCrossfade = true;
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECIEVED_CROSSFADE_VALUE), object: nil);
+                
+            case EnlightedBLEProtocol.ENL_BLE_GET_PALETTE:
+                print("incoming palette");
+                //print(currentPacketContents);
+                var rawPalette = currentPacketContents;
+                
+                var currentPalette: [UIColor] = [UIColor]();
+                
+                // remove all the "P_" ascii values from the bytes that we got back so that we can treat the rest as rgb values - going backwards so that we don't mess up any of the important indexes later in the array
+                for i in (0...55).reversed()
+                {
+                    if (i % 14 == 0 || i % 14 == 1)
+                    {
+                        rawPalette.remove(at: i);
+                    }
+                }
+                
+                print("Palette after pruning 'P_' values: \n", rawPalette);
+                
+                // once we've pruned out all the ascii values, we can parse the rest of the rgb values and create UIColor objects to pass into the setPalette function
+                for i in 0...15
+                {
+                    let indexOffset = i * 3;
+                    print("Current Color: ", rawPalette[0 + indexOffset], rawPalette[1 + indexOffset], rawPalette[2 + indexOffset]);
+                    currentPalette.append(UIColor(red: CGFloat(rawPalette[0 + indexOffset]), green: CGFloat(rawPalette[1 + indexOffset]), blue: CGFloat(rawPalette[2 + indexOffset]), alpha: CGFloat(1.0)));
+                }
+                
+                // set the palette in the corresponding mode and then remove the mode from the list of modes that still need palette information so that we don't ask for the same one infinitely
+                Device.connectedDevice?.modes[(Device.connectedDevice?.emptyPalettes[0])! - 1].setPalette(palette: currentPalette);
+                Device.connectedDevice?.emptyPalettes.remove(at:0);
                 
                     // MARK: Get Version
             case EnlightedBLEProtocol.ENL_BLE_GET_VERSION:
@@ -2601,7 +2641,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         let bitmap2 = UIImage(named: "Bitmap2");
         
             // adding a blank mode with just the correct name (hopefully)
-        return Mode(name: name, index: -1, usesBitmap: true, bitmap: bitmap2, colors: [nil])!;
+        return Mode(name: name, index: -1, usesPalette: false, usesBitmap: true, bitmap: bitmap2, colors: [nil])!;
         
     }
             

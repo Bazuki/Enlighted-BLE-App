@@ -19,8 +19,10 @@ class Mode: NSObject, NSCoding
         static let name = "name";
         static let usesBitmap = "usesBitmap";
         static let bitmapIndex = "bitmapIndex";
+        static let usesPalette = "usesPalette";
         static let index = "index";
         static let colors = "colors";
+        static let paletteColors = "paletteColors";
     }
     
     
@@ -38,6 +40,12 @@ class Mode: NSObject, NSCoding
     
     var bitmapIndex: Int?;
     
+    // whether or not the mode uses a palette of 16 colors
+    var usesPalette: Bool;
+    
+    // reference to the palette of colors
+    var paletteColors: [UIColor]?;
+    
     // a reference to the colors used by the mode (if it isn't a bitmap mode)
     var color1: UIColor?;
     
@@ -48,7 +56,7 @@ class Mode: NSObject, NSCoding
     
     // MARK: Initialization
     
-    init?(name:String, index:Int, usesBitmap: Bool, bitmap: UIImage?, colors: [UIColor?])
+    init?(name:String, index:Int, usesPalette: Bool, usesBitmap: Bool, bitmap: UIImage?, colors: [UIColor?])
     {
             // check for empty references
         if name.isEmpty || index < 1
@@ -60,12 +68,20 @@ class Mode: NSObject, NSCoding
         self.name = name;
         self.index = index;
         self.usesBitmap = usesBitmap;
+        self.usesPalette = usesPalette;
         
             // if it's a bitmap, assign the bitmap passed in the constructor
         if (usesBitmap)
         {
             self.bitmap = bitmap;
             self.bitmapIndex = 1;
+        }
+        else if (usesPalette)
+        {
+            self.paletteColors = [UIColor]();
+            //NOTE: remove this once the palette and palette icon works
+            self.color1 = colors[0];
+            self.color2 = colors[1];
         }
             // otherwise pass the two colors that make up the pattern
         else
@@ -75,7 +91,7 @@ class Mode: NSObject, NSCoding
         }
     }
     
-    init?(name:String, index:Int, usesBitmap: Bool, bitmapIndex: Int?, colors: [UIColor?])
+    init?(name:String, index:Int, usesPalette: Bool, usesBitmap: Bool, bitmapIndex: Int?, colors: [UIColor?])
     {
         // check for empty references
         if name.isEmpty || index < 1
@@ -87,6 +103,8 @@ class Mode: NSObject, NSCoding
         self.name = name;
         self.index = index;
         self.usesBitmap = usesBitmap;
+        self.usesPalette = usesPalette;
+        
         
         // if it's a bitmap, assign the bitmap passed in the constructor
         if (usesBitmap)
@@ -94,6 +112,13 @@ class Mode: NSObject, NSCoding
                 // sample bitmap until getBitmap works
             self.bitmap = UIImage(named: "Bitmap2");
             self.bitmapIndex = bitmapIndex;
+        }
+        else if (usesPalette)
+        {
+            self.paletteColors = [UIColor]();
+            //NOTE: remove this once the palette and palette icon works
+            self.color1 = colors[0];
+            self.color2 = colors[1];
         }
             // otherwise pass the two colors that make up the pattern
         else
@@ -109,9 +134,22 @@ class Mode: NSObject, NSCoding
         self.name = "Default";
         self.index = -1;
         self.usesBitmap = false;
+        self.usesPalette = false;
+        self.paletteColors = [UIColor]();
         self.bitmapIndex = 1;
         color1 = UIColor.red
         color2 = UIColor.blue;
+
+    }
+    
+    public func setPalette(palette: [UIColor])
+    {
+        for paletteCell in palette
+        {
+            self.paletteColors?.append(paletteCell);
+        }
+        self.color1 = self.paletteColors![0];
+        self.color2 = self.paletteColors![1];
 
     }
     
@@ -122,11 +160,16 @@ class Mode: NSObject, NSCoding
     {
         aCoder.encode(name, forKey: PropertyKey.name);
         aCoder.encode(usesBitmap, forKey: PropertyKey.usesBitmap);
+        aCoder.encode(usesPalette, forKey: PropertyKey.usesPalette);
         aCoder.encode(index, forKey: PropertyKey.index);
         if (usesBitmap)
         {
             let encodableBitmapIndex: Int = bitmapIndex!
             aCoder.encode(encodableBitmapIndex, forKey: PropertyKey.bitmapIndex);
+        }
+        else if (usesPalette)
+        {
+            aCoder.encode(paletteColors, forKey: PropertyKey.paletteColors);
         }
         else
         {
@@ -142,6 +185,7 @@ class Mode: NSObject, NSCoding
         }
         
         let usesBitmap = aDecoder.decodeBool(forKey: PropertyKey.usesBitmap);
+        let usesPalette = aDecoder.decodeBool(forKey: PropertyKey.usesPalette);
         
         let index = aDecoder.decodeInteger(forKey: PropertyKey.index);
         
@@ -149,13 +193,20 @@ class Mode: NSObject, NSCoding
         {
             let bitmapIndex = aDecoder.decodeInteger(forKey: PropertyKey.bitmapIndex) ;
                 // creating a Bitmap mode
-            self.init(name: name, index: index, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil]);
+            self.init(name: name, index: index, usesPalette: false, usesBitmap: usesBitmap, bitmapIndex: bitmapIndex, colors: [nil]);
+        }
+        else if (usesPalette)
+        {
+            let paletteColors = aDecoder.decodeObject(forKey: PropertyKey.paletteColors) as? [UIColor];
+            self.init(name: name, index: index, usesPalette: usesPalette, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [UIColor(red: 0, green: 0, blue: 0, alpha: 1.0), UIColor(red: 255, green: 255, blue: 255, alpha: 1.0)]);
+            //NOTE: change the argument for colors above to [nil], using a 'magic' array with set colors for the sake of testing
+            self.setPalette(palette: paletteColors!);
         }
         else
         {
             let colors = aDecoder.decodeObject(forKey: PropertyKey.colors) as? [UIColor];
-            // creating a Bitmap mode
-            self.init(name: name, index: index, usesBitmap: usesBitmap, bitmapIndex: nil, colors: colors!);
+            // creating a color mode
+            self.init(name: name, index: index, usesPalette: false, usesBitmap: usesBitmap, bitmapIndex: nil, colors: colors!);
         }
         
         
