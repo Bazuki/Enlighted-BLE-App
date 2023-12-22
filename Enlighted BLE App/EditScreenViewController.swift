@@ -20,6 +20,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     @IBOutlet weak var colorModeObjects: UIView!
     @IBOutlet weak var bitmapModeObjects: UIView!
+    @IBOutlet weak var paletteModeObjects: UIView!
     
     @IBOutlet weak var bitmapUIImage: UIImageView!
     
@@ -48,6 +49,25 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBOutlet weak var color2RGB: UILabel!
     
     @IBOutlet weak var saturationLabel: UILabel!
+    
+    @IBOutlet weak var pColorPickerWrapper: UIView!
+    
+    @IBOutlet weak var pColor1Selector: ColorPreview!
+    @IBOutlet weak var pColor2Selector: ColorPreview!
+    @IBOutlet weak var pColor3Selector: ColorPreview!
+    @IBOutlet weak var pColor4Selector: ColorPreview!
+    @IBOutlet weak var pColor5Selector: ColorPreview!
+    @IBOutlet weak var pColor6Selector: ColorPreview!
+    @IBOutlet weak var pColor7Selector: ColorPreview!
+    @IBOutlet weak var pColor8Selector: ColorPreview!
+    @IBOutlet weak var pColor9Selector: ColorPreview!
+    @IBOutlet weak var pColor10Selector: ColorPreview!
+    @IBOutlet weak var pColor11Selector: ColorPreview!
+    @IBOutlet weak var pColor12Selector: ColorPreview!
+    @IBOutlet weak var pColor13Selector: ColorPreview!
+    @IBOutlet weak var pColor14Selector: ColorPreview!
+    @IBOutlet weak var pColor15Selector: ColorPreview!
+    @IBOutlet weak var pColor16Selector: ColorPreview!
     
         // the peripheral manager
     var peripheralManager: CBPeripheralManager?;
@@ -164,6 +184,92 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             
             color1Selector.isHidden = true;
             color2Selector.isHidden = true;
+            
+            paletteModeObjects.isHidden = true;
+            
+            pColor1Selector.isHidden = true;
+            pColor2Selector.isHidden = true;
+            pColor3Selector.isHidden = true;
+            pColor4Selector.isHidden = true;
+            pColor5Selector.isHidden = true;
+            pColor6Selector.isHidden = true;
+            pColor7Selector.isHidden = true;
+            pColor8Selector.isHidden = true;
+            pColor9Selector.isHidden = true;
+            pColor10Selector.isHidden = true;
+            pColor11Selector.isHidden = true;
+            pColor12Selector.isHidden = true;
+            pColor13Selector.isHidden = true;
+            pColor14Selector.isHidden = true;
+            pColor15Selector.isHidden = true;
+            pColor16Selector.isHidden = true;
+        }
+        else if (Device.connectedDevice?.mode?.usesPalette)!
+        {
+            bitmapUIImage.isHidden = true;
+            
+            bitmapPicker.isHidden = true;
+            
+            bitmapModeObjects.isHidden = true;
+            
+            colorModeObjects.isHidden = false;
+            
+            colorPickerWrapper.isHidden = true;
+            
+            color1UndoButton.isHidden = true;
+            color2UndoButton.isHidden = true;
+            colorRevertButton.isHidden = true;
+            
+            bitmapUndoButton.isHidden = true;
+            bitmapRevertButton.isHidden = true;
+            
+            color1Label.isHidden = true;
+            color2Label.isHidden = true;
+            color1RGB.isHidden = true;
+            color2RGB.isHidden = true;
+            
+            color1Selector.isHidden = true;
+            color2Selector.isHidden = true;
+            
+            // unhide palette related objects
+            
+            paletteModeObjects.isHidden = false;
+            
+            // set the colors for the palette colors and then show them
+            
+            pColor1Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![0])!);
+            pColor2Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![1])!);
+            pColor3Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![2])!);
+            pColor4Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![3])!);
+            pColor5Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![4])!);
+            pColor6Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![5])!);
+            pColor7Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![6])!);
+            pColor8Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![7])!);
+            pColor9Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![8])!);
+            pColor10Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![9])!);
+            pColor11Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![10])!);
+            pColor12Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![11])!);
+            pColor13Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![12])!);
+            pColor14Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![13])!);
+            pColor15Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![14])!);
+            pColor16Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![15])!);
+            
+            pColor1Selector.isHidden = false;
+            pColor2Selector.isHidden = false;
+            pColor3Selector.isHidden = false;
+            pColor4Selector.isHidden = false;
+            pColor5Selector.isHidden = false;
+            pColor6Selector.isHidden = false;
+            pColor7Selector.isHidden = false;
+            pColor8Selector.isHidden = false;
+            pColor9Selector.isHidden = false;
+            pColor10Selector.isHidden = false;
+            pColor11Selector.isHidden = false;
+            pColor12Selector.isHidden = false;
+            pColor13Selector.isHidden = false;
+            pColor14Selector.isHidden = false;
+            pColor15Selector.isHidden = false;
+            pColor16Selector.isHidden = false;
         }
         else if !(Device.connectedDevice?.mode?.usesBitmap)!
         {
@@ -201,6 +307,25 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             
             color1Selector.isHidden = false;
             color2Selector.isHidden = false;
+            
+            paletteModeObjects.isHidden = true;
+            
+            pColor1Selector.isHidden = true;
+            pColor2Selector.isHidden = true;
+            pColor3Selector.isHidden = true;
+            pColor4Selector.isHidden = true;
+            pColor5Selector.isHidden = true;
+            pColor6Selector.isHidden = true;
+            pColor7Selector.isHidden = true;
+            pColor8Selector.isHidden = true;
+            pColor9Selector.isHidden = true;
+            pColor10Selector.isHidden = true;
+            pColor11Selector.isHidden = true;
+            pColor12Selector.isHidden = true;
+            pColor13Selector.isHidden = true;
+            pColor14Selector.isHidden = true;
+            pColor15Selector.isHidden = true;
+            pColor16Selector.isHidden = true;
         }
         
     }
