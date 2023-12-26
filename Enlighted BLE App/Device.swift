@@ -452,12 +452,27 @@ class Device: NSObject, NSCoding
             
             while (intsToParse.count > 0)
             {
+                // set palette commands have special formatting so that we can restrict the large amount of color data to 16 bytes - also only FASTNRF51822 boards can support palettes, so we can assume we only need the 51822 array
+                if (inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE1) || inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2) || inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3) || inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4))
+                {
+                    //print("Palette arguments: ", intsToParse);
+                    if (intsToParse[0] > 127)
+                    {
+                        intsToParse[0] = (intsToParse[0] - 256);
+                    }
+                    uInt8Array51822 += [(UInt8(bitPattern: Int8(intsToParse[0])))];
+                    intsToParse.remove(at: 0);
+                    //print("Packet arguments: ", uInt8Array51822);
+                }
+                else
+                {
                     // the nRF51822 protocol requires special formatting
-                uInt8Array51822 += (formatForNRF51822(intsToParse[0], numExpectedDigits: digitsPerInput));
-               
-                uInt8Array8001.append(UInt8(intsToParse[0]));
-                
-                intsToParse.remove(at: 0);
+                    uInt8Array51822 += (formatForNRF51822(intsToParse[0], numExpectedDigits: digitsPerInput));
+                    
+                    uInt8Array8001.append(UInt8(intsToParse[0]));
+                    
+                    intsToParse.remove(at: 0);
+                }
             }
         }
         

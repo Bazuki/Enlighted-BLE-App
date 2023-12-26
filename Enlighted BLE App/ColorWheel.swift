@@ -77,17 +77,25 @@ class ColorWheel: UIView
                 
                 let newColor = getColor();
                 
-                if (viewController?.getCurrentColorIndex() == 1)
+                if ((Device.connectedDevice?.mode?.usesPalette)!)
                 {
-                    viewController?.color1Selector.setBackgroundColor(newColor: newColor);
+                    viewController?.paletteColorSelectors[viewController!.currentColorIndex - 1]?.setBackgroundColor(newColor: newColor);
+                    viewController?.pBrightnessSlider.minimumTrackTintColor = newColor;
+                    viewController?.pBrightnessSlider.maximumTrackTintColor = newColor;
                 }
                 else
                 {
-                    viewController?.color2Selector.setBackgroundColor(newColor: newColor);
+                    if (viewController?.getCurrentColorIndex() == 1)
+                    {
+                        viewController?.color1Selector.setBackgroundColor(newColor: newColor);
+                    }
+                    else
+                    {
+                        viewController?.color2Selector.setBackgroundColor(newColor: newColor);
+                    }
+                    viewController?.brightnessSlider.minimumTrackTintColor = newColor;
+                    viewController?.brightnessSlider.maximumTrackTintColor = newColor;
                 }
-                
-                viewController?.brightnessSlider.minimumTrackTintColor = newColor;
-                viewController?.brightnessSlider.maximumTrackTintColor = newColor;
             }
             break
             
@@ -97,17 +105,25 @@ class ColorWheel: UIView
             
             let newColor = getColor();
             
-            if (viewController?.getCurrentColorIndex() == 1)
+            if ((Device.connectedDevice?.mode?.usesPalette)!)
             {
-                viewController?.color1Selector.setBackgroundColor(newColor: newColor);
+                viewController?.paletteColorSelectors[viewController!.currentColorIndex - 1]?.setBackgroundColor(newColor: newColor);
+                viewController?.pBrightnessSlider.minimumTrackTintColor = newColor;
+                viewController?.pBrightnessSlider.maximumTrackTintColor = newColor;
             }
             else
             {
-                viewController?.color2Selector.setBackgroundColor(newColor: newColor);
+                if (viewController?.getCurrentColorIndex() == 1)
+                {
+                    viewController?.color1Selector.setBackgroundColor(newColor: newColor);
+                }
+                else
+                {
+                    viewController?.color2Selector.setBackgroundColor(newColor: newColor);
+                }
+                viewController?.brightnessSlider.minimumTrackTintColor = newColor;
+                viewController?.brightnessSlider.maximumTrackTintColor = newColor;
             }
-            
-            viewController?.brightnessSlider.minimumTrackTintColor = newColor;
-            viewController?.brightnessSlider.maximumTrackTintColor = newColor;
             
             //knob?.frame.midY = knobPosition.y;
             //getColor();
@@ -115,15 +131,23 @@ class ColorWheel: UIView
             
         case UIGestureRecognizerState.ended:
                 // updating the view controller upon release
-            if (viewController?.getCurrentColorIndex() == 1)
+            if ((Device.connectedDevice?.mode?.usesPalette)!)
             {
-                viewController?.color1History += [getColor()];
+                viewController?.updatePaletteColorPicker(getColor(), fromPicker: true);
             }
             else
             {
-                viewController?.color2History += [getColor()];
+                // updating the view controller upon release
+                if (viewController?.getCurrentColorIndex() == 1)
+                {
+                    viewController?.color1History += [getColor()];
+                }
+                else
+                {
+                    viewController?.color2History += [getColor()];
+                }
+                viewController?.updateColorPicker(getColor(), fromPicker: true);
             }
-            viewController?.updateColorPicker(getColor(), fromPicker: true);
             break
             
         default:
@@ -148,28 +172,45 @@ class ColorWheel: UIView
             
             let newColor = getColor();
             
-            if (viewController?.getCurrentColorIndex() == 1)
+            if ((Device.connectedDevice?.mode?.usesPalette)!)
             {
-                viewController?.color1Selector.setBackgroundColor(newColor: newColor);
+                viewController?.paletteColorSelectors[viewController!.currentColorIndex - 1]?.setBackgroundColor(newColor: newColor);
+                viewController?.pBrightnessSlider.minimumTrackTintColor = newColor;
+                viewController?.pBrightnessSlider.maximumTrackTintColor = newColor;
             }
             else
             {
-                viewController?.color2Selector.setBackgroundColor(newColor: newColor);
+                if (viewController?.getCurrentColorIndex() == 1)
+                {
+                    viewController?.color1Selector.setBackgroundColor(newColor: newColor);
+                }
+                else
+                {
+                    viewController?.color2Selector.setBackgroundColor(newColor: newColor);
+                }
+                viewController?.brightnessSlider.minimumTrackTintColor = newColor;
+                viewController?.brightnessSlider.maximumTrackTintColor = newColor;
             }
             
-            viewController?.brightnessSlider.minimumTrackTintColor = newColor;
-            viewController?.brightnessSlider.maximumTrackTintColor = newColor;
             
-            // updating the view controller upon release
-            if (viewController?.getCurrentColorIndex() == 1)
+            
+            if ((Device.connectedDevice?.mode?.usesPalette)!)
             {
-                viewController?.color1History += [getColor()];
+                viewController?.updatePaletteColorPicker(getColor(), fromPicker: true);
             }
             else
             {
-                viewController?.color2History += [getColor()];
+                // updating the view controller upon release
+                if (viewController?.getCurrentColorIndex() == 1)
+                {
+                    viewController?.color1History += [getColor()];
+                }
+                else
+                {
+                    viewController?.color2History += [getColor()];
+                }
+                viewController?.updateColorPicker(getColor(), fromPicker: true);
             }
-            viewController?.updateColorPicker(getColor(), fromPicker: true);
         }
         
     }

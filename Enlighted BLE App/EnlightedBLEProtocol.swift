@@ -46,6 +46,10 @@ class EnlightedBLEProtocol
     static let ENL_BLE_SET_BITMAP = "!SB"
     static let ENL_BLE_SET_STANDBY = "!SS"
     static let ENL_BLE_SET_CROSSFADE = "!SX"
+    static let ENL_BLE_SET_PALETTE1 = "!SP1"
+    static let ENL_BLE_SET_PALETTE2 = "!SP2"
+    static let ENL_BLE_SET_PALETTE3 = "!SP3"
+    static let ENL_BLE_SET_PALETTE4 = "!SP4"
 }
 
 class Constants

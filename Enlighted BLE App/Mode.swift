@@ -79,9 +79,7 @@ class Mode: NSObject, NSCoding
         else if (usesPalette)
         {
             self.paletteColors = [UIColor]();
-            //NOTE: remove this once the palette and palette icon works
-            self.color1 = colors[0];
-            self.color2 = colors[1];
+            
         }
             // otherwise pass the two colors that make up the pattern
         else
@@ -116,9 +114,7 @@ class Mode: NSObject, NSCoding
         else if (usesPalette)
         {
             self.paletteColors = [UIColor]();
-            //NOTE: remove this once the palette and palette icon works
-            self.color1 = colors[0];
-            self.color2 = colors[1];
+            
         }
             // otherwise pass the two colors that make up the pattern
         else
@@ -198,8 +194,7 @@ class Mode: NSObject, NSCoding
         else if (usesPalette)
         {
             let paletteColors = aDecoder.decodeObject(forKey: PropertyKey.paletteColors) as? [UIColor];
-            self.init(name: name, index: index, usesPalette: usesPalette, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [UIColor(red: 0, green: 0, blue: 0, alpha: 1.0), UIColor(red: 255, green: 255, blue: 255, alpha: 1.0)]);
-            //NOTE: change the argument for colors above to [nil], using a 'magic' array with set colors for the sake of testing
+            self.init(name: name, index: index, usesPalette: usesPalette, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [nil]);
             self.setPalette(palette: paletteColors!);
         }
         else

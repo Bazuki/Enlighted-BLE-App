@@ -51,6 +51,12 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBOutlet weak var saturationLabel: UILabel!
     
     @IBOutlet weak var pColorPickerWrapper: UIView!
+    @IBOutlet weak var pColorWheel: ColorWheel!
+    @IBOutlet weak var pColorImage: UIImageView!
+    @IBOutlet weak var pHueSlider: UISlider!
+    @IBOutlet weak var pSaturationSlider: UISlider!
+    @IBOutlet weak var pBrightnessSlider: UISlider!
+
     
     @IBOutlet weak var pColor1Selector: ColorPreview!
     @IBOutlet weak var pColor2Selector: ColorPreview!
@@ -72,6 +78,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         // the peripheral manager
     var peripheralManager: CBPeripheralManager?;
     
+    var paletteColorSelectors = [ColorPreview?]();
     
     //var delegate =
     //var _colorWheel: ISColorWheel = ISColorWheel();
@@ -91,6 +98,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
         // brightness of slider
     public var brightness: CGFloat = 1;
+    public var pBrightness: CGFloat = 1;
     
         // don't let the user spam revert if the mode is already reverted
     //var hasReverted = false;
@@ -165,6 +173,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             colorModeObjects.isHidden = true;
             
             colorPickerWrapper.isHidden = true;
+            ColorWheel.isHidden = true;
+            pColorWheel.isHidden = true;
             
             //intensitySliderPlaceholder.isHidden = true;
             
@@ -211,10 +221,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             bitmapPicker.isHidden = true;
             
             bitmapModeObjects.isHidden = true;
-            
             colorModeObjects.isHidden = false;
             
             colorPickerWrapper.isHidden = true;
+            ColorWheel.isHidden = true;
             
             color1UndoButton.isHidden = true;
             color2UndoButton.isHidden = true;
@@ -234,6 +244,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             // unhide palette related objects
             
             paletteModeObjects.isHidden = false;
+            pColorWheel.isHidden = false;
+            pColorPickerWrapper.isHidden = false;
             
             // set the colors for the palette colors and then show them
             
@@ -253,6 +265,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             pColor14Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![13])!);
             pColor15Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![14])!);
             pColor16Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![15])!);
+            
+            paletteColorSelectors = [pColor1Selector, pColor2Selector, pColor3Selector, pColor4Selector, pColor5Selector, pColor6Selector, pColor7Selector, pColor8Selector, pColor9Selector, pColor10Selector, pColor11Selector, pColor12Selector, pColor13Selector, pColor14Selector, pColor15Selector, pColor16Selector];
             
             pColor1Selector.isHidden = false;
             pColor2Selector.isHidden = false;
@@ -282,6 +296,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             colorModeObjects.isHidden = false;
             
             colorPickerWrapper.isHidden = false;
+            ColorWheel.isHidden = false;
+            pColorWheel.isHidden = true;
             //intensitySliderPlaceholder.isHidden = false;
             
             color1UndoButton.isHidden = false;
@@ -326,6 +342,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             pColor14Selector.isHidden = true;
             pColor15Selector.isHidden = true;
             pColor16Selector.isHidden = true;
+            
         }
         
     }
@@ -380,13 +397,18 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         {
             
         }
+        else if ((Device.connectedDevice?.mode?.usesPalette)!)
+        {
+            pColor1Selector.setHighlighted(true);
+            pColorWheel.initializeColorWheel(radius: Float(pColorImage.frame.width / 2), color: pColor1Selector.myColor, owner: self, knobRadius: 15);
+        }
         else
         {
                 // activate color 1 by default
             setColorSelectorAsActive(isColor1: true);
             
             // radius is half of the image width
-            ColorWheel.initializeColorWheel(radius: Float(colorImage.frame.width / 2), color: color1Selector.myColor, owner: self, knobRadius: 15)
+            ColorWheel.initializeColorWheel(radius: Float(colorImage.frame.width / 2), color: color1Selector.myColor, owner: self, knobRadius: 15);
         }
     }
     
@@ -535,6 +557,34 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: Device.convertUIColorToIntArray(color1) + Device.convertUIColorToIntArray(color2), digitsPerInput: 3, sendToMimicDevices: true);
             // saving cache
         NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
+    }
+    
+    private func setPaletteColors()
+    {
+        let indexOffset = Int((currentColorIndex - 1)/4) * 4;
+        print(indexOffset);
+        var colorInts = [Int]();
+        for i in 0...3
+        {
+            colorInts += Device.convertUIColorToIntArray((Device.connectedDevice?.mode?.paletteColors![indexOffset + i])!);
+        }
+        print(colorInts);
+        switch indexOffset
+        {
+        case 0:
+            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE1, inputInts: colorInts, digitsPerInput: 1, sendToMimicDevices: true);
+        case 4:
+            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2, inputInts: colorInts, digitsPerInput: 1, sendToMimicDevices: true);
+        case 8:
+            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: colorInts, digitsPerInput: 1, sendToMimicDevices: true);
+        case 12:
+            formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: colorInts, digitsPerInput: 1, sendToMimicDevices: true);
+        default:
+            print("indexOffset out of bounds");
+        }
+        
+        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
+        
     }
     
 //    func setColors(color1: UIColor, color2: UIColor)
@@ -746,6 +796,44 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
     }
     
+    public func updatePaletteColorPicker(_ newColor: UIColor, fromPicker: Bool)
+    {
+        var hue: CGFloat = 0;
+        var saturation: CGFloat = 0;
+        var newBrightness: CGFloat = 0;
+        var alpha: CGFloat = 0;
+        let _ = newColor.getHue(&hue, saturation: &saturation, brightness: &newBrightness, alpha: &alpha);
+       
+        // scaling up for respective ranges
+        hue *= 360;
+        saturation *= 100;
+        let sliderBrightness = Float(newBrightness * 100);
+        
+            // if this new color is from setting sliders, we want to set the currently selected Color that way
+        if (fromPicker)
+        {
+            Device.connectedDevice?.mode?.paletteColors![currentColorIndex - 1] = newColor;
+            paletteColorSelectors[currentColorIndex - 1]!.setBackgroundColor(newColor: newColor);
+            
+                //TODO: update the palette on the hardware
+            setPaletteColors();
+            
+        }
+            // otherwise it's from selecting a color, and so we want to enable and set the sliders
+        else
+        {
+            pBrightnessSlider.minimumTrackTintColor = newColor;
+            pBrightnessSlider.maximumTrackTintColor = newColor;
+            pBrightnessSlider.isEnabled = true;
+            
+            pBrightnessSlider.setValue(sliderBrightness, animated: true);
+            pBrightness = newBrightness;
+            pColorWheel.updateBrightness();
+            
+            pColorWheel.setColor(newColor: newColor);
+        }
+    }
+    
     func setColorSelectorAsActive(isColor1: Bool)
     {
         if (isColor1)
@@ -787,6 +875,68 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBAction func selectAndEditColor2(_ sender: UITapGestureRecognizer)
     {
         setColorSelectorAsActive(isColor1: false);
+    }
+    
+    @IBAction func testUITap(_ sender: UITapGestureRecognizer)
+    {
+        print("Selected", sender);
+    }
+    
+    @IBAction func selectAndEditPaletteColor(_ sender: UITapGestureRecognizer)
+    {
+        print("selected new palette color");
+        switch sender.view{
+        case pColor1Selector:
+            currentColorIndex = 1;
+        case pColor2Selector:
+            currentColorIndex = 2;
+        case pColor3Selector:
+            currentColorIndex = 3;
+        case pColor4Selector:
+            currentColorIndex = 4;
+        case pColor5Selector:
+            currentColorIndex = 5;
+        case pColor6Selector:
+            currentColorIndex = 6;
+        case pColor7Selector:
+            currentColorIndex = 7;
+        case pColor8Selector:
+            currentColorIndex = 8;
+        case pColor9Selector:
+            currentColorIndex = 9;
+        case pColor10Selector:
+            currentColorIndex = 10;
+        case pColor11Selector:
+            currentColorIndex = 11;
+        case pColor12Selector:
+            currentColorIndex = 12;
+        case pColor13Selector:
+            currentColorIndex = 13;
+        case pColor14Selector:
+            currentColorIndex = 14;
+        case pColor15Selector:
+            currentColorIndex = 15;
+        case pColor16Selector:
+            currentColorIndex = 16;
+        default:
+            print("selected palette color that doesn't exist");
+        }
+        print("Currently Selected Palette Color: ", currentColorIndex);
+        for selector in paletteColorSelectors
+        {
+            if (selector != paletteColorSelectors[currentColorIndex - 1])
+            {
+                selector!.setHighlighted(false);
+            }
+            else
+            {
+                selector!.setHighlighted(true);
+                currentColor = paletteColorSelectors[currentColorIndex - 1]!.myColor;
+            }
+        }
+        print("RGB Values: ", currentColor.cgColor.components!);
+        print("Palette Values: ", (Device.connectedDevice?.mode?.paletteColors![currentColorIndex - 1].cgColor.components!)!);
+        updatePaletteColorPicker(currentColor, fromPicker: false);
     }
     
         // undoing bitmap selections
@@ -871,57 +1021,98 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     @IBAction func changedColor(_ sender: UISlider)
     {
-        let newHue: CGFloat = ColorWheel.hue;
-        let newSaturation: CGFloat = ColorWheel.saturation;
-        let newBrightness: CGFloat = CGFloat(brightnessSlider.value / brightnessSlider.maximumValue);
-        let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
-//
-//            // updating slider background with new values, for some instant feedback
-//        hueSlider.minimumTrackTintColor = newColor;
-//        hueSlider.maximumTrackTintColor = newColor;
-//
-//        saturationSlider.minimumTrackTintColor = newColor;
-//        saturationSlider.maximumTrackTintColor = newColor;
-        
-        brightnessSlider.minimumTrackTintColor = newColor;
-        brightnessSlider.maximumTrackTintColor = newColor;
-        
-        brightness = CGFloat(brightnessSlider.value / brightnessSlider.maximumValue);
-        
-        ColorWheel.updateBrightness();
-        
-        if (currentColorIndex == 1)
+        if ((Device.connectedDevice?.mode?.usesPalette)!)
         {
-            color1Selector.setBackgroundColor(newColor: newColor);
+            let newHue: CGFloat = pColorWheel.hue;
+            let newSaturation: CGFloat = pColorWheel.saturation;
+            let newBrightness: CGFloat = CGFloat(pBrightnessSlider.value / pBrightnessSlider.maximumValue);
+            let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
+    //
+    //            // updating slider background with new values, for some instant feedback
+    //        hueSlider.minimumTrackTintColor = newColor;
+    //        hueSlider.maximumTrackTintColor = newColor;
+    //
+    //        saturationSlider.minimumTrackTintColor = newColor;
+    //        saturationSlider.maximumTrackTintColor = newColor;
+            
+            pBrightnessSlider.minimumTrackTintColor = newColor;
+            pBrightnessSlider.maximumTrackTintColor = newColor;
+            
+            pBrightness = CGFloat(pBrightnessSlider.value / pBrightnessSlider.maximumValue);
+            
+            pColorWheel.updateBrightness();
+            
+            paletteColorSelectors[currentColorIndex - 1]!.setBackgroundColor(newColor: newColor);
         }
         else
         {
-            color2Selector.setBackgroundColor(newColor: newColor);
+            let newHue: CGFloat = ColorWheel.hue;
+            let newSaturation: CGFloat = ColorWheel.saturation;
+            let newBrightness: CGFloat = CGFloat(brightnessSlider.value / brightnessSlider.maximumValue);
+            let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
+            //
+            //            // updating slider background with new values, for some instant feedback
+            //        hueSlider.minimumTrackTintColor = newColor;
+            //        hueSlider.maximumTrackTintColor = newColor;
+            //
+            //        saturationSlider.minimumTrackTintColor = newColor;
+            //        saturationSlider.maximumTrackTintColor = newColor;
+            
+            brightnessSlider.minimumTrackTintColor = newColor;
+            brightnessSlider.maximumTrackTintColor = newColor;
+            
+            brightness = CGFloat(brightnessSlider.value / brightnessSlider.maximumValue);
+            
+            ColorWheel.updateBrightness();
+            
+            if (currentColorIndex == 1)
+            {
+                color1Selector.setBackgroundColor(newColor: newColor);
+            }
+            else
+            {
+                color2Selector.setBackgroundColor(newColor: newColor);
+            }
         }
         
     }
     
     @IBAction func createdNewColor(_ sender: UISlider)
     {
-        let newHue: CGFloat = ColorWheel.hue;
-        let newSaturation: CGFloat = ColorWheel.saturation;
-        let newBrightness: CGFloat = CGFloat(brightnessSlider.value / brightnessSlider.maximumValue);
-        let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
-
-        //print("new HSB: \(newHue), \(newSaturation), \(newBrightness)");
-
-        if (currentColorIndex == 1)
+        if ((Device.connectedDevice?.mode?.usesPalette)!)
         {
-            color1History += [newColor];
-        }
-        else
-        {
-            color2History += [newColor];
-        }
+            let newHue: CGFloat = pColorWheel.hue;
+            let newSaturation: CGFloat = pColorWheel.saturation;
+            let newBrightness: CGFloat = CGFloat(pBrightnessSlider.value / pBrightnessSlider.maximumValue);
+            let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
 
-        ColorWheel.updateBrightness();
-        
-        updateColorPicker(newColor, fromPicker: true);
+            //TODO: deal with history
+
+            pColorWheel.updateBrightness();
+            
+            updatePaletteColorPicker(newColor, fromPicker: true);
+        }
+        else{
+            let newHue: CGFloat = ColorWheel.hue;
+            let newSaturation: CGFloat = ColorWheel.saturation;
+            let newBrightness: CGFloat = CGFloat(brightnessSlider.value / brightnessSlider.maximumValue);
+            let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
+            
+            //print("new HSB: \(newHue), \(newSaturation), \(newBrightness)");
+            
+            if (currentColorIndex == 1)
+            {
+                color1History += [newColor];
+            }
+            else
+            {
+                color2History += [newColor];
+            }
+            
+            ColorWheel.updateBrightness();
+            
+            updateColorPicker(newColor, fromPicker: true);
+        }
     }
     
     @IBAction func revertMode(_ sender: UIButton)

@@ -834,8 +834,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     else if (usesPalette)
                     {
                         //if it's a palette mode, we need to make a mode without any color data so that we can later populate the palette
-                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesPalette: usesPalette, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [UIColor(red: 0, green: 0, blue: 0, alpha: 1.0), UIColor(red: 255, green: 255, blue: 255, alpha: 1.0)])!];
-                        //NOTE: change the array of colors to [nil] once palettes and palette previews work
+                        Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesPalette: usesPalette, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [nil])!];
                         Device.connectedDevice?.emptyPalettes += [currentIndex];
                         print("found a palette mode - adding to emptyPalettes");
                     }
@@ -1046,7 +1045,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 {
                     let indexOffset = i * 3;
                     print("Current Color: ", rawPalette[0 + indexOffset], rawPalette[1 + indexOffset], rawPalette[2 + indexOffset]);
-                    currentPalette.append(UIColor(red: CGFloat(rawPalette[0 + indexOffset]), green: CGFloat(rawPalette[1 + indexOffset]), blue: CGFloat(rawPalette[2 + indexOffset]), alpha: CGFloat(1.0)));
+                    currentPalette.append(UIColor(red: CGFloat(Double(rawPalette[0 + indexOffset])/255.0), green: CGFloat(Double(rawPalette[1 + indexOffset])/255.0), blue: CGFloat(Double(rawPalette[2 + indexOffset])/255.0), alpha: CGFloat(1.0)));
                 }
                 
                 // set the palette in the corresponding mode and then remove the mode from the list of modes that still need palette information so that we don't ask for the same one infinitely
@@ -2366,13 +2365,16 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // send differently-formatted data packets depending on hardware type
             if (Device.connectedDevice!.hardwareVersion == .NRF51822 || Device.connectedDevice!.hardwareVersion == .FASTNRF51822)
             {
+                print("Sending to NRF51822", valueData[1]);
                 Device.connectedDevice!.peripheral.writeValue(valueData[1] as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
             }
             else
             {
+                print("Sending to NRF8001");
                 Device.connectedDevice!.peripheral.writeValue(valueData[0] as Data, for: Device.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
             }
             
+            print("waiting for response");
             Device.connectedDevice!.requestWithoutResponse = true;
             Device.connectedDevice!.lastUnsentMessage = [NSData]();
         }
