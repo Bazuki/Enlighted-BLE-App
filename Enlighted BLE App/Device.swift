@@ -83,6 +83,8 @@ class Device: NSObject, NSCoding
     var hardwareVersion = Constants.HARDWARE_VERSION.UNKNOWN;
         // whether this device can use crossfading - set to false by default and then set to true if we get the initial get crossfade response
     var supportsCrossfade = false;
+        // whether we have checked for crossfade support yet or not
+    var checkedCrossfade = false;
     
         // a list of all the palettes that we have not gotten yet
     var emptyPalettes = [Int]();

@@ -77,7 +77,7 @@ class BLEConnectionTableViewCell: UITableViewCell
     {
         super.setSelected(selected, animated: animated)
         //print("setSelected(\(selected)) called");
-        var isSelected = selected;
+        let isSelected = selected;
         //self.wasSelected = false;
         //self.wasWasSelected = false;
         

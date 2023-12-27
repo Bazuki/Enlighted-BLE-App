@@ -25,6 +25,8 @@ class ColorWheel: UIView
     
     var knob: ColorKnob?;
     
+    var usesPalette: Bool = false;
+    
     var viewController: EditScreenViewController?;
     
     override func draw(_ rect: CGRect)
@@ -43,11 +45,11 @@ class ColorWheel: UIView
 
                 // filling with black scaled to brightness to change wheel
             UIColor.black.setFill();
-            
             guard let newBrightness = viewController?.brightness else
             {
                 return;
             }
+            
             path.fill(with: CGBlendMode.copy, alpha: (max(min(1.0 - newBrightness, 1), 0)));
         }
         // temporary outline
@@ -134,6 +136,8 @@ class ColorWheel: UIView
             if ((Device.connectedDevice?.mode?.usesPalette)!)
             {
                 viewController?.updatePaletteColorPicker(getColor(), fromPicker: true);
+                viewController?.paletteColorHistory[(viewController?.currentColorIndex)! - 1] += [getColor()];
+                print("History: ", viewController?.paletteColorHistory as Any);
             }
             else
             {
@@ -197,6 +201,8 @@ class ColorWheel: UIView
             if ((Device.connectedDevice?.mode?.usesPalette)!)
             {
                 viewController?.updatePaletteColorPicker(getColor(), fromPicker: true);
+                viewController?.paletteColorHistory[(viewController?.currentColorIndex)! - 1] += [getColor()];
+                print("History: ", viewController?.paletteColorHistory as Any);
             }
             else
             {
@@ -251,10 +257,12 @@ class ColorWheel: UIView
     // MARK: - Public Methods
     
         // setting up the color wheel
-    public func initializeColorWheel(radius: Float, color: UIColor, owner: EditScreenViewController, knobRadius: Float)
+    public func initializeColorWheel(radius: Float, color: UIColor, owner: EditScreenViewController, knobRadius: Float, paletteMode: Bool = false)
     {
         self.viewController = owner;
         self.radius = radius;
+        self.usesPalette = paletteMode;
+        print("paletteMode is ", paletteMode);
         
         setNeedsDisplay();
         

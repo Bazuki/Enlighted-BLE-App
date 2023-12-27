@@ -57,6 +57,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBOutlet weak var pSaturationSlider: UISlider!
     @IBOutlet weak var pBrightnessSlider: UISlider!
 
+    @IBOutlet weak var paletteColorRGB: UILabel!
+    @IBOutlet weak var paletteUndoButton: UIButton!
     
     @IBOutlet weak var pColor1Selector: ColorPreview!
     @IBOutlet weak var pColor2Selector: ColorPreview!
@@ -92,6 +94,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         // the histories for each color, so that they can be undone as well
     public var color1History = [UIColor]();
     public var color2History = [UIColor]();
+    
+    public var paletteColorHistory = [[UIColor]]();
     
     var currentColor: UIColor = UIColor.clear;
     var currentColorIndex: Int = 1;
@@ -197,6 +201,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             
             paletteModeObjects.isHidden = true;
             
+            paletteColorRGB.isHidden = true;
             pColor1Selector.isHidden = true;
             pColor2Selector.isHidden = true;
             pColor3Selector.isHidden = true;
@@ -246,6 +251,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             paletteModeObjects.isHidden = false;
             pColorWheel.isHidden = false;
             pColorPickerWrapper.isHidden = false;
+            paletteColorRGB.isHidden = false;
             
             // set the colors for the palette colors and then show them
             
@@ -267,6 +273,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             pColor16Selector.setBackgroundColor(newColor: (Device.connectedDevice?.mode?.paletteColors![15])!);
             
             paletteColorSelectors = [pColor1Selector, pColor2Selector, pColor3Selector, pColor4Selector, pColor5Selector, pColor6Selector, pColor7Selector, pColor8Selector, pColor9Selector, pColor10Selector, pColor11Selector, pColor12Selector, pColor13Selector, pColor14Selector, pColor15Selector, pColor16Selector];
+            
+            paletteColorRGB.text = getThreeDigitRGBStringFromUIColor(pColor1Selector.myColor);
             
             pColor1Selector.isHidden = false;
             pColor2Selector.isHidden = false;
@@ -326,6 +334,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             
             paletteModeObjects.isHidden = true;
             
+            paletteColorRGB.isHidden = true;
             pColor1Selector.isHidden = true;
             pColor2Selector.isHidden = true;
             pColor3Selector.isHidden = true;
@@ -351,7 +360,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     {
         super.viewWillAppear(animated);
         
-        print("\(self.navigationController?.viewControllers)");
+        print("\(String(describing: self.navigationController?.viewControllers))");
         
         NotificationCenter.default.addObserver(self, selector: #selector(finishRevertingMode), name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_MODE_VALUE), object: nil)
         
@@ -364,6 +373,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             // clearing history upon entry
         color1History = [UIColor]();
         color2History = [UIColor]();
+        paletteColorHistory = [[UIColor]]();
         
             // should automatically pre-select the correct bitmap
         if ((Device.connectedDevice?.mode?.usesBitmap)!)
@@ -374,6 +384,14 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             bitmapHistory += [indexPath.row + 1];
                 // on loading in, enforce the stored bitmap
             setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
+        }
+        else if ((Device.connectedDevice?.mode?.usesPalette)!)
+        {
+            for i in 0...15
+            {
+                paletteColorHistory += [[paletteColorSelectors[i]!.myColor]];
+            }
+            //print("paletteColorHistory: ", paletteColorHistory);
         }
         else
         {
@@ -400,7 +418,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         else if ((Device.connectedDevice?.mode?.usesPalette)!)
         {
             pColor1Selector.setHighlighted(true);
-            pColorWheel.initializeColorWheel(radius: Float(pColorImage.frame.width / 2), color: pColor1Selector.myColor, owner: self, knobRadius: 15);
+            pColorWheel.initializeColorWheel(radius: Float(pColorImage.frame.width / 2), color: pColor1Selector.myColor, owner: self, knobRadius: 15, paletteMode: true);
+            updatePaletteColorPicker(pColor1Selector.myColor, fromPicker: false);
         }
         else
         {
@@ -415,7 +434,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     override func viewWillDisappear(_ animated: Bool)
     {
         super.viewWillDisappear(animated);
-        print("Removing \(modeLabel.text)'s observers (in viewWillDisappear)");
+        print("Removing \(modeLabel.text ?? "Default")'s observers (in viewWillDisappear)");
         NotificationCenter.default.removeObserver(self);
     }
     
@@ -677,6 +696,35 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
 //
 //        BLEConnectionTableViewController.sendBLEPacketToConnectedPeripherals(valueData: valueData, sendToMimicDevices: true)
 //    }
+    func getThreeDigitRGBStringFromUIColor(_ color: UIColor) -> String
+    {
+        // getting RGB values of color
+        var red: CGFloat = 0;
+        var green: CGFloat = 0;
+        var blue: CGFloat = 0;
+        var alpha: CGFloat = 0;
+        color.getRed(&red, green: &green, blue: &blue, alpha: &alpha);
+        
+        // clamping within 0 and 1
+        red = max(min(red, 1), 0);
+        green = max(min(green, 1), 0);
+        blue = max(min(blue, 1), 0);
+        // scaling up to 255
+        red *= 255;
+        green *= 255;
+        blue *= 255;
+        
+            // making them ints so they fit in the text box
+        let redString = String(format: "%03d", Int(red));
+        let greenString = String(format: "%03d", Int(green));
+        let blueString = String(format: "%03d", Int(blue));
+        
+            // adding to string
+        var output: String = "R: " + redString;
+        output += " G: " + greenString;
+        output += " B: " + blueString;
+        return output;
+    }
     
     func getRGBStringFromUIColor(_ color: UIColor) -> String
     {
@@ -827,11 +875,13 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             pBrightnessSlider.isEnabled = true;
             
             pBrightnessSlider.setValue(sliderBrightness, animated: true);
-            pBrightness = newBrightness;
+            brightness = newBrightness;
             pColorWheel.updateBrightness();
             
             pColorWheel.setColor(newColor: newColor);
         }
+        
+        paletteColorRGB.text = getThreeDigitRGBStringFromUIColor(paletteColorSelectors[currentColorIndex - 1]!.myColor);
     }
     
     func setColorSelectorAsActive(isColor1: Bool)
@@ -962,6 +1012,24 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
     }
     
+    @IBAction func pressedPaletteUndo(_ sender: UIButton)
+    {
+        if (paletteColorHistory[currentColorIndex - 1].count > 1)
+        {
+            print("Getting history of : ", currentColorIndex);
+            print("History: ", paletteColorHistory);
+            Device.connectedDevice?.mode?.paletteColors![currentColorIndex - 1] = paletteColorHistory[currentColorIndex - 1][paletteColorHistory[currentColorIndex - 1].count - 2];
+            paletteColorHistory[currentColorIndex - 1].removeLast();
+            updatePaletteColorPicker((Device.connectedDevice?.mode?.paletteColors![currentColorIndex - 1])!, fromPicker: false);
+            updatePaletteColorPicker((Device.connectedDevice?.mode?.paletteColors![currentColorIndex - 1])!, fromPicker: true);
+        }
+        else
+        {
+            print("No more history to undo");
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+        }
+    }
+    
     @IBAction func pressedColorUndo(_ sender: UIButton)
     {
             // whether it's color 1 or color 2's undo button
@@ -1019,6 +1087,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
     }
     
+    //TODO: palette undo function here
+    
     @IBAction func changedColor(_ sender: UISlider)
     {
         if ((Device.connectedDevice?.mode?.usesPalette)!)
@@ -1027,18 +1097,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             let newSaturation: CGFloat = pColorWheel.saturation;
             let newBrightness: CGFloat = CGFloat(pBrightnessSlider.value / pBrightnessSlider.maximumValue);
             let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
-    //
-    //            // updating slider background with new values, for some instant feedback
-    //        hueSlider.minimumTrackTintColor = newColor;
-    //        hueSlider.maximumTrackTintColor = newColor;
-    //
-    //        saturationSlider.minimumTrackTintColor = newColor;
-    //        saturationSlider.maximumTrackTintColor = newColor;
             
             pBrightnessSlider.minimumTrackTintColor = newColor;
             pBrightnessSlider.maximumTrackTintColor = newColor;
             
-            pBrightness = CGFloat(pBrightnessSlider.value / pBrightnessSlider.maximumValue);
+            brightness = CGFloat(pBrightnessSlider.value / pBrightnessSlider.maximumValue);
             
             pColorWheel.updateBrightness();
             
@@ -1091,6 +1154,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             pColorWheel.updateBrightness();
             
             updatePaletteColorPicker(newColor, fromPicker: true);
+            paletteColorHistory[currentColorIndex - 1] += [newColor];
         }
         else{
             let newHue: CGFloat = ColorWheel.hue;
@@ -1099,7 +1163,6 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
             
             //print("new HSB: \(newHue), \(newSaturation), \(newBrightness)");
-            
             if (currentColorIndex == 1)
             {
                 color1History += [newColor];
@@ -1178,7 +1241,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         // basically viewWillAppear (after getting the "new" values from reverting)
     @objc private func finishRevertingMode()
     {
-        print("Finished reverting mode \(modeLabel.text), updating screen");
+        print("Finished reverting mode \(modeLabel.text ?? "Default"), updating screen");
         if ((Device.connectedDevice?.mode?.usesBitmap)!)
         {
             bitmapUIImage.image = Device.connectedDevice?.thumbnails[(Device.connectedDevice?.mode?.bitmapIndex)! - 1];

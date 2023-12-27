@@ -35,7 +35,7 @@ class ColorPreview: UIView
         if (highlighted)
         {
             path.lineWidth = CGFloat(strokeWidth);
-            UIColor.white.setStroke();
+            UIColor.gray.setStroke();
             path.stroke();
         }
         

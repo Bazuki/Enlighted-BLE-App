@@ -85,6 +85,9 @@ class Constants
         // the time (in seconds) before the app stops looking for a version response (as the nRF8001 does not provide one)
     static let VERSION_TIMEOUT_TIME = 0.35;
     
+        // the time (in seconds) before the app stops looking for a crossfade response
+    static let CROSSFADE_TIMEOUT_TIME = 0.35;
+    
         // the default brightness to set the hardware to if it's at STANDBY_BRIGHTNESS
     static let DEFAULT_BRIGHTNESS = 127;
     

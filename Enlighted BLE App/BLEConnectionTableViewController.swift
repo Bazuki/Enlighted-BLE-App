@@ -1016,7 +1016,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // MARK: Get Crossfade
             case EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE:
                 print("Got Crossfade Value: ", Int(rxValue[1]));
-                
+          
                 // if we got a response here, that means our hardware supports crossfading -> lets set the value and flip the boolean so that we know that in the future
                 Device.connectedDevice?.crossfade = Int(rxValue[1]);
                 Device.connectedDevice?.supportsCrossfade = true;
@@ -1870,7 +1870,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         
         print("Found \(characteristics.count) characteristics!");
         
-        if (peripheral.identifier as NSUUID == Device.connectedDevice!.peripheral.identifier as! NSUUID)
+        if (peripheral.identifier as NSUUID == Device.connectedDevice!.peripheral.identifier as NSUUID)
         {
         
             for characteristic in characteristics

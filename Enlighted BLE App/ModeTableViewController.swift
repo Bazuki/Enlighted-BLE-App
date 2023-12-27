@@ -43,6 +43,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // separate timer for querying the hardware version, as only the nRF51822 will respond
     var BLEVersionTimer = Timer();
     
+        // seperate timer for querying the crossfade support, since only recent firmware will respond
+    var BLECrossfadeTimer = Timer();
+    
     // A timer to introduce a delay for older hardware
     var delayTimer = Timer();
     
@@ -502,13 +505,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
             }
-            else if (((Device.connectedDevice?.crossfade)! < 0))
+            else if (((Device.connectedDevice?.crossfade)! < 0) && !(Device.connectedDevice!.checkedCrossfade))
             {
                 // same for crossfade value
-                if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)))
+                if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)) && !(Device.connectedDevice!.checkedCrossfade))
                 {
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE);
                     progress += 1 / Float(totalPacketsForSetup);
+                    BLECrossfadeTimer.invalidate();
+                    BLECrossfadeTimer = Timer.scheduledTimer(timeInterval: Constants.CROSSFADE_TIMEOUT_TIME, target: self, selector: #selector(crossfadeTimeout), userInfo: nil, repeats: false);
                 }
                 
                 return;
@@ -814,6 +819,19 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         }
     }
     
+    @objc func crossfadeTimeout()
+    {
+        if ((Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)) && Device.connectedDevice!.checkedCrossfade == false)
+        {
+            print("No Crossfade Support Found");
+            Device.connectedDevice!.supportsCrossfade = false;
+            Device.connectedDevice!.requestWithoutResponse = false;
+            Device.connectedDevice!.expectedPacketType = "";
+            Device.connectedDevice!.checkedCrossfade = true;
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+        }
+    }
+    
     @objc func requestNextDataWithDelay()
     {
 
@@ -832,6 +850,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         }
         else
         {
+            print("requesting next data");
             requestNextData();
         }
     }
@@ -1004,6 +1023,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     {
                         setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!, toSingleDevice: mimicDevice);
                     }
+                    else if ((Device.connectedDevice?.mode?.usesPalette)!)
+                    {
+                        setAllPaletteColors();
+                    }
                     else
                     {
                         setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!, toSingleDevice: mimicDevice);
@@ -1019,6 +1042,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 {
                     setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!, toSingleDevice: Device.connectedDevice!);
                 }
+                else if ((Device.connectedDevice?.mode?.usesPalette)!)
+                {
+                    setAllPaletteColors();
+                }
                 else
                 {
                     setColors(color1: (Device.connectedDevice?.mode?.color1)!, color2: (Device.connectedDevice?.mode?.color2)!, toSingleDevice: Device.connectedDevice!)
@@ -1030,6 +1057,10 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             if ((Device.connectedDevice?.mode?.usesBitmap)!)
             {
                 setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
+            }
+            else if ((Device.connectedDevice?.mode?.usesPalette)!)
+            {
+                setAllPaletteColors();
             }
             else
             {
@@ -1115,6 +1146,70 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     func setColors(color1: UIColor, color2: UIColor, toSingleDevice: Device? = nil)
     {
         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_COLOR, inputInts: convertUIColorToIntArray(color1) + convertUIColorToIntArray(color2), digitsPerInput: 3, sendToMimicDevices: false, toSingleDevice: toSingleDevice)
+        
+    }
+    
+    private func setAllPaletteColors()
+    {
+        var colorInts = [Int]();
+        var output = [Int]();
+        for i in 0...15
+        {
+            colorInts += Device.convertUIColorToIntArray((Device.connectedDevice?.mode?.paletteColors![i])!);
+            if ((i+1) % 4 == 0)
+            {
+                output = colorInts;
+                colorInts = [Int]();
+                switch i
+                {
+                case 3:
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE1, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                case 7:
+                    if ((Device.connectedDevice?.requestWithoutResponse)!)
+                    {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2)
+                        {
+                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                        }
+                    }
+                    else
+                    {
+                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                    }
+                    
+                case 11:
+                    if ((Device.connectedDevice?.requestWithoutResponse)!)
+                    {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4)
+                        {
+                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                        }
+                    }
+                    else
+                    {
+                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                    }
+                case 15:
+                    if ((Device.connectedDevice?.requestWithoutResponse)!)
+                    {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6)
+                        {
+                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                        }
+                    }
+                    else
+                    {
+                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                    }
+                default:
+                    print("Found index out of setPalette targets");
+                }
+            }
+        }
+        
+        
+        
+        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
         
     }
 //

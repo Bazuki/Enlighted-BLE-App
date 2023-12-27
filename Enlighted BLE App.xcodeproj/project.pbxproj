@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		602AC7352B364557006D377F /* PassthroughView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 602AC7342B364557006D377F /* PassthroughView.swift */; };
 		9E604EF621535D1200734E4E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E604EF521535D1200734E4E /* AppDelegate.swift */; };
 		9E604EF821535D1200734E4E /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E604EF721535D1200734E4E /* ViewController.swift */; };
 		9E604EFB21535D1200734E4E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9E604EF921535D1200734E4E /* Main.storyboard */; };
@@ -44,6 +45,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		602AC7342B364557006D377F /* PassthroughView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassthroughView.swift; sourceTree = "<group>"; };
 		9E604EF221535D1200734E4E /* Enlighted BLE App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Enlighted BLE App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E604EF521535D1200734E4E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9E604EF721535D1200734E4E /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -138,6 +140,7 @@
 				9E83FA7E2184E677003C054A /* Source */,
 				9E604EFE21535D1900734E4E /* LaunchScreen.storyboard */,
 				9E604F0121535D1900734E4E /* Info.plist */,
+				602AC7342B364557006D377F /* PassthroughView.swift */,
 			);
 			path = "Enlighted BLE App";
 			sourceTree = "<group>";
@@ -270,6 +273,7 @@
 				9E6936862160430A00B26C9C /* BitmapPickerCollectionViewCell.swift in Sources */,
 				9EA2B8E82159E3EA00C7D71A /* BLEConnectionTableViewCell.swift in Sources */,
 				9EE0BCF0217287E600E1403A /* UUIDKey.swift in Sources */,
+				602AC7352B364557006D377F /* PassthroughView.swift in Sources */,
 				9E604EF821535D1200734E4E /* ViewController.swift in Sources */,
 				9EDAD64322F7B90E007B3658 /* MimicTableViewController.swift in Sources */,
 				9E69367A215EC1F200B26C9C /* Mode.swift in Sources */,
@@ -452,7 +456,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.3;
+				MARKETING_VERSION = 1.2.4;
 				OTHER_SWIFT_FLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -476,7 +480,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.3;
+				MARKETING_VERSION = 1.2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "";
