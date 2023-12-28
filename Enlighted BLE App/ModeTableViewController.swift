@@ -1152,29 +1152,29 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     private func setAllPaletteColors()
     {
         var colorInts = [Int]();
-        var output = [Int]();
+        var outputs = [[Int]]();
         for i in 0...15
         {
             colorInts += Device.convertUIColorToIntArray((Device.connectedDevice?.mode?.paletteColors![i])!);
             if ((i+1) % 4 == 0)
             {
-                output = colorInts;
+                outputs += [colorInts];
                 colorInts = [Int]();
                 switch i
                 {
                 case 3:
-                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE1, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                    formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE1, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                 case 7:
                     if ((Device.connectedDevice?.requestWithoutResponse)!)
                     {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2)
                         {
-                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                         }
                     }
                     else
                     {
-                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                     }
                     
                 case 11:
@@ -1182,24 +1182,24 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4)
                         {
-                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                         }
                     }
                     else
                     {
-                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                     }
                 case 15:
                     if ((Device.connectedDevice?.requestWithoutResponse)!)
                     {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6)
                         {
-                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                         }
                     }
                     else
                     {
-                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: output, digitsPerInput: 1, sendToMimicDevices: true);
+                        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                     }
                 default:
                     print("Found index out of setPalette targets");

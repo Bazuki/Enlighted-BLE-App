@@ -1016,8 +1016,8 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     {
         if (paletteColorHistory[currentColorIndex - 1].count > 1)
         {
-            print("Getting history of : ", currentColorIndex);
-            print("History: ", paletteColorHistory);
+            //print("Getting history of : ", currentColorIndex);
+            //print("History: ", paletteColorHistory);
             Device.connectedDevice?.mode?.paletteColors![currentColorIndex - 1] = paletteColorHistory[currentColorIndex - 1][paletteColorHistory[currentColorIndex - 1].count - 2];
             paletteColorHistory[currentColorIndex - 1].removeLast();
             updatePaletteColorPicker((Device.connectedDevice?.mode?.paletteColors![currentColorIndex - 1])!, fromPicker: false);

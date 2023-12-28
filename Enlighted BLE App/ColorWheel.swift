@@ -137,7 +137,7 @@ class ColorWheel: UIView
             {
                 viewController?.updatePaletteColorPicker(getColor(), fromPicker: true);
                 viewController?.paletteColorHistory[(viewController?.currentColorIndex)! - 1] += [getColor()];
-                print("History: ", viewController?.paletteColorHistory as Any);
+                //print("History: ", viewController?.paletteColorHistory as Any);
             }
             else
             {
@@ -202,7 +202,7 @@ class ColorWheel: UIView
             {
                 viewController?.updatePaletteColorPicker(getColor(), fromPicker: true);
                 viewController?.paletteColorHistory[(viewController?.currentColorIndex)! - 1] += [getColor()];
-                print("History: ", viewController?.paletteColorHistory as Any);
+                //print("History: ", viewController?.paletteColorHistory as Any);
             }
             else
             {
