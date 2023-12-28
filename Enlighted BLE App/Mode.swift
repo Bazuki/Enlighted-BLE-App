@@ -76,6 +76,7 @@ class Mode: NSObject, NSCoding
             self.bitmap = bitmap;
             self.bitmapIndex = 1;
         }
+            // if it's a palette mode, initialize the paletteColors array
         else if (usesPalette)
         {
             self.paletteColors = [UIColor]();
@@ -111,6 +112,7 @@ class Mode: NSObject, NSCoding
             self.bitmap = UIImage(named: "Bitmap2");
             self.bitmapIndex = bitmapIndex;
         }
+            // if it's a palette mode, initialize the paletteColors array
         else if (usesPalette)
         {
             self.paletteColors = [UIColor]();
@@ -140,10 +142,12 @@ class Mode: NSObject, NSCoding
     
     public func setPalette(palette: [UIColor])
     {
+            //when we reload all the modes, we loop through the palette info we got back and populate the paletteColors array
         for paletteCell in palette
         {
             self.paletteColors?.append(paletteCell);
         }
+            // setting color1 and color2 to avoid nil unwrapping errors - MIGHT NOT BE NECESSARY ANYMORE
         self.color1 = self.paletteColors![0];
         self.color2 = self.paletteColors![1];
 

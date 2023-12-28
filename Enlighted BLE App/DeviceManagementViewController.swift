@@ -146,12 +146,15 @@ class DeviceManagementViewController: UIViewController, CBPeripheralManagerDeleg
         
     }
     
+    // if the crossfade slider is changed, we want to update the connected Device and then send the set crossfade command
     @IBAction func changeCrossfade(_ sender: UISlider)
     {
         print("New Crossfade value: \(sender.value)");
         Device.connectedDevice?.crossfade = Int(sender.value);
         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_CROSSFADE, inputInts: [Int(sender.value)], digitsPerInput: 3, sendToMimicDevices: true)
     }
+    
+    
 //        // don't send a BLE request if it's a demo device
 //        if (Device.connectedDevice!.isDemoDevice)
 //        {

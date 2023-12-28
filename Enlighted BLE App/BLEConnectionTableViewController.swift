@@ -609,7 +609,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 {
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_PALETTE
                     print("expecting a palette");
-                    print(Device.connectedDevice!.expectedPacketType);
+                    //print(Device.connectedDevice!.expectedPacketType);
                 }
                     // Get Battery
                 else if (rxString?.prefix(1) == "B")
@@ -833,7 +833,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     }
                     else if (usesPalette)
                     {
-                        //if it's a palette mode, we need to make a mode without any color data so that we can later populate the palette
+                        //if it's a palette mode, we need to make a mode without any color data so that we can later populate the palette and add the index to the emptyPalettes array so that we know where to put the palettes that we ask for later
                         Device.connectedDevice?.modes += [Mode(name: parsedName, index: currentIndex, usesPalette: usesPalette, usesBitmap: usesBitmap, bitmapIndex: nil, colors: [nil])!];
                         Device.connectedDevice?.emptyPalettes += [currentIndex];
                         print("found a palette mode - adding to emptyPalettes");
@@ -1022,6 +1022,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 Device.connectedDevice?.supportsCrossfade = true;
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECIEVED_CROSSFADE_VALUE), object: nil);
                 
+                // MARK: Get Palette
             case EnlightedBLEProtocol.ENL_BLE_GET_PALETTE:
                 print("incoming palette");
                 //print(currentPacketContents);
@@ -1029,7 +1030,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 
                 var currentPalette: [UIColor] = [UIColor]();
                 
-                // remove all the "P_" ascii values from the bytes that we got back so that we can treat the rest as rgb values - going backwards so that we don't mess up any of the important indexes later in the array
+                // remove all the "P#" ascii values from the bytes that we got back so that we can treat the rest as rgb values - going backwards so that we don't mess up any of the important indexes later in the array
                 for i in (0...55).reversed()
                 {
                     if (i % 14 == 0 || i % 14 == 1)
@@ -1090,6 +1091,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                             break;
                         }
                     }
+                    // we only want to send this message to the notificationCenter if we are done waiting for all mimics to receive their success messages, otherwise the last mimic to receive will do it for us
                     if !(waitingForMimics)
                     {
                         NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil, userInfo: identifier);
@@ -1574,6 +1576,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                             print("Since the command to set the mode on \(mimicDevice.name) succeeded, we are going to change the mode settings now.")
                             mimicDevice.requestedModeChange = false;
                             let identifier = [0: peripheral.identifier as NSUUID];
+                            // make sure we aren't waiting for the primary peripheral before sending this message
                             if !((Device.connectedDevice?.requestWithoutResponse)!)
                             {
                                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil, userInfo: identifier);

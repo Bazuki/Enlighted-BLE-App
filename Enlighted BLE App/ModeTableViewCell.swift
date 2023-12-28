@@ -142,6 +142,7 @@ class ModeTableViewCell: UITableViewCell
         }
         else if ((mode?.usesPalette)!)
         {
+            // if the current mode is a palete mode, we need to update and display all the previews
             colorPreviewWrapper.isHidden = true;
             palettePreviewWrapper.isHidden = false;
             modeBitmap.isHidden = true;

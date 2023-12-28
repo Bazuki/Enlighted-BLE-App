@@ -79,6 +79,7 @@ class ColorWheel: UIView
                 
                 let newColor = getColor();
                 
+                    // if the current mode is a palette mode, we need to set the color of the correct preview and slider
                 if ((Device.connectedDevice?.mode?.usesPalette)!)
                 {
                     viewController?.paletteColorSelectors[viewController!.currentColorIndex - 1]?.setBackgroundColor(newColor: newColor);
@@ -107,6 +108,7 @@ class ColorWheel: UIView
             
             let newColor = getColor();
             
+                // if the current mode is a palette mode, we need to set the correct preview and slider
             if ((Device.connectedDevice?.mode?.usesPalette)!)
             {
                 viewController?.paletteColorSelectors[viewController!.currentColorIndex - 1]?.setBackgroundColor(newColor: newColor);
@@ -176,6 +178,7 @@ class ColorWheel: UIView
             
             let newColor = getColor();
             
+                //if the current mode is a palette mode, we need to set the correct preview and slider
             if ((Device.connectedDevice?.mode?.usesPalette)!)
             {
                 viewController?.paletteColorSelectors[viewController!.currentColorIndex - 1]?.setBackgroundColor(newColor: newColor);
@@ -197,7 +200,7 @@ class ColorWheel: UIView
             }
             
             
-            
+                // if the curent mode is a palette mode, we need to update the correct color picker and history
             if ((Device.connectedDevice?.mode?.usesPalette)!)
             {
                 viewController?.updatePaletteColorPicker(getColor(), fromPicker: true);
@@ -262,7 +265,7 @@ class ColorWheel: UIView
         self.viewController = owner;
         self.radius = radius;
         self.usesPalette = paletteMode;
-        print("paletteMode is ", paletteMode);
+        //print("paletteMode is ", paletteMode);
         
         setNeedsDisplay();
         

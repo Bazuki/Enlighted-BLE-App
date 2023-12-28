@@ -457,14 +457,15 @@ class Device: NSObject, NSCoding
                 // set palette commands have special formatting so that we can restrict the large amount of color data to 16 bytes - also only FASTNRF51822 boards can support palettes, so we can assume we only need the 51822 array
                 if (inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE1) || inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2) || inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3) || inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4))
                 {
-                    //print("Palette arguments: ", intsToParse);
+                    // if it's a palette mode, we need to convert our 0-255 Ints to uInt8 format, which means we have to take two's complement into account here
                     if (intsToParse[0] > 127)
                     {
                         intsToParse[0] = (intsToParse[0] - 256);
                     }
-                    uInt8Array51822 += [(UInt8(bitPattern: Int8(intsToParse[0])))];
+                    
+                    // Once we've taken two's complement into account, just do a bunch of typecasting and add to the output
+                    uInt8Array51822 += [(UInt8(bitPattern: Int8(intsToParse[0])))]; // Since we are using the bitPattern constructor, our now negative numbers from the conditional above will have the correct value
                     intsToParse.remove(at: 0);
-                    //print("Packet arguments: ", uInt8Array51822);
                 }
                 else
                 {

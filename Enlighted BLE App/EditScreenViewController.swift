@@ -80,6 +80,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         // the peripheral manager
     var peripheralManager: CBPeripheralManager?;
     
+    // list of palette color selectors
     var paletteColorSelectors = [ColorPreview?]();
     
     //var delegate =
@@ -387,6 +388,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
         else if ((Device.connectedDevice?.mode?.usesPalette)!)
         {
+            // if it's a palette mode, add all the first colors to the history
             for i in 0...15
             {
                 paletteColorHistory += [[paletteColorSelectors[i]!.myColor]];
@@ -417,6 +419,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
         else if ((Device.connectedDevice?.mode?.usesPalette)!)
         {
+            // activate color 1 by default, initialize the color wheel, and then update it so that the knob and brightness sliders are accurate
             pColor1Selector.setHighlighted(true);
             pColorWheel.initializeColorWheel(radius: Float(pColorImage.frame.width / 2), color: pColor1Selector.myColor, owner: self, knobRadius: 15, paletteMode: true);
             updatePaletteColorPicker(pColor1Selector.myColor, fromPicker: false);
@@ -578,16 +581,19 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.SAVE_DEVICE_CACHE), object: nil);
     }
     
+    // function for setting the current row of the palette
     private func setPaletteColors()
     {
-        let indexOffset = Int((currentColorIndex - 1)/4) * 4;
+        let indexOffset = Int((currentColorIndex - 1)/4) * 4; //indexOffset is the first color of the row - color 0-3 = 0, color 4-7 = 4, etc.
         print(indexOffset);
         var colorInts = [Int]();
+        // grab the RGB values for each of the colors in the row
         for i in 0...3
         {
             colorInts += Device.convertUIColorToIntArray((Device.connectedDevice?.mode?.paletteColors![indexOffset + i])!);
         }
-        print(colorInts);
+        //print(colorInts);
+        // send the row based on the indexOffset
         switch indexOffset
         {
         case 0:
@@ -844,8 +850,10 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         
     }
     
+    // function to update the color picker on the palette mode
     public func updatePaletteColorPicker(_ newColor: UIColor, fromPicker: Bool)
     {
+        // getting HSB values
         var hue: CGFloat = 0;
         var saturation: CGFloat = 0;
         var newBrightness: CGFloat = 0;
@@ -860,16 +868,16 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             // if this new color is from setting sliders, we want to set the currently selected Color that way
         if (fromPicker)
         {
+            // set the new color on the Device array, the color preview, and on the hardware
             Device.connectedDevice?.mode?.paletteColors![currentColorIndex - 1] = newColor;
             paletteColorSelectors[currentColorIndex - 1]!.setBackgroundColor(newColor: newColor);
-            
-                //TODO: update the palette on the hardware
             setPaletteColors();
             
         }
-            // otherwise it's from selecting a color, and so we want to enable and set the sliders
+            // otherwise it's from selecting a color preview, and so we want to enable and set the sliders
         else
         {
+            // make sure brightness is accurate and enabled
             pBrightnessSlider.minimumTrackTintColor = newColor;
             pBrightnessSlider.maximumTrackTintColor = newColor;
             pBrightnessSlider.isEnabled = true;
@@ -878,9 +886,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
             brightness = newBrightness;
             pColorWheel.updateBrightness();
             
+            // make sure color wheel is accurate
             pColorWheel.setColor(newColor: newColor);
         }
         
+        // regardless of who called the function, we want to update the RGB text
         paletteColorRGB.text = getThreeDigitRGBStringFromUIColor(paletteColorSelectors[currentColorIndex - 1]!.myColor);
     }
     
@@ -935,6 +945,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     @IBAction func selectAndEditPaletteColor(_ sender: UITapGestureRecognizer)
     {
         print("selected new palette color");
+        // get current color index based on who called the function
         switch sender.view{
         case pColor1Selector:
             currentColorIndex = 1;
@@ -969,9 +980,11 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         case pColor16Selector:
             currentColorIndex = 16;
         default:
+            // cases are exhaustive already but xcode makes you include a default
             print("selected palette color that doesn't exist");
         }
         print("Currently Selected Palette Color: ", currentColorIndex);
+        // make sure the correct selector is highlighted and active
         for selector in paletteColorSelectors
         {
             if (selector != paletteColorSelectors[currentColorIndex - 1])
@@ -1012,12 +1025,13 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
     }
     
+    // undo palette color
     @IBAction func pressedPaletteUndo(_ sender: UIButton)
     {
+        // if we have history to go back to
         if (paletteColorHistory[currentColorIndex - 1].count > 1)
         {
-            //print("Getting history of : ", currentColorIndex);
-            //print("History: ", paletteColorHistory);
+            // set the color on the device, then remove the color from the history and update the palette color picker
             Device.connectedDevice?.mode?.paletteColors![currentColorIndex - 1] = paletteColorHistory[currentColorIndex - 1][paletteColorHistory[currentColorIndex - 1].count - 2];
             paletteColorHistory[currentColorIndex - 1].removeLast();
             updatePaletteColorPicker((Device.connectedDevice?.mode?.paletteColors![currentColorIndex - 1])!, fromPicker: false);
@@ -1025,6 +1039,7 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
         else
         {
+            // if the history array is empty, buzz
             print("No more history to undo");
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
         }
@@ -1087,10 +1102,9 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
         }
     }
     
-    //TODO: palette undo function here
-    
     @IBAction func changedColor(_ sender: UISlider)
     {
+        // if we're on a palette mode, make sure we set the correct color picker and brightness slider
         if ((Device.connectedDevice?.mode?.usesPalette)!)
         {
             let newHue: CGFloat = pColorWheel.hue;
@@ -1142,14 +1156,13 @@ class EditScreenViewController: UIViewController, UICollectionViewDataSource, UI
     
     @IBAction func createdNewColor(_ sender: UISlider)
     {
+        // if we're on a palette mode, make sure we set the correct color picker and brightness slider
         if ((Device.connectedDevice?.mode?.usesPalette)!)
         {
             let newHue: CGFloat = pColorWheel.hue;
             let newSaturation: CGFloat = pColorWheel.saturation;
             let newBrightness: CGFloat = CGFloat(pBrightnessSlider.value / pBrightnessSlider.maximumValue);
             let newColor = UIColor(hue: newHue, saturation: newSaturation, brightness: newBrightness, alpha: 1);
-
-            //TODO: deal with history
 
             pColorWheel.updateBrightness();
             

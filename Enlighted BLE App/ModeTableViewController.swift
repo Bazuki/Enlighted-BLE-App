@@ -508,17 +508,19 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
                 return;
             }
+                // if we still have the placeholder negative crossfade value, and we haven't gotten the crossfade value yet, request that
             else if (((Device.connectedDevice?.crossfade)! < 0) && !(Device.connectedDevice!.checkedCrossfade))
             {
-                // same for crossfade value
+                // if the response isn't expected already, send the get crossfade command
                 if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)) && !(Device.connectedDevice!.checkedCrossfade))
                 {
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE);
                     progress += 1 / Float(totalPacketsForSetup);
+                        // Trigger the timer so that older hardware can timeout and we can move on
                     BLECrossfadeTimer.invalidate();
                     BLECrossfadeTimer = Timer.scheduledTimer(timeInterval: Constants.CROSSFADE_TIMEOUT_TIME, target: self, selector: #selector(crossfadeTimeout), userInfo: nil, repeats: false);
                 }
-                
+                    //if we've already requested this info, we need to wait so we return
                 return;
             }
             else if (Constants.USE_STANDBY_BRIGHTNESS && !deviceHasModes && !(Device.connectedDevice?.dimmedBrightnessForStandby)!)
@@ -682,7 +684,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 // if we aren't already asking for a palette
                 if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_PALETTE)))
                 {
-                    // get the first palette from the list of ones we need - since we need a reference to the index number when parsing the palette out, we'll deal with removing those indexes from the array in the parsing phase
+                    // get the first palette from the list of ones we need - since we need a reference to the index number when parsing the palette out, we'll deal with removing those indexes from the array in the parsing phase (AKA when the palette is actually no longer empty)
                     print("asking for a palette");
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_PALETTE, inputInts: [(Device.connectedDevice?.emptyPalettes[0])!]);
                 }
@@ -822,14 +824,19 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         }
     }
     
+        // crossfade timeout function for older firmware that can't respond to crossfade requests
     @objc func crossfadeTimeout()
     {
-        if ((Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)) && Device.connectedDevice!.checkedCrossfade == false)
+        if ((Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)) && !(Device.connectedDevice!.checkedCrossfade))
         {
             print("No Crossfade Support Found");
-            Device.connectedDevice!.supportsCrossfade = false;
+            
+            // make sure to reset these booleans so that the app can keep making requests for other data
             Device.connectedDevice!.requestWithoutResponse = false;
             Device.connectedDevice!.expectedPacketType = "";
+            
+            // make sure to set the crossfade booleans so we know that this device doesn't support crossfade and we already checked
+            Device.connectedDevice!.supportsCrossfade = false;
             Device.connectedDevice!.checkedCrossfade = true;
             NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
         }
@@ -1026,6 +1033,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     {
                         setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!, toSingleDevice: mimicDevice);
                     }
+                        // if we just switched to a palette mode, we need to update every row in the mode so that whatever changes the user put into the palette show up
                     else if ((Device.connectedDevice?.mode?.usesPalette)!)
                     {
                         setAllPaletteColors();
@@ -1045,6 +1053,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 {
                     setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!, toSingleDevice: Device.connectedDevice!);
                 }
+                    // if the mode we just switched to is a palette mode, we need to set the colors for every row in the palette to make sure any user edits actually show up
                 else if ((Device.connectedDevice?.mode?.usesPalette)!)
                 {
                     setAllPaletteColors();
@@ -1061,6 +1070,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             {
                 setBitmap((Device.connectedDevice?.mode?.bitmapIndex)!);
             }
+                // if the mode we just switched to is a palette mode, we need to set the colors for every row in the palette to make sure any user edits actually show up
             else if ((Device.connectedDevice?.mode?.usesPalette)!)
             {
                 setAllPaletteColors();
@@ -1152,6 +1162,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         
     }
     
+    // function for setting all rows of the palette to whatever is stored on the device's memory
     private func setAllPaletteColors()
     {
         var colorInts = [Int]();
@@ -1160,28 +1171,34 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         for workItem in workItems {
             workItem.cancel();
         }
-        var delay = 0.0;
         workItems = [DispatchWorkItem]();
+        var delay = 0.0;
         for i in 0...15
         {
+            // keep adding colors to the array until you get to a multiple of 4 (offset by 1 because the array is zero-justified)
             colorInts += Device.convertUIColorToIntArray((Device.connectedDevice?.mode?.paletteColors![i])!);
             if ((i+1) % 4 == 0)
             {
+                // if we are at a multiple of 4, take a snapshot of the array and then clear it - we do it this way because the delayed sending can get the wrong values if we just try to use colorInts instead
                 outputs += [colorInts];
                 colorInts = [Int]();
+                // send the different rows depending on the value of i
                 switch i
                 {
                 case 3:
+                    // because 1.3.2 changed the behavior so that we wait for all set-mode success responses before moving onto this function, no need for any delay on the first row
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE1, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                 case 7:
+                    // for the 2nd-4th rows, we check to see if we're waiting for a response, and if we are, put the send command into the dispatchQueue with 200ms delay.
                     let workItemRow2: DispatchWorkItem = DispatchWorkItem(block: {
                         self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                     })
+                        // add the row 2 work item to the array so that we're able to cancel it later if we need to
                     workItems.append(workItemRow2);
                     if ((Device.connectedDevice?.requestWithoutResponse)! || ((Device.connectedDevice?.connectedMimicDevices.count)! > 0))
                     {
                         delay += 0.2
-                        print(delay);
+                        //print(delay);
                         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItemRow2);
                     }
                     else
@@ -1190,6 +1207,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     }
                     
                 case 11:
+                    // for the 2nd-4th rows, we check to see if we're waiting for a response, and if we are, put the send command into the dispatchQueue with 200ms delay.
                     let workItemRow3: DispatchWorkItem = DispatchWorkItem(block: {
                         self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                     })
@@ -1197,7 +1215,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     if ((Device.connectedDevice?.requestWithoutResponse)!)
                     {
                         delay += 0.2
-                        print(delay);
+                        //print(delay);
                         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItemRow3);
                     }
                     else
@@ -1205,6 +1223,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                     }
                 case 15:
+                    // for the 2nd-4th rows, we check to see if we're waiting for a response, and if we are, put the send command into the dispatchQueue with 200ms delay.
                     let workItemRow4: DispatchWorkItem = DispatchWorkItem(block: {
                         self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                     })
@@ -1212,7 +1231,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     if ((Device.connectedDevice?.requestWithoutResponse)!)
                     {
                         delay += 0.2
-                        print(delay);
+                        //print(delay);
                         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItemRow4);
                     }
                     else
@@ -1220,6 +1239,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                     }
                 default:
+                    // this shouldn't happen because we only hit the switch if i + 1 is a multiple of 4
                     print("Found index out of setPalette targets");
                 }
             }
