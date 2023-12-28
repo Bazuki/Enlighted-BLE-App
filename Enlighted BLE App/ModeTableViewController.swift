@@ -46,6 +46,9 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         // seperate timer for querying the crossfade support, since only recent firmware will respond
     var BLECrossfadeTimer = Timer();
     
+        // list of workItems for setting palettes so we can cancel any that we might not need
+    var workItems = [DispatchWorkItem]();
+    
     // A timer to introduce a delay for older hardware
     var delayTimer = Timer();
     
@@ -1153,6 +1156,12 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     {
         var colorInts = [Int]();
         var outputs = [[Int]]();
+        //cancel any remaining work items before clearing the array
+        for workItem in workItems {
+            workItem.cancel();
+        }
+        var delay = 0.0;
+        workItems = [DispatchWorkItem]();
         for i in 0...15
         {
             colorInts += Device.convertUIColorToIntArray((Device.connectedDevice?.mode?.paletteColors![i])!);
@@ -1165,12 +1174,15 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                 case 3:
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE1, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                 case 7:
-                    if ((Device.connectedDevice?.requestWithoutResponse)!)
+                    let workItemRow2: DispatchWorkItem = DispatchWorkItem(block: {
+                        self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
+                    })
+                    workItems.append(workItemRow2);
+                    if ((Device.connectedDevice?.requestWithoutResponse)! || ((Device.connectedDevice?.connectedMimicDevices.count)! > 0))
                     {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2)
-                        {
-                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE2, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
-                        }
+                        delay += 0.2
+                        print(delay);
+                        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItemRow2);
                     }
                     else
                     {
@@ -1178,24 +1190,30 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     }
                     
                 case 11:
+                    let workItemRow3: DispatchWorkItem = DispatchWorkItem(block: {
+                        self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
+                    })
+                    workItems.append(workItemRow3);
                     if ((Device.connectedDevice?.requestWithoutResponse)!)
                     {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4)
-                        {
-                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
-                        }
+                        delay += 0.2
+                        print(delay);
+                        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItemRow3);
                     }
                     else
                     {
                         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE3, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
                     }
                 case 15:
+                    let workItemRow4: DispatchWorkItem = DispatchWorkItem(block: {
+                        self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
+                    })
+                    workItems.append(workItemRow4);
                     if ((Device.connectedDevice?.requestWithoutResponse)!)
                     {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6)
-                        {
-                            self.formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_PALETTE4, inputInts: outputs[Int(i/4)], digitsPerInput: 1, sendToMimicDevices: true);
-                        }
+                        delay += 0.2
+                        print(delay);
+                        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItemRow4);
                     }
                     else
                     {

@@ -1081,7 +1081,19 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     print("Since the command to set the mode succeeded, we are going to change the mode settings now.")
                     Device.connectedDevice?.requestedModeChange = false;
                     let identifier = [0: peripheral.identifier as NSUUID];
-                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil, userInfo: identifier);
+                    var waitingForMimics: Bool = false;
+                    for mimic in (Device.connectedDevice?.connectedMimicDevices)!
+                    {
+                        if mimic.requestedModeChange
+                        {
+                            waitingForMimics = true;
+                            break;
+                        }
+                    }
+                    if !(waitingForMimics)
+                    {
+                        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil, userInfo: identifier);
+                    }
                 }
                 
                     // we need to know when the first color was changed so we can change the second (as of 1.0.33, both protocols change color in 1 packet)
@@ -1562,7 +1574,10 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                             print("Since the command to set the mode on \(mimicDevice.name) succeeded, we are going to change the mode settings now.")
                             mimicDevice.requestedModeChange = false;
                             let identifier = [0: peripheral.identifier as NSUUID];
-                            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil, userInfo: identifier);
+                            if !((Device.connectedDevice?.requestWithoutResponse)!)
+                            {
+                                NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGED_MODE_VALUE), object: nil, userInfo: identifier);
+                            }
                         }
                     }
                 }

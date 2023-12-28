@@ -242,7 +242,7 @@
                                 <color key="textColor" name="Title"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 1.2.4" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Version 1.3.1" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="S4i-ZK-u4N">
                                 <rect key="frame" x="135" y="578" width="115" height="24"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="20"/>
                                 <color key="textColor" name="Subtitle"/>
@@ -1508,15 +1508,15 @@
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="R8h-UW-utE" userLabel="Color Picker">
                                         <rect key="frame" x="17" y="277" width="301" height="272"/>
                                         <subviews>
-                                            <imageView autoresizesSubviews="NO" clearsContextBeforeDrawing="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" image="ColorWheel" translatesAutoresizingMaskIntoConstraints="NO" id="gaB-SR-KnM" userLabel="ColorPickerImage">
-                                                <rect key="frame" x="54.5" y="0.0" width="192" height="192"/>
+                                            <imageView autoresizesSubviews="NO" clearsContextBeforeDrawing="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="ColorWheel" translatesAutoresizingMaskIntoConstraints="NO" id="gaB-SR-KnM" userLabel="ColorPickerImage">
+                                                <rect key="frame" x="65" y="0.5" width="171" height="171"/>
                                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 <constraints>
                                                     <constraint firstAttribute="width" secondItem="gaB-SR-KnM" secondAttribute="height" multiplier="1:1" id="w5C-wi-4kS"/>
                                                 </constraints>
                                             </imageView>
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="wNV-SM-YSj" userLabel="Color Picker" customClass="ColorWheel" customModule="Enlighted_BLE_App" customModuleProvider="target">
-                                                <rect key="frame" x="54.5" y="0.0" width="192" height="192"/>
+                                                <rect key="frame" x="55" y="-9.5" width="191" height="191"/>
                                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 <constraints>
                                                     <constraint firstAttribute="width" secondItem="wNV-SM-YSj" secondAttribute="height" multiplier="1:1" id="k9H-LA-qI9"/>
@@ -1553,7 +1553,7 @@
                                                 </connections>
                                             </slider>
                                             <slider opaque="NO" contentMode="scaleToFill" verticalCompressionResistancePriority="751" contentHorizontalAlignment="center" contentVerticalAlignment="center" minValue="0.0" maxValue="100" translatesAutoresizingMaskIntoConstraints="NO" id="ZRR-Fb-e9f" userLabel="Brightness Slider">
-                                                <rect key="frame" x="-2" y="181" width="305" height="43"/>
+                                                <rect key="frame" x="-2" y="191.5" width="305" height="32.5"/>
                                                 <variation key="heightClass=regular-widthClass=compact">
                                                     <nil key="minimumTrackTintColor"/>
                                                 </variation>
@@ -1569,7 +1569,7 @@
                                                 <nil key="highlightedColor"/>
                                             </label>
                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="bvb-rU-AcD">
-                                                <rect key="frame" x="257" y="79" width="44" height="34"/>
+                                                <rect key="frame" x="256" y="69" width="45" height="34"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="18"/>
                                                 <state key="normal" title="Undo"/>
                                                 <connections>
@@ -1577,7 +1577,7 @@
                                                 </connections>
                                             </button>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="RGB placeholder" textAlignment="center" lineBreakMode="wordWrap" numberOfLines="3" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1Mm-w9-xSZ">
-                                                <rect key="frame" x="0.0" y="74.5" width="45" height="43"/>
+                                                <rect key="frame" x="0.0" y="64.5" width="45" height="43"/>
                                                 <constraints>
                                                     <constraint firstAttribute="width" relation="lessThanOrEqual" constant="45" id="fIX-hY-uaY"/>
                                                 </constraints>
@@ -1588,27 +1588,37 @@
                                         </subviews>
                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <constraints>
-                                            <constraint firstItem="gaB-SR-KnM" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="R8h-UW-utE" secondAttribute="leading" constant="5" id="1Ao-4R-RgE"/>
                                             <constraint firstItem="gaB-SR-KnM" firstAttribute="centerX" secondItem="R8h-UW-utE" secondAttribute="centerX" id="2cx-ZU-EcA"/>
                                             <constraint firstAttribute="trailing" secondItem="bvb-rU-AcD" secondAttribute="trailing" id="2fK-3w-IhB"/>
-                                            <constraint firstItem="fmp-Q2-xAS" firstAttribute="top" secondItem="ZRR-Fb-e9f" secondAttribute="bottom" priority="750" constant="-31" id="2rG-xO-fge"/>
+                                            <constraint firstItem="fmp-Q2-xAS" firstAttribute="top" secondItem="ZRR-Fb-e9f" secondAttribute="bottom" constant="-25" id="2rG-xO-fge"/>
                                             <constraint firstItem="1Mm-w9-xSZ" firstAttribute="centerY" secondItem="bvb-rU-AcD" secondAttribute="centerY" id="5rN-yb-6fT"/>
-                                            <constraint firstItem="wNV-SM-YSj" firstAttribute="leading" secondItem="R8h-UW-utE" secondAttribute="leading" constant="54.5" id="KV5-Ep-nLm"/>
+                                            <constraint firstItem="gaB-SR-KnM" firstAttribute="leading" relation="lessThanOrEqual" secondItem="1Mm-w9-xSZ" secondAttribute="trailing" constant="20" id="APh-eW-BwO"/>
+                                            <constraint firstItem="wNV-SM-YSj" firstAttribute="leading" secondItem="R8h-UW-utE" secondAttribute="leading" priority="250" constant="54.5" id="KV5-Ep-nLm"/>
+                                            <constraint firstItem="gaB-SR-KnM" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="1Mm-w9-xSZ" secondAttribute="trailing" constant="10" id="Kvz-pF-Hct"/>
+                                            <constraint firstItem="bvb-rU-AcD" firstAttribute="leading" relation="lessThanOrEqual" secondItem="gaB-SR-KnM" secondAttribute="trailing" constant="20" id="MbS-78-8mn"/>
+                                            <constraint firstAttribute="bottom" secondItem="ZRR-Fb-e9f" secondAttribute="bottom" constant="49" id="NTS-VO-lEA"/>
                                             <constraint firstAttribute="bottom" secondItem="fmp-Q2-xAS" secondAttribute="bottom" id="O3V-Rj-Lk2"/>
-                                            <constraint firstItem="fmp-Q2-xAS" firstAttribute="top" secondItem="wNV-SM-YSj" secondAttribute="bottom" id="PrZ-ex-5nX"/>
+                                            <constraint firstItem="fmp-Q2-xAS" firstAttribute="top" relation="greaterThanOrEqual" secondItem="wNV-SM-YSj" secondAttribute="bottom" constant="10" id="PrZ-ex-5nX"/>
+                                            <constraint firstItem="wNV-SM-YSj" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="1Mm-w9-xSZ" secondAttribute="trailing" constant="10" id="Qsc-9R-2YX"/>
                                             <constraint firstItem="fmp-Q2-xAS" firstAttribute="centerX" secondItem="R8h-UW-utE" secondAttribute="centerX" id="RrN-Ia-p18"/>
-                                            <constraint firstItem="ZRR-Fb-e9f" firstAttribute="top" secondItem="gaB-SR-KnM" secondAttribute="bottom" priority="750" constant="10" id="Ryq-z7-sBU"/>
-                                            <constraint firstItem="fmp-Q2-xAS" firstAttribute="top" secondItem="wNV-SM-YSj" secondAttribute="bottom" priority="250" id="RzN-oM-xeP"/>
+                                            <constraint firstItem="ZRR-Fb-e9f" firstAttribute="top" relation="greaterThanOrEqual" secondItem="gaB-SR-KnM" secondAttribute="bottom" constant="10" id="Ryq-z7-sBU"/>
+                                            <constraint firstItem="fmp-Q2-xAS" firstAttribute="top" relation="greaterThanOrEqual" secondItem="wNV-SM-YSj" secondAttribute="bottom" constant="10" id="RzN-oM-xeP"/>
+                                            <constraint firstItem="bvb-rU-AcD" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="gaB-SR-KnM" secondAttribute="trailing" constant="10" id="VOr-P4-UIW"/>
+                                            <constraint firstItem="ZRR-Fb-e9f" firstAttribute="top" relation="greaterThanOrEqual" secondItem="wNV-SM-YSj" secondAttribute="bottom" constant="1" id="VTi-e9-aw1"/>
                                             <constraint firstItem="gaB-SR-KnM" firstAttribute="centerX" secondItem="wNV-SM-YSj" secondAttribute="centerX" id="Wba-ng-Wbu"/>
                                             <constraint firstItem="wNV-SM-YSj" firstAttribute="centerX" secondItem="R8h-UW-utE" secondAttribute="centerX" id="WyH-Ly-Fy3"/>
-                                            <constraint firstAttribute="trailing" secondItem="wNV-SM-YSj" secondAttribute="trailing" constant="54.5" id="alc-nb-GQG"/>
+                                            <constraint firstAttribute="trailing" secondItem="wNV-SM-YSj" secondAttribute="trailing" priority="250" constant="54.5" id="alc-nb-GQG"/>
                                             <constraint firstAttribute="trailing" secondItem="ZRR-Fb-e9f" secondAttribute="trailing" id="biJ-60-Dt8"/>
+                                            <constraint firstItem="bvb-rU-AcD" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="wNV-SM-YSj" secondAttribute="trailing" constant="10" id="c0l-Jd-D8r"/>
                                             <constraint firstItem="bvb-rU-AcD" firstAttribute="centerY" secondItem="gaB-SR-KnM" secondAttribute="centerY" id="e8I-e2-jod"/>
+                                            <constraint firstItem="wNV-SM-YSj" firstAttribute="leading" relation="lessThanOrEqual" secondItem="1Mm-w9-xSZ" secondAttribute="trailing" constant="20" id="j3a-Fw-OOW"/>
+                                            <constraint firstItem="ZRR-Fb-e9f" firstAttribute="top" relation="lessThanOrEqual" secondItem="gaB-SR-KnM" secondAttribute="bottom" constant="20" id="jCZ-on-Mes"/>
                                             <constraint firstItem="gaB-SR-KnM" firstAttribute="centerY" secondItem="wNV-SM-YSj" secondAttribute="centerY" id="mKL-hB-An0"/>
-                                            <constraint firstItem="gaB-SR-KnM" firstAttribute="centerY" secondItem="R8h-UW-utE" secondAttribute="centerY" constant="-40" id="t0O-Si-8PA"/>
+                                            <constraint firstItem="gaB-SR-KnM" firstAttribute="centerY" secondItem="R8h-UW-utE" secondAttribute="centerY" constant="-50" id="t0O-Si-8PA"/>
                                             <constraint firstItem="ZRR-Fb-e9f" firstAttribute="leading" secondItem="R8h-UW-utE" secondAttribute="leading" id="tYt-JL-qAk"/>
                                             <constraint firstItem="ZRR-Fb-e9f" firstAttribute="centerX" secondItem="R8h-UW-utE" secondAttribute="centerX" id="tdg-0V-rjd"/>
                                             <constraint firstItem="1Mm-w9-xSZ" firstAttribute="leading" secondItem="R8h-UW-utE" secondAttribute="leading" id="v8l-4i-zWb"/>
+                                            <constraint firstItem="bvb-rU-AcD" firstAttribute="leading" relation="lessThanOrEqual" secondItem="wNV-SM-YSj" secondAttribute="trailing" constant="20" id="x2r-SZ-eKQ"/>
                                         </constraints>
                                         <variation key="default">
                                             <mask key="subviews">
