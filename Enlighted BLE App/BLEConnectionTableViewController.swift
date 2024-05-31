@@ -1691,14 +1691,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             
             updateMimicDevicesAndCentralState();
         }
-        
-        
-        
-            // stop scanning
-        //centralManager?.stopScan();
-        //print("Scan stopped");
-            // stopping the normal scan timer
-        //timer.invalidate();
+    
         
             // erase data we might have
         data.length = 0;
@@ -2355,6 +2348,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             }
             else if (toSingleDevice!.hardwareVersion == .NRF51822 || toSingleDevice!.hardwareVersion == .FASTNRF51822)
             {
+                //MARK: Testing checking for peripheral availability before sending
                 toSingleDevice!.peripheral.writeValue(valueData[1] as Data, for: toSingleDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse);
             }
             

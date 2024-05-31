@@ -325,6 +325,9 @@ class Constants
         static let CHANGED_FIRST_COLOR = "changedFirstColor";
         
         static let SEND_ERROR_LOG_EMAIL = "sendErrorLogEmail";
+        
+        static let WATCH_READY_TO_SHOW = "watchReadyToShow";
+        static let CHANGE_BRIGHTNESS = "changeBrightness";
     }
     
 }

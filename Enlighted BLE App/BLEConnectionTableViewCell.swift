@@ -85,6 +85,7 @@ class BLEConnectionTableViewCell: UITableViewCell
         if (isDemoDevice)
         {
             connectButton.isEnabled = true;
+            //connectButton.isHidden = false;
             //connectButton.tintColor = UIColor.white;
         }
         
