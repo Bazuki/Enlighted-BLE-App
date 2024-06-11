@@ -90,6 +90,9 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         // a list of all the modes this device has, from Get Mode;
     var modes = [Mode]();
     
+        // a list of all the mode names, since the apple watch version of the app doesn't need all the extra information, bitmaps, etc.
+    var modeNames = [String]();
+    
         // a list of all the thumbnails this device has, from Get Thumbnail
     var thumbnails = [UIImage]();
     
@@ -111,6 +114,9 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
     
         // LED brightness and crossfade length values
     var brightness: Int;
+    var lastSentBrightness: Int;
+    var checkedLastBrightnessChange: Bool;
+    
     var crossfade: Int;
     
     var peripheral: CBPeripheral!;
@@ -141,6 +147,7 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
     var receivedName = false;
     var requestedMode = false;
     var requestedThumbnail = false;
+    var requestedCrossfade = false;
     var requestedBrightnessChange = false;
     var requestedStandbyActivated = false;
     var requestedStandbyDeactivated = false;
@@ -188,6 +195,8 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        lastSentBrightness = brightness
+        checkedLastBrightnessChange = true
         crossfade = -1;
         
         isConnected = false;
@@ -215,6 +224,8 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        lastSentBrightness = brightness
+        checkedLastBrightnessChange = true
         crossfade = -1;
         
         isConnected = false;
@@ -240,6 +251,8 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        lastSentBrightness = brightness
+        checkedLastBrightnessChange = true
         crossfade = -1;
         
         isConnected = false;
@@ -265,6 +278,8 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        lastSentBrightness = brightness
+        checkedLastBrightnessChange = true
         crossfade = -1;
         
         isConnected = false;
@@ -297,6 +312,8 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         
         // initial value;
         brightness = -1;
+        lastSentBrightness = brightness
+        checkedLastBrightnessChange = true
         crossfade = -1;
         
         hardwareVersion = .DEMO;
@@ -318,6 +335,8 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        lastSentBrightness = brightness
+        checkedLastBrightnessChange = true
         crossfade = -1;
         isConnected = true;
         isConnecting = false
@@ -335,6 +354,8 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         maxNumModes = -1;
         maxBitmaps = -1;
         brightness = -1;
+        lastSentBrightness = brightness
+        checkedLastBrightnessChange = true
         crossfade = -1;
         isConnected = true;
         isConnecting = false
@@ -360,6 +381,8 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
             
             // initial value;
         brightness = -1;
+        lastSentBrightness = brightness
+        checkedLastBrightnessChange = true
         crossfade = -1;
             
             // mock declaration without a peripheral, so not connected

@@ -10,6 +10,7 @@ import SwiftUI
 
 @main
 struct Enlighted_BLE_Watch_App_Watch_AppApp: App {
+    @State var showingLaunchImage = true
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -11,35 +11,55 @@ import SwiftUI
 struct WatchDeviceList: View {
     @EnvironmentObject var BLE: BLEConnectionController
     @State var devicesToShow = [WatchDevice]()
+    @State var showPopUp: Bool = false
+    
+    //Disconnect listener so that we can show a pop-up notifying the user when we disconnect
+    let disconnectListener = NotificationCenter.default.publisher(for:  Notification.Name(rawValue: Constants.MESSAGES.DISCONNECTED_FROM_WATCH_DEVICE))
+    
     var demoDevice: WatchDevice = WatchDevice(true)
     var body: some View {
             NavigationView{
                 ScrollView{
                     ZStack{
                         VStack{
-                            HStack{
-                                Text(BLE.isBluetoothEnabled ? "Available Devices: " : "Bluetooth is not available")
-                            }
-                            Divider()
-                            // List of devices
-                            VStack {
-                                if(!BLE.isBluetoothEnabled || BLE.canShowDemoDevice){ //If bluetooth is disabled or we want to show demo device, show demo device
-                                    NavigationLink(destination: WatchDeviceControl(thisDevice: demoDevice), label: {WatchDeviceListRow(thisDevice: demoDevice)})
+                            if(!showPopUp){
+                                HStack{
+                                    Text(BLE.isBluetoothEnabled ? "Available Devices: " : "Bluetooth is not available")
                                 }
-                                else if (BLE.isBluetoothEnabled){ //If we have bluetooth and aren't showing the demo device, we must have some devices to show
-                                    ForEach(BLE.visibleDevices, id:\.self) { listDevice in
-                                        NavigationLink(destination: WatchDeviceControl(thisDevice: listDevice), label: {WatchDeviceListRow(thisDevice: listDevice)}).onTapGesture {
-                                            WatchDevice.setConnectedDevice(newDevice: listDevice)
+                                Divider()
+                                // List of devices
+                                VStack {
+                                    if(!BLE.isBluetoothEnabled || BLE.canShowDemoDevice){ //If bluetooth is disabled or we want to show demo device, show demo device
+                                        NavigationLink(destination: WatchDeviceControl(thisDevice: demoDevice), label: {WatchDeviceListRow(thisDevice: demoDevice)})
+                                    }
+                                    else if (BLE.isBluetoothEnabled){ //If we have bluetooth and aren't showing the demo device, we must have some devices to show
+                                        ForEach(BLE.visibleDevices, id:\.self) { listDevice in
+                                            NavigationLink(destination: WatchDeviceControl(thisDevice: listDevice), label: {WatchDeviceListRow(thisDevice: listDevice)}).onTapGesture {
+                                                WatchDevice.setConnectedDevice(newDevice: listDevice)
+                                            }
                                         }
                                     }
                                 }
+                                Spacer()
                             }
-                            Spacer()
+                            else{
+                                Spacer()
+                                Text("Got Disconnected from Primary Device")
+                                Button("Back to Device List"){
+                                    withAnimation{
+                                        showPopUp = false
+                                    }
+                                }
+                                Spacer()
+                            }
                         }
                     }
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
+            .onReceive(disconnectListener, perform: {_ in
+                showPopUp = true
+            })
     }
 }
 

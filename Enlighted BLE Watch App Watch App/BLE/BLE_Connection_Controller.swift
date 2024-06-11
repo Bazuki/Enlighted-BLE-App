@@ -126,6 +126,7 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
         }
     }
     
+    //Called every time the CBCentralManager finds a bluetooth device 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber)
     {
             // the true (non-cached) advertised name of the device
@@ -388,13 +389,21 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
         WatchDevice.connectedDevice?.requestedLimits = true;
     }
     
+    //Getting brightness of the primary device, which we may have to do more than just in the setup phase
+    func getPrimaryBrightness(){
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS);
+        WatchDevice.connectedDevice?.requestedBrightness = true;
+    }
+    
     //Setting the brightness to a new value
     func changeBrightness(newBrightness: Double)
     {
-        print("New Brightness value: \(newBrightness)");
+        print("Sending new Brightness value: \(newBrightness)");
             // FIXME: only update these variables if these commands succeed? ("1" response)
-        WatchDevice.connectedDevice?.brightness = Int(newBrightness);
+        WatchDevice.connectedDevice?.lastSentBrightness = Int(newBrightness);
+        WatchDevice.connectedDevice?.brightness = Int(newBrightness);  //Setting the current brightness here before we get the success response because we will double check in the brightness tick once the slider has stopped moving and replace this value with what the hardware actually says its brightness is.  Setting it here helps the UI not stutter
         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInts: [Int(newBrightness)], digitsPerInput: 3, sendToMimicDevices: true)
+        WatchDevice.connectedDevice?.requestedBrightnessChange = true
         
     }
     
@@ -411,17 +420,18 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
         }
         else
         {
+            print("resetting flags")
             // reset the flags, so we get all items
             WatchDevice.connectedDevice!.expectedPacketType = "";
             
+            WatchDevice.connectedDevice?.requestedLimits = false;
             WatchDevice.connectedDevice?.requestedName = false;
-            WatchDevice.connectedDevice?.currentlyBuildingThumbnails = false;
-            WatchDevice.connectedDevice?.requestedStandbyActivated = false;
-            WatchDevice.connectedDevice?.requestedStandbyDeactivated = false;
             WatchDevice.connectedDevice?.requestedBrightnessChange = false;
             WatchDevice.connectedDevice?.requestedMode = false;
-            WatchDevice.connectedDevice?.requestedBattery = false;
             WatchDevice.connectedDevice?.requestedBrightness = false;
+            WatchDevice.connectedDevice?.requestedCrossfade = false;
+            WatchDevice.connectedDevice?.supportsCrossfade = false;
+            WatchDevice.connectedDevice?.checkedCrossfade = false;
             
             // we always want to do some setup, but if we already have modes / thumbnails it should be quick
             WatchDevice.connectedDevice?.readyToShowModes = false;
@@ -434,14 +444,11 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
     //Recursive-ish function for getting data from the device based on which flags are set in the main WatchDevice
     func requestNextData(){
         print("checking what we need still")
-        if ((WatchDevice.connectedDevice?.currentModeIndex)! < 0)
+        if (((WatchDevice.connectedDevice?.currentModeIndex)! < 0) || !(WatchDevice.connectedDevice?.requestedLimits)!)
         {
-                // if we haven't already, getLimits for this device, so that we'll know it when we change it on the settings screen;  This should already be done, however, in viewDidLoad().  This is just in case that wasn't called somehow.
-            if (!(WatchDevice.connectedDevice?.requestedLimits)!)
-            {
-                print("requesting limits")
-                getPrimaryLimits()
-            }
+                // if we haven't already, getLimits for this device, so that we'll know it when we change it on the settings screen
+            print("requesting limits")
+            getPrimaryLimits()
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
             return;
         }
@@ -458,16 +465,34 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
             // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
             return;
         }
-        else if (((WatchDevice.connectedDevice?.brightness)! < 0))
+        else if (((WatchDevice.connectedDevice?.brightness)! < 0) || !(WatchDevice.connectedDevice?.requestedBrightness)!)
         {
-            // if we haven't already, getBrightness for this device, so that we'll know it when we change it on the settings screen
+            // if we haven't already, getBrightness for this device, so that we'll know it for the slider
             if (!(WatchDevice.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS)))
             {
                 print("requesting brightness")
-                formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS);
-                WatchDevice.connectedDevice?.requestedBrightness = true
+                getPrimaryBrightness()
             }
             // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
+            return;
+        }
+        else if (!(WatchDevice.connectedDevice?.requestedCrossfade)!){
+            
+            // if we haven't already, get crossfade for this device, so that we'll know it for the slider
+            if (!(WatchDevice.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE))){
+                print("requesting crossfade")
+                formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)
+                WatchDevice.connectedDevice?.requestedCrossfade = true;
+            }
+            return;
+        }
+        else if ((WatchDevice.connectedDevice?.modeNames.count)! < (WatchDevice.connectedDevice?.maxNumModes)!) {
+            //Getting mode names so we can display them on the control page
+            if (!(WatchDevice.connectedDevice?.requestedName)!){
+                print("Getting name for mode: \((WatchDevice.connectedDevice?.modeNames.count)!)")
+                formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInts: [(WatchDevice.connectedDevice?.modeNames.count)! + 1])
+                WatchDevice.connectedDevice?.requestedName = true;
+            }
             return;
         }
         print("We didn't need anything")
@@ -993,8 +1018,8 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                     let receivedName = rxString!;
                     // taking off quotes
                     parsedName = receivedName.filter { $0 != "\"" }
-                    //Device.connectedDevice?.requestedName = false;
-                    //print("Received complete name: " + parsedName);
+                    WatchDevice.connectedDevice?.modeNames.append(parsedName) //Add the name to the list of mode names
+                    WatchDevice.connectedDevice?.requestedName = false;
                     WatchDevice.connectedDevice?.receivedName = true;
                     
                 }
@@ -1244,7 +1269,8 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                             // set the flag that we aren't in that mode
                         WatchDevice.connectedDevice?.dimmedBrightnessForStandby = false;
                     }
-                    
+                    print("Successfully set brightness")
+                    WatchDevice.connectedDevice?.checkedLastBrightnessChange = false;
                     WatchDevice.connectedDevice?.requestedBrightnessChange = false;
                 }
                 
@@ -1256,6 +1282,10 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                 WatchDevice.reportWatchError(Constants.RECEIVED_FAILURE_RESPONSE);
                 WatchDevice.connectedDevice!.requestWithoutResponse = false;
                 WatchDevice.connectedDevice!.expectedPacketType = "";
+                if ((WatchDevice.connectedDevice?.requestedBrightnessChange)!){
+                    print("Failed to set brightness, retrying now")
+                    changeBrightness(newBrightness: Double(WatchDevice.connectedDevice!.lastSentBrightness))
+                }
                     // MARK: Unidentifiable Packet
             default:
                 
@@ -1283,6 +1313,10 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                     // FIX-ME: trying to see what went wrong on the nRF8001
                     // if it's the nRF8001, we need to introduce a bit of delay, otherwise, do this instantly
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+            }
+            if ((WatchDevice.connectedDevice?.requestedBrightnessChange)!){
+                print("Failed to set brightness, retrying now")
+                changeBrightness(newBrightness: Double(WatchDevice.connectedDevice!.lastSentBrightness))
             }
         }
             // receiving from other characteristics, most likely the mimic devices' rxCharacteristics (the only thing we expect here is the hardware version)
@@ -1395,6 +1429,7 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
             WatchDevice.connectedDevice?.isConnected = true;
             WatchDevice.connectedDevice?.isConnecting = false;
             
+            
             // once we've connected, we can rescan again TODO: Deal with this in UI
             //searchButton.isEnabled = true;
         }
@@ -1438,12 +1473,15 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
         guard (peripheral.identifier as NSUUID != WatchDevice.connectedDevice?.UUID) else
         {
             WatchDevice.connectedDevice!.isConnected = false;
+            WatchDevice.connectedDevice!.requestWithoutResponse = false;
             BLEConnectionController.CBCentralState = .UNCONNECTED_SCANNING_FOR_PRIMARY;
             print(BLEConnectionController.CBCentralState);
             
             //print("We disconnected from our connected primary peripheral.");
             //print("\(error?.localizedDescription ?? "unknown error")");
             WatchDevice.reportWatchError(Constants.DISCONNECTED_FROM_PRIMARY_PERIPHERAL_UNEXPECTEDLY, additionalInfo: error?.localizedDescription ?? "unknown error");
+            
+            NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.DISCONNECTED_FROM_WATCH_DEVICE), object: nil)
             
             // TODO: error popup, deselect/disconnect device, start scanning again
             return;
@@ -1641,6 +1679,11 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                 print("Tx Value \(String(describing: txCharacteristic?.value))")
             }
         }
+        
+        //Connect message
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
+            NotificationCenter.default.post(name: Notification.Name(Constants.MESSAGES.CONNECTED_TO_WATCH_DEVICE), object: nil)
+        })
     }
     
         // console updates for notification state for a given service, taken from Bluefruit's "simple chat app".
