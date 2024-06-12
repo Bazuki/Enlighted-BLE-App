@@ -399,12 +399,18 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
     func changeBrightness(newBrightness: Double)
     {
         print("Sending new Brightness value: \(newBrightness)");
-            // FIXME: only update these variables if these commands succeed? ("1" response)
         WatchDevice.connectedDevice?.lastSentBrightness = Int(newBrightness);
         WatchDevice.connectedDevice?.brightness = Int(newBrightness);  //Setting the current brightness here before we get the success response because we will double check in the brightness tick once the slider has stopped moving and replace this value with what the hardware actually says its brightness is.  Setting it here helps the UI not stutter
         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_BRIGHTNESS, inputInts: [Int(newBrightness)], digitsPerInput: 3, sendToMimicDevices: true)
         WatchDevice.connectedDevice?.requestedBrightnessChange = true
         
+    }
+    
+    func changeCrossfade(newCrossfade: Double){
+        print("Sending new Crossfade value: \(newCrossfade)");
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_CROSSFADE, inputInts: [Int(newCrossfade)], digitsPerInput: 3, sendToMimicDevices: true)
+        WatchDevice.connectedDevice?.crossfade = Int(newCrossfade)
+        WatchDevice.connectedDevice?.requestedCrossfadeChange = true
     }
     
     //Depending on whether the primary device is a demo or a real device, we set a variety of boolean flags in the main WatchDevice
@@ -1272,6 +1278,10 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                     print("Successfully set brightness")
                     WatchDevice.connectedDevice?.checkedLastBrightnessChange = false;
                     WatchDevice.connectedDevice?.requestedBrightnessChange = false;
+                }
+                
+                if ((WatchDevice.connectedDevice?.requestedCrossfadeChange)!){
+                    WatchDevice.connectedDevice?.requestedCrossfadeChange = false
                 }
                 
                     // MARK: Failure Response

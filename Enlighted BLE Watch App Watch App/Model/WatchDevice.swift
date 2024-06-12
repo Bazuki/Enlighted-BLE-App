@@ -148,6 +148,7 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
     var requestedMode = false;
     var requestedThumbnail = false;
     var requestedCrossfade = false;
+    var requestedCrossfadeChange = false;
     var requestedBrightnessChange = false;
     var requestedStandbyActivated = false;
     var requestedStandbyDeactivated = false;

@@ -22,14 +22,25 @@ struct WatchDeviceControl: View {
     @Environment(\.dismiss) var dismiss
     
     //State variables to deal with UI elements
-    @State var loading = true
+        //Numerical slider or mode values
     @State var currentMode = -1
     @State var brightnessSliderValue = 0.0
+    @State var crossfadeSliderValue = 0.0
+    
+        //State booleans for showing different screens
+    @State var loading = true
     @State var deviceIsSetup = false
+    @State var brightnessControlMode = false
+    @State var crossfadeControlMode = false
+    
+    //Current screen being shown
+    @State var selectedTab = 0
+    
     
     //Event listeners for interrupt signals - Credit to: https://stackoverflow.com/questions/58818046/how-to-set-addobserver-in-swiftui
     let loadingListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.MESSAGES.WATCH_READY_TO_SHOW))
     let brightnessChangeListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.MESSAGES.CHANGE_BRIGHTNESS))
+    let crossfadeChangeListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.MESSAGES.CHANGE_CROSSFADE))
     let deviceConnectionListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.MESSAGES.CONNECTED_TO_WATCH_DEVICE))
     let disconnectListener = NotificationCenter.default.publisher(for:  Notification.Name(rawValue: Constants.MESSAGES.DISCONNECTED_FROM_WATCH_DEVICE))
     
@@ -88,7 +99,7 @@ struct WatchDeviceControl: View {
                 VideoPlayerView()
                     .ignoresSafeArea()
                     .opacity(0.75)
-                TabView{
+                TabView(selection: $selectedTab){
                     VStack{ //Main vertical stack
                         //Basic device info
                         //Text(thisDevice.name)
@@ -105,18 +116,54 @@ struct WatchDeviceControl: View {
                                 newMode(next: true)
                             }
                         }
-                        Text("Brightness: \(loading ? String("Loading...") : String(Int(brightnessSliderValue)))")
-                        BrightnessSlider(value: $brightnessSliderValue, orientation: false)
-                    }
-                    .safeAreaPadding(.top, 80) //Credit to: https://swiftwithmajid.com/2021/11/03/managing-safe-area-in-swiftui/
+                        //Text("Brightness: \(loading ? String("Loading...") : String(Int(brightnessSliderValue)))")
+                        //BrightnessSlider(value: $brightnessSliderValue, orientation: false)
+                        Spacer()
+                    }.tag(0)
+                    //.safeAreaPadding(.top, 80) //Credit to: https://swiftwithmajid.com/2021/11/03/managing-safe-area-in-swiftui/
                     VStack{ // Extra control VStack
-                        Button("Brightness control"){
-                            print("Switching to brightness control")
+                        Spacer()
+                        if (!brightnessControlMode && !crossfadeControlMode){
+                            Button{
+                                print("Switching to brightness control")
+                                withAnimation{
+                                    brightnessControlMode = true
+                                }
+                            } label: {
+                                DynamicSliderValueButtonLabelView(value: $brightnessSliderValue, title: "Brightness", minValue: 0, maxValue: 255)
+                            }
+                            Button(){
+                                print("Switching to crossfade control")
+                                withAnimation{
+                                    crossfadeControlMode = true
+                                }
+                            } label: {
+                                DynamicSliderValueButtonLabelView(value: $crossfadeSliderValue, title: "Crossfade", minValue: 0, maxValue: 100)
+                            }
+                        } else if (brightnessControlMode){
+                            HStack{
+                                Button("Back"){
+                                    withAnimation{
+                                        brightnessControlMode = false
+                                    }
+                                }
+                                BrightnessSlider(value: $brightnessSliderValue, orientation: true)
+                            }
+                        } else if (crossfadeControlMode){
+                            HStack{
+                                Button("Back"){
+                                    withAnimation{
+                                        crossfadeControlMode = false
+                                    }
+                                }
+                                CrossfadeSlider(value: $crossfadeSliderValue, orientation: true)
+                            }
                         }
-                        Button("Crossfade control"){
-                            print("Switching to crossfade control")
-                        }
+                        Spacer()
                     }
+                    //.ignoresSafeArea()
+                    .safeAreaPadding(.bottom, 10)
+                    .tag(1)
                 }.tabViewStyle(.carousel)
                 if(loading){ //Layer the progress view on top of the controls so that users can't interact with them while loading
                     ProgressView()
@@ -155,23 +202,27 @@ struct WatchDeviceControl: View {
         .onReceive(loadingListener, perform: {_ in //When we get the signal that loading is done, remove the progressView and start the brightness timer
             loading = false
             brightnessSliderValue = Double(thisDevice.brightness)
+            crossfadeSliderValue = Double(thisDevice.crossfade)
             RunLoop.main.add(brightnessTimer, forMode: .common)
-            RunLoop.main.add(brightnessToggleTimer, forMode: .common)
+            //RunLoop.main.add(brightnessToggleTimer, forMode: .common)
         })
         .onReceive(brightnessChangeListener, perform: {_ in //When we get the signal that the brightness has changed, update it
             BrightnessSliderChanged()
+        })
+        .onReceive(crossfadeChangeListener, perform: {_ in
+            BLE.changeCrossfade(newCrossfade: crossfadeSliderValue)
         })
         .onReceive(disconnectListener, perform: {_ in //If we've disconnected, reset the deviceIsSetup flag and leave the control screen
             deviceIsSetup = false
             dismiss()
         })
         .onReceive(brightnessToggleListener, perform: {_ in //For testing purposes so that there's a visible indicator on the hardware that the app hasn't fallen asleep
-            if(thisDevice.brightness > 0){
-                BLE.changeBrightness(newBrightness: 0)
+            if(thisDevice.brightness > 10){
+                BLE.changeBrightness(newBrightness: 10)
             } else {
                 BLE.changeBrightness(newBrightness: 127)
             }
         })
-        
+        .toolbar((selectedTab == 1) ? .hidden : .visible)
     }
 }

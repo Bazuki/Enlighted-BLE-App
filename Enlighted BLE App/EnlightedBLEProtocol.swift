@@ -328,6 +328,7 @@ class Constants
         
         static let WATCH_READY_TO_SHOW = "watchReadyToShow";
         static let CHANGE_BRIGHTNESS = "changeBrightness";
+        static let CHANGE_CROSSFADE = "changeCrossfade";
         static let CONNECTED_TO_WATCH_DEVICE = "connectedtoWatchDevice";
         static let DISCONNECTED_FROM_WATCH_DEVICE = "desconnectedFromWatchDevice";
     }

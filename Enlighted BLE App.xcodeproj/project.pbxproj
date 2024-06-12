@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6004A6742C19059A00B43E2A /* DynamicSliderValueButtonLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6004A6732C19059A00B43E2A /* DynamicSliderValueButtonLabelView.swift */; };
+		6004A6772C19317000B43E2A /* CrossfadeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6004A6762C19317000B43E2A /* CrossfadeSlider.swift */; };
 		60185E142BFD43FF0050D068 /* BLE_Connection_Controller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6082F1882BF8163B008A2824 /* BLE_Connection_Controller.swift */; };
 		60185E162BFD51350050D068 /* WatchDeviceList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60185E152BFD51350050D068 /* WatchDeviceList.swift */; };
 		60185E182BFD81240050D068 /* WatchDeviceListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60185E172BFD81240050D068 /* WatchDeviceListRow.swift */; };
@@ -83,6 +85,8 @@
 
 /* Begin PBXFileReference section */
 		6004A6722C17A60000B43E2A /* Enlighted-BLE-Watch-App-Watch-App-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Enlighted-BLE-Watch-App-Watch-App-Info.plist"; sourceTree = SOURCE_ROOT; };
+		6004A6732C19059A00B43E2A /* DynamicSliderValueButtonLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicSliderValueButtonLabelView.swift; sourceTree = "<group>"; };
+		6004A6762C19317000B43E2A /* CrossfadeSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossfadeSlider.swift; sourceTree = "<group>"; };
 		60185E152BFD51350050D068 /* WatchDeviceList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDeviceList.swift; sourceTree = "<group>"; };
 		60185E172BFD81240050D068 /* WatchDeviceListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDeviceListRow.swift; sourceTree = "<group>"; };
 		60185E192BFD87140050D068 /* WatchDeviceControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDeviceControl.swift; sourceTree = "<group>"; };
@@ -152,6 +156,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6004A6752C19315000B43E2A /* Sliders */ = {
+			isa = PBXGroup;
+			children = (
+				6004A6732C19059A00B43E2A /* DynamicSliderValueButtonLabelView.swift */,
+				607033122C00E596004E7C3D /* BrightnessSlider.swift */,
+				6004A6762C19317000B43E2A /* CrossfadeSlider.swift */,
+			);
+			path = Sliders;
+			sourceTree = "<group>";
+		};
 		6082F1772BF80535008A2824 /* Enlighted BLE Watch App Watch App */ = {
 			isa = PBXGroup;
 			children = (
@@ -187,10 +201,10 @@
 		6082F18B2BF818F7008A2824 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				6004A6752C19315000B43E2A /* Sliders */,
 				60185E152BFD51350050D068 /* WatchDeviceList.swift */,
 				60185E172BFD81240050D068 /* WatchDeviceListRow.swift */,
 				60185E192BFD87140050D068 /* WatchDeviceControl.swift */,
-				607033122C00E596004E7C3D /* BrightnessSlider.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -415,6 +429,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6082F17B2BF80535008A2824 /* ContentView.swift in Sources */,
+				6004A6772C19317000B43E2A /* CrossfadeSlider.swift in Sources */,
 				6082F1792BF80535008A2824 /* Enlighted_BLE_Watch_AppApp.swift in Sources */,
 				60AF89692C130A5700D1D263 /* VideoPlayerModel.swift in Sources */,
 				6082F18C2BF8191E008A2824 /* UUIDKey.swift in Sources */,
@@ -423,6 +438,7 @@
 				60185E1A2BFD87140050D068 /* WatchDeviceControl.swift in Sources */,
 				6082F1922BF82631008A2824 /* WatchDevice.swift in Sources */,
 				60185E142BFD43FF0050D068 /* BLE_Connection_Controller.swift in Sources */,
+				6004A6742C19059A00B43E2A /* DynamicSliderValueButtonLabelView.swift in Sources */,
 				607033132C00E596004E7C3D /* BrightnessSlider.swift in Sources */,
 				6082F18D2BF8191E008A2824 /* Mode.swift in Sources */,
 				6082F18F2BF8191E008A2824 /* EnlightedBLEProtocol.swift in Sources */,

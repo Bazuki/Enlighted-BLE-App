@@ -1,16 +1,14 @@
 //
-//  BrightnessSlider.swift
+//  CrossfadeSlider.swift
 //  Enlighted BLE Watch App Watch App
 //
-//  Created by Dylan Suzuki on 5/24/24.
+//  Created by Dylan Suzuki on 6/11/24.
 //  Copyright © 2024 Bryce Suzuki. All rights reserved.
 //
 
-//Credit for tutorial to: https://medium.com/@kusalprabathrajapaksha/bidirectional-custom-slider-in-swiftui-b5c92cadcba4
-
 import SwiftUI
 
-struct BrightnessSlider: View {
+struct CrossfadeSlider: View {
     //Actual slider value
     @Binding var value: Double
     
@@ -19,7 +17,7 @@ struct BrightnessSlider: View {
     
     //Limits for parameters
     private let minValue: Double = 0
-    private let maxValue: Double = 255
+    private let maxValue: Double = 100
     private let thumbRadius: CGFloat = 8
     private let sliderHeight: CGFloat = 4
     
@@ -75,30 +73,30 @@ struct BrightnessSlider: View {
             } else{ //Vertical Slider
                 ZStack{
                     //Track
-                    RoundedRectangle(cornerRadius: 4)
+                    RoundedRectangle(cornerRadius: 10)
                         .fill(Color.white.opacity(1))
-                        .frame(width: sliderHeight, height: geometry.size.height)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
                     VStack{
+                        Spacer()
                         ZStack{
                             let currentRatio = CGFloat(value/(maxValue - minValue))
                             let tintHeight = geometry.size.height * currentRatio
                             
                             //Tint
-                            Rectangle()
+                            RoundedRectangle(cornerRadius: 10)
                                 .fill(Color(white: currentRatio))
-                                .frame(width: sliderHeight, height: abs(tintHeight))
+                                .frame(width: geometry.size.width, height: abs(tintHeight))
                             
                         }
-                        Spacer()
                     }
                     VStack{
                         //Sliding piece
-                        Circle()
+                        RoundedRectangle(cornerRadius: thumbRadius)
                             .fill(Color.black)
                             .fill(Color.white.opacity(value/(maxValue - minValue)))
                             .stroke(Color.white, lineWidth: 3)
-                            .frame(width: thumbRadius * 2)
-                            .offset(y: CGFloat((value)/(maxValue - minValue)) * geometry.size.height - thumbRadius)
+                            .frame(width: geometry.size.width, height: thumbRadius * 2)
+                            .offset(y: CGFloat((maxValue - value)/(maxValue - minValue)) * geometry.size.height - thumbRadius)
                             .onChange(of: value) { oldValue, newValue in
                                 value = min(max(newValue, minValue), maxValue)
                             }
@@ -111,7 +109,7 @@ struct BrightnessSlider: View {
                                     .onEnded({gesture in // Credit to: https://developer.apple.com/documentation/swiftui/adding-interactivity-with-gestures
                                         updateValue(with: gesture, in: geometry)
                                         print("Ended Dragging")
-                                        //                                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGE_BRIGHTNESS), object: nil)
+                                        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGE_CROSSFADE), object: nil)
                                     })
                             )
                         Spacer()
@@ -130,14 +128,13 @@ struct BrightnessSlider: View {
     
     //Update the binded value when the slider is dragged
     private func updateValue(with gesture: DragGesture.Value, in geometry: GeometryProxy) {
-        let dragPortion = gesture.location.x / geometry.size.width
+        let dragPortion = self.orientation ? (geometry.size.height - gesture.location.y) / geometry.size.height : gesture.location.x / geometry.size.width
         let newValue = ((Double(maxValue) - Double(minValue)) * dragPortion)
         value = min(max(newValue, minValue), maxValue).rounded(.toNearestOrAwayFromZero)
     }
         
 }
 
-
 #Preview {
-    BrightnessSlider(value: Binding.constant(127), orientation: true)
+    CrossfadeSlider(value: Binding.constant(200), orientation: true)
 }
