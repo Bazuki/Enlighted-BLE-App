@@ -124,7 +124,7 @@ struct BrightnessSlider: View {
         .frame(height: orientation ? 150 : 100)
         .padding()
         .focusable() //Credit to: https://www.hackingwithswift.com/quick-start/swiftui/how-to-read-the-digital-crown-on-watchos-using-digitalcrownrotation
-        .digitalCrownRotation($value, from: minValue , through: maxValue, by: 1, sensitivity: .medium, isContinuous: false, isHapticFeedbackEnabled: true )
+        .digitalCrownRotation($value, from: minValue , through: maxValue, by: 1, sensitivity: .high, isContinuous: false, isHapticFeedbackEnabled: true )
         .scrollIndicators(.hidden)
     }
     

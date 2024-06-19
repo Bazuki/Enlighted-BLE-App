@@ -331,6 +331,7 @@ class Constants
         static let CHANGE_CROSSFADE = "changeCrossfade";
         static let CONNECTED_TO_WATCH_DEVICE = "connectedtoWatchDevice";
         static let DISCONNECTED_FROM_WATCH_DEVICE = "desconnectedFromWatchDevice";
+        static let ENDED_WORKOUT = "endedWorkout";
     }
     
 }

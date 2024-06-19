@@ -40,7 +40,7 @@ struct DynamicSliderValueButtonLabelView: View {
                 HStack{ //Centered Title
                     Spacer()
                     Text(title)
-                        .foregroundStyle((value <= maxValue/2) ? .white : .black)
+                        .foregroundStyle((value <= (5 * maxValue)/8) ? .white : .black)  //Depending on how high the value is, the title will either be white or black
                     Spacer()
                 }
             }

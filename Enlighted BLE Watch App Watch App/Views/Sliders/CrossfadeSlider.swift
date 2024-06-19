@@ -62,7 +62,7 @@ struct CrossfadeSlider: View {
                                     .onEnded({gesture in // Credit to: https://developer.apple.com/documentation/swiftui/adding-interactivity-with-gestures
                                         updateValue(with: gesture, in: geometry)
                                         print("Ended Dragging")
-                                        //                                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGE_BRIGHTNESS), object: nil)
+                                        //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGE_CROSSFADE), object: nil)
                                     })
                             )
                         Spacer()
@@ -109,7 +109,7 @@ struct CrossfadeSlider: View {
                                     .onEnded({gesture in // Credit to: https://developer.apple.com/documentation/swiftui/adding-interactivity-with-gestures
                                         updateValue(with: gesture, in: geometry)
                                         print("Ended Dragging")
-                                        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGE_CROSSFADE), object: nil)
+                                        //NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.CHANGE_CROSSFADE), object: nil)
                                     })
                             )
                         Spacer()
@@ -122,7 +122,7 @@ struct CrossfadeSlider: View {
         .frame(height: orientation ? 150 : 100)
         .padding()
         .focusable() //Credit to: https://www.hackingwithswift.com/quick-start/swiftui/how-to-read-the-digital-crown-on-watchos-using-digitalcrownrotation
-        .digitalCrownRotation($value, from: minValue , through: maxValue, by: 1, sensitivity: .medium, isContinuous: false, isHapticFeedbackEnabled: true )
+        .digitalCrownRotation($value, from: minValue , through: maxValue, by: 1, sensitivity: .high, isContinuous: false, isHapticFeedbackEnabled: true )
         .scrollIndicators(.hidden)
     }
     

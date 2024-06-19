@@ -11,10 +11,14 @@ import SwiftUI
 @main
 struct Enlighted_BLE_Watch_App_Watch_AppApp: App {
     @State var showingLaunchImage = true
+    
+    @State var workoutManager = WorkoutManager()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(BLEConnectionController())
+                .environmentObject(workoutManager)
         }
     }
 }

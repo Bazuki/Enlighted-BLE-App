@@ -377,6 +377,7 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         
             // starting at mode -1; in the real app, would read current mode from device
         currentModeIndex = -1;
+        modeNames = ["Demo Mode"]
         maxNumModes = -1;
         maxBitmaps = -1;
             
