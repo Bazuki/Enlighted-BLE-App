@@ -332,6 +332,7 @@ class Constants
         static let CONNECTED_TO_WATCH_DEVICE = "connectedtoWatchDevice";
         static let DISCONNECTED_FROM_WATCH_DEVICE = "desconnectedFromWatchDevice";
         static let ENDED_WORKOUT = "endedWorkout";
+        static let COULDNT_SAVE_WORKOUT_DUE_TO_ERROR = "couldntSaveWorkoutDueToError";
     }
     
 }

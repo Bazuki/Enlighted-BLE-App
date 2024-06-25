@@ -20,29 +20,34 @@ struct WorkoutSummaryView: View {
         formatter.zeroFormattingBehavior = .pad
         return formatter
     }()
+    @State var savingStatus: String = "Saving Workout"
+    
+    let workoutErrorListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.MESSAGES.COULDNT_SAVE_WORKOUT_DUE_TO_ERROR))
+    
     var body: some View {
-        if workoutManager.workout == nil{
-            ProgressView("Saving Workout")
-                .navigationBarHidden(true)
-        } else {
-            ScrollView(.vertical){
-                VStack(alignment: .leading){
-                    SummaryMetricView(title: "Total Time", value: durationFormatter.string(from: workoutManager.workout?.duration ?? 0.0) ?? "")
-                    SummaryMetricView(title: "Avg. Heart Rate", value: workoutManager.averageHeartRate.formatted(.number.precision(.fractionLength(0))))
-                    Button("Done") {
-                        NotificationCenter.default.post(Notification(name: Notification.Name(rawValue: Constants.MESSAGES.ENDED_WORKOUT)))
-                        dismiss()
-                    }
-                }.scenePadding()
+        ZStack{
+            if workoutManager.workout == nil{
+                ProgressView(savingStatus)
+                    .navigationBarHidden(true)
+            } else {
+                ScrollView(.vertical){
+                    VStack(alignment: .leading){
+                        SummaryMetricView(title: "Total Time", value: durationFormatter.string(from: workoutManager.workout?.duration ?? 0.0) ?? "")
+                        SummaryMetricView(title: "Avg. Heart Rate", value: workoutManager.averageHeartRate.formatted(.number.precision(.fractionLength(0))))
+                        Button("Done") {
+                            NotificationCenter.default.post(Notification(name: Notification.Name(rawValue: Constants.MESSAGES.ENDED_WORKOUT)))
+                            dismiss()
+                        }
+                    }.scenePadding()
+                }
+                .navigationTitle("Summary")
+                .navigationBarTitleDisplayMode(.inline)
             }
-            .navigationTitle("Summary")
-            .navigationBarTitleDisplayMode(.inline)
-        }
+        }.onReceive(workoutErrorListener, perform: {notification in
+            print("***************GOT AN ERROR WHILE SAVING WORKOUT*************** \n\n \(notification.object as! String)")
+            savingStatus = notification.object as? String ?? "Could not get error message"
+        })
     }
-}
-
-#Preview {
-    WorkoutSummaryView()
 }
 
 struct SummaryMetricView: View {

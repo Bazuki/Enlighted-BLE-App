@@ -95,16 +95,17 @@ class WorkoutManager: NSObject, ObservableObject {
     }
     
     func endWorkout() {
-        print("Ending workout")
-        session?.end()
-        showingSummaryView = true
+        if session?.state != .ended{
+            print("Ending workout")
+            session?.end()
+            showingSummaryView = true
+        }
     }
     
     //MARK: - Workout Metrics
     @Published var averageHeartRate: Double = 0
     @Published var heartRate: Double = 0
     @Published var activeEnergy: Double = 0
-//    @Published var distance: Double = 0
     @Published var workout: HKWorkout?
     
     func updateForStatistics(_ statistics: HKStatistics?) {
@@ -121,9 +122,6 @@ class WorkoutManager: NSObject, ObservableObject {
             case HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned):
                 let energyUnit = HKUnit.kilocalorie()
                 self.activeEnergy = statistics.sumQuantity()?.doubleValue(for: energyUnit) ?? 0
-//            case HKQuantityType.quantityType(forIdentifier: .distanceCycling), HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning):
-//                let meterUnit = HKUnit.meter()
-//                self.distance = statistics.sumQuantity()?.doubleValue(for: meterUnit) ?? 0
             default:
                 return
             }
@@ -140,7 +138,6 @@ class WorkoutManager: NSObject, ObservableObject {
         activeEnergy = 0
         averageHeartRate = 0
         heartRate = 0
-        //distance = 0
     }
 }
 
@@ -155,7 +152,13 @@ extension WorkoutManager: HKWorkoutSessionDelegate {
         //Wait for the session to transition states before ending the builder
         if toState == .ended {
             builder?.endCollection(withEnd: date){ (success, error) in
+                if (error != nil){
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.COULDNT_SAVE_WORKOUT_DUE_TO_ERROR), object: error)
+                }
                 self.builder?.finishWorkout {(workout, error) in
+                    if (error != nil){
+                        NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.COULDNT_SAVE_WORKOUT_DUE_TO_ERROR), object: error)
+                    }
                     DispatchQueue.main.async {
                         self.workout = workout
                     }

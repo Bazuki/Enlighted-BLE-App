@@ -41,6 +41,9 @@ struct WatchDeviceControl: View {
     //Current screen being shown
     @State var selectedTab = 0
     
+    //Loading string so we can tell the user what is happening when the watch is loading limits, modes, brightness, etc.
+    @State var loadingString: String?
+    
     
     //Event listeners for interrupt signals - Credit to: https://stackoverflow.com/questions/58818046/how-to-set-addobserver-in-swiftui
     let loadingListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.MESSAGES.WATCH_READY_TO_SHOW))
@@ -49,6 +52,7 @@ struct WatchDeviceControl: View {
     let deviceConnectionListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.MESSAGES.CONNECTED_TO_WATCH_DEVICE))
     let disconnectListener = NotificationCenter.default.publisher(for:  Notification.Name(rawValue: Constants.MESSAGES.DISCONNECTED_FROM_WATCH_DEVICE))
     let workoutListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.MESSAGES.ENDED_WORKOUT))
+    let loadingStringListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET))
     
     //MARK: DIMMED STATE TESTER
     let brightnessHRChangeListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: "HRBrightness"))
@@ -63,14 +67,11 @@ struct WatchDeviceControl: View {
         NotificationCenter.default.post(name: Notification.Name(rawValue: "HRBrightness"), object: nil)
     }
     
-    //VideoPlayerModel to keep the screen awake by playing a still shot of the enlighted logo in the background
-    @ObservedObject var videoPlayerModel: VideoPlayerModel = VideoPlayerModel()
-    
     //Helper function for the next and previous buttons
     func newMode(next: Bool){
         //Set the mode index depending on which button was pushed
         if(next){
-            thisDevice.currentModeIndex = (thisDevice.currentModeIndex % thisDevice.maxNumModes) + 1
+            thisDevice.currentModeIndex = ((thisDevice.currentModeIndex + 1 ) % thisDevice.maxNumModes)
         } else{
             thisDevice.currentModeIndex -= 1
             if(thisDevice.currentModeIndex < 1){
@@ -96,11 +97,15 @@ struct WatchDeviceControl: View {
         }
     }
     
+    //Change brightness based on the heartrate
     func HRBrightnessChange() {
-        if (workoutManager.heartRate < 70){
-            BLE.changeBrightness(newBrightness: max(Double(thisDevice.brightness) - 1.0, 0.0))
-        } else {
-            BLE.changeBrightness(newBrightness: min(Double(thisDevice.brightness) + 1.0, 255.0))
+        if (workoutControlMode && workoutManager.running){
+            print("**********REACTING TO HEARTRATE CONTROL**********")
+            if (workoutManager.heartRate < 70){
+                BLE.changeBrightness(newBrightness: 127)
+            } else {
+                BLE.changeBrightness(newBrightness: 128)
+            }
         }
     }
     
@@ -113,7 +118,7 @@ struct WatchDeviceControl: View {
                     TabView(selection: $selectedTab){ //Main TabView that holds the mode control on the first page and the brightness, crossfade, and continuous control on the second page
                         VStack{ //Main vertical stack
                             //Basic device info
-                            Text("\(loading ? String("Loading...") : "\(String(thisDevice.currentModeIndex )): \(thisDevice.name == "emptyDevice" ? "Demo Mode": thisDevice.modeNames[thisDevice.currentModeIndex])")")
+                            Text("\(loading ? "" : "\(String(thisDevice.currentModeIndex )): \(thisDevice.name == "emptyDevice" ? "Demo Mode": thisDevice.modeNames[thisDevice.currentModeIndex - 1])")") //modeNames is zero justified while currentModeIndex is not, so we need to subtract one from the index to get the correct modeName and not cause an index out of bounds
                                 .fixedSize(horizontal: false, vertical: true) //Credit to: https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
                             HStack{ //Mode button horizontal stack
                                 Button("<"){
@@ -179,16 +184,18 @@ struct WatchDeviceControl: View {
                                         workoutControlMode = false
                                     }
                                     .gesture(workoutControlMode ? DragGesture() : nil) //Credit to: https://stackoverflow.com/questions/63168014/swiftui-2-0-tabview-disable-swipe-to-change-page
+                                    .focusable()
                             }
                             Spacer()
                         }
                         //.ignoresSafeArea()
                         .safeAreaPadding(.bottom, 10)
                         .tag(1)
-                    }.tabViewStyle(.carousel)
+                    }
+                        .tabViewStyle(.carousel)
                         .tabViewStyle(PageTabViewStyle(indexDisplayMode: workoutControlMode ? .never : .automatic)) //Credit to: https://stackoverflow.com/questions/63168014/swiftui-2-0-tabview-disable-swipe-to-change-page
                     if(loading){ //Layer the progress view on top of the controls so that users can't interact with them while loading
-                        ProgressView()
+                        ProgressView(label: {Text(loadingString ?? "Loading")})
                     }
                 }.background(content: { //Enlighted logo in the background
                     Image("logo_1024")
@@ -202,6 +209,7 @@ struct WatchDeviceControl: View {
             
             //When this view appears, connect to the selected device if it's a real device
             if (thisDevice.name != "emptyDevice"){
+                loadingString = thisDevice.loadingStatus
                 loading = true
                 WatchDevice.setConnectedDevice(newDevice: thisDevice)
                 WatchDevice.connectedDevice!.isConnected = false
@@ -260,6 +268,11 @@ struct WatchDeviceControl: View {
         .onReceive(workoutListener, perform: {_ in
             //When we get the workout finished message, remove the workout control page from the screen
             workoutControlMode = false
+        })
+        .onReceive(loadingStringListener, perform: { _ in
+            //Update loading string whenever we get a complete packet
+            loadingString = thisDevice.loadingStatus
+            //print("Updating loading string")
         })
         .toolbar((selectedTab == 1) ? .hidden : .visible) //Only let the user disconnect from the top page since it was confusing to have multiple back buttons on the brightness, crossfade, and continuous control pages
     }

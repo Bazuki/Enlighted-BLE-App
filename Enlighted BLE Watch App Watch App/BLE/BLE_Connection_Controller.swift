@@ -438,6 +438,8 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
             WatchDevice.connectedDevice?.requestedCrossfade = false;
             WatchDevice.connectedDevice?.supportsCrossfade = false;
             WatchDevice.connectedDevice?.checkedCrossfade = false;
+            WatchDevice.connectedDevice?.modeNames = [String]()
+            WatchDevice.connectedDevice?.loadingStatus = "Loading"
             
             // we always want to do some setup, but if we already have modes / thumbnails it should be quick
             WatchDevice.connectedDevice?.readyToShowModes = false;
@@ -455,6 +457,8 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
                 // if we haven't already, getLimits for this device, so that we'll know it when we change it on the settings screen
             print("requesting limits")
             getPrimaryLimits()
+            WatchDevice.connectedDevice?.loadingStatus = "Getting Limits"
+            
                 // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
             return;
         }
@@ -467,6 +471,8 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
                 print("requesting version")
                 formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_VERSION);
                 WatchDevice.connectedDevice?.requestedVersion = true;
+                WatchDevice.connectedDevice?.loadingStatus = "Getting Version"
+                
             }
             // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
             return;
@@ -478,6 +484,8 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
             {
                 print("requesting brightness")
                 getPrimaryBrightness()
+                WatchDevice.connectedDevice?.loadingStatus = "Getting Brightness"
+                
             }
             // if we've already requested it, we have to keep waiting for a response before sending something else on the txCharacteristic
             return;
@@ -489,6 +497,8 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
                 print("requesting crossfade")
                 formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)
                 WatchDevice.connectedDevice?.requestedCrossfade = true;
+                WatchDevice.connectedDevice?.loadingStatus = "Getting Crossfade"
+                
             }
             return;
         }
@@ -498,6 +508,8 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
                 print("Getting name for mode: \((WatchDevice.connectedDevice?.modeNames.count)!)")
                 formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_NAME, inputInts: [(WatchDevice.connectedDevice?.modeNames.count)! + 1])
                 WatchDevice.connectedDevice?.requestedName = true;
+                WatchDevice.connectedDevice?.loadingStatus = "Getting Mode \((WatchDevice.connectedDevice?.modeNames.count)! + 1) of \((WatchDevice.connectedDevice?.maxNumModes)!)"
+                
             }
             return;
         }
@@ -1025,6 +1037,10 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                     // taking off quotes
                     parsedName = receivedName.filter { $0 != "\"" }
                     WatchDevice.connectedDevice?.modeNames.append(parsedName) //Add the name to the list of mode names
+                    if WatchDevice.connectedDevice?.modeNames.count == WatchDevice.connectedDevice?.maxNumModes{
+                        //Reset the loadingStatus when we receive the last the last mode name so it doesn't show up as 33 of 34 when you reconnect
+                        WatchDevice.connectedDevice?.loadingStatus = "Loading"
+                    }
                     WatchDevice.connectedDevice?.requestedName = false;
                     WatchDevice.connectedDevice?.receivedName = true;
                     

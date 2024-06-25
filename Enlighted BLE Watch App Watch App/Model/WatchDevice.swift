@@ -68,6 +68,7 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
     
     var name: String;
     var nickname = "";
+    var loadingStatus = "Loading"
     var RSSI: Int;
     var batteryPercentage: Int = -1;
         // the current mode
