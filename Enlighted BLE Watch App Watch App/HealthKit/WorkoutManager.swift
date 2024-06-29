@@ -138,6 +138,7 @@ class WorkoutManager: NSObject, ObservableObject {
         activeEnergy = 0
         averageHeartRate = 0
         heartRate = 0
+        running = false
     }
 }
 

@@ -20,6 +20,16 @@ struct WorkoutControlsView: View {
         HStack{
             VStack{
                 Button {
+                    NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.ENDED_WORKOUT), object: nil)
+                } label: {
+                    Image(systemName: "arrowshape.backward.fill")
+                }
+                .tint(Color.purple)
+                .font(.title2)
+                Text("Back")
+            }
+            VStack{
+                Button {
                     workoutManager.endWorkout()
                 } label: {
                     Image(systemName: "xmark")
@@ -27,16 +37,6 @@ struct WorkoutControlsView: View {
                 .tint(Color.red)
                 .font(.title2)
                 Text("End")
-            }
-            VStack{
-                Button {
-                    workoutManager.togglePause()
-                } label: {
-                    Image(systemName: workoutManager.running ? "pause" : "play")
-                }
-                .tint(Color.yellow)
-                .font(.title2)
-                Text(workoutManager.running ? "Pause" : "Resume")
             }
         }
     }

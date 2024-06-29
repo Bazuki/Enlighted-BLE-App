@@ -42,7 +42,7 @@ private struct MetricsTimelineSchedule: TimelineSchedule {
     }
 }
 
-#Preview {
-    WorkoutMetricsView()
-        .environmentObject(WorkoutManager())
-}
+//#Preview {
+//    WorkoutMetricsView()
+//        .environmentObject(WorkoutManager())
+//}

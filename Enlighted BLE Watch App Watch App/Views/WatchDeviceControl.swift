@@ -97,7 +97,7 @@ struct WatchDeviceControl: View {
         }
     }
     
-    //Change brightness based on the heartrate
+    //Change brightness based on the heartrate - NOTE: as it stands starting in 0.0.6, this only will change the brightness based on HR if the user is currently in the workout status page for the sake of not constantly spamming the hardware when the user may want to change mode, brightness (purposely), etc
     func HRBrightnessChange() {
         if (workoutControlMode && workoutManager.running){
             print("**********REACTING TO HEARTRATE CONTROL**********")
@@ -112,99 +112,114 @@ struct WatchDeviceControl: View {
     //MARK: Main body
     var body: some View {
         GeometryReader{ geometry in
-            VStack{
-                ZStack{ //Zstack so that we can layer the progressView (loading circle) over the main controls and restrict the user's interaction during loading
-
-                    TabView(selection: $selectedTab){ //Main TabView that holds the mode control on the first page and the brightness, crossfade, and continuous control on the second page
-                        VStack{ //Main vertical stack
-                            //Basic device info
-                            Text("\(loading ? "" : "\(String(thisDevice.currentModeIndex )): \(thisDevice.name == "emptyDevice" ? "Demo Mode": thisDevice.modeNames[thisDevice.currentModeIndex - 1])")") //modeNames is zero justified while currentModeIndex is not, so we need to subtract one from the index to get the correct modeName and not cause an index out of bounds
-                                .fixedSize(horizontal: false, vertical: true) //Credit to: https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
-                            HStack{ //Mode button horizontal stack
-                                Button("<"){
-                                    print("Previous mode")
-                                    newMode(next: false)
-                                }
-                                Button(">"){
-                                    print("Next mode")
-                                    newMode(next: true)
-                                }
-                            }
-                            Spacer()
-                        }.tag(0)
-                        //.safeAreaPadding(.top, 80) //Credit to: https://swiftwithmajid.com/2021/11/03/managing-safe-area-in-swiftui/
-                        VStack{ // Extra control VStack
-                            Spacer()
-                            if (!brightnessControlMode && !crossfadeControlMode && !workoutControlMode){
-                                Button{
-                                    print("Switching to brightness control")
-                                    withAnimation{
-                                        brightnessControlMode = true
+                VStack{
+                    ZStack{ //Zstack so that we can layer the progressView (loading circle) over the main controls and restrict the user's interaction during loading
+                        
+                        TabView(selection: $selectedTab){ //Main TabView that holds the mode control on the first page and the brightness, crossfade, and continuous control on the second page
+                            VStack{ //Main vertical stack
+                                //Basic device info
+                                Text("\(loading ? "" : "\(String(thisDevice.currentModeIndex )): \(thisDevice.name == "emptyDevice" ? "Demo Mode": thisDevice.modeNames[thisDevice.currentModeIndex - 1])")") //modeNames is zero justified while currentModeIndex is not, so we need to subtract one from the index to get the correct modeName and not cause an index out of bounds
+                                    .fixedSize(horizontal: false, vertical: true) //Credit to: https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
+                                HStack{ //Mode button horizontal stack
+                                    Button("<"){
+                                        print("Previous mode")
+                                        newMode(next: false)
                                     }
-                                } label: {
-                                    DynamicSliderValueButtonLabelView(value: $brightnessSliderValue, title: "Brightness", minValue: 0, maxValue: 255)
-                                }
-                                Button(){
-                                    print("Switching to crossfade control")
-                                    withAnimation{
-                                        crossfadeControlMode = true
+                                    Button(">"){
+                                        print("Next mode")
+                                        newMode(next: true)
                                     }
-                                } label: {
-                                    DynamicSliderValueButtonLabelView(value: $crossfadeSliderValue, title: "Crossfade", minValue: 0, maxValue: 100)
                                 }
-                                Button(){
-                                    print("Switching to workout control")
-                                    withAnimation{
-                                        workoutControlMode = true
-                                    }
-                                } label: {
-                                    DynamicSliderValueButtonLabelView(value: Binding.constant(0), title: "Heart Rate Control", minValue: 0, maxValue: 1)
-                                }
-                            } else if (brightnessControlMode){
-                                HStack{
-                                    Button("Back"){
+                                Spacer()
+                            }.tag(0)
+                            //.safeAreaPadding(.top, 80) //Credit to: https://swiftwithmajid.com/2021/11/03/managing-safe-area-in-swiftui/
+                            VStack{ // Extra control VStack
+                                Spacer()
+                                if (!brightnessControlMode && !crossfadeControlMode && !workoutControlMode){
+                                    Button{
+                                        print("Switching to brightness control")
                                         withAnimation{
-                                            brightnessControlMode = false
+                                            brightnessControlMode = true
                                         }
+                                    } label: {
+                                        DynamicSliderValueButtonLabelView(value: $brightnessSliderValue, title: "Brightness", minValue: 0, maxValue: 255)
                                     }
-                                    BrightnessSlider(value: $brightnessSliderValue, orientation: true)
-                                }
-                            } else if (crossfadeControlMode){
-                                HStack{
-                                    Button("Back"){
+                                    Button(){
+                                        print("Switching to crossfade control")
                                         withAnimation{
-                                            crossfadeControlMode = false
+                                            crossfadeControlMode = true
                                         }
+                                    } label: {
+                                        DynamicSliderValueButtonLabelView(value: $crossfadeSliderValue, title: "Crossfade", minValue: 0, maxValue: 100)
                                     }
-                                    CrossfadeSlider(value: $crossfadeSliderValue, orientation: true)
+                                    Button(){
+                                        print("Switching to workout control")
+                                        withAnimation{
+                                            workoutControlMode = true
+                                        }
+                                    } label: {
+                                        DynamicSliderValueButtonLabelView(value: Binding.constant(0), title: "Workout Status", minValue: 0, maxValue: 1)
+                                    }
+                                } else if (brightnessControlMode){
+                                    HStack{
+                                        Button("Back"){
+                                            withAnimation{
+                                                brightnessControlMode = false
+                                            }
+                                        }
+                                        BrightnessSlider(value: $brightnessSliderValue, active: $brightnessControlMode, orientation: true)
+                                            .disabled(!brightnessControlMode)
+                                    }
+                                } else if (crossfadeControlMode){
+                                    HStack{
+                                        Button("Back"){
+                                            withAnimation{
+                                                crossfadeControlMode = false
+                                            }
+                                        }
+                                        CrossfadeSlider(value: $crossfadeSliderValue, active: crossfadeControlMode, orientation: true)
+                                            .disabled(!crossfadeControlMode)
+                                    }
+                                } else if (workoutControlMode){
+                                    WorkoutSessionView()
+                                        .onDisappear{
+                                            workoutControlMode = false
+                                        }
+                                        .gesture(workoutControlMode ? DragGesture() : nil) //Credit to: https://stackoverflow.com/questions/63168014/swiftui-2-0-tabview-disable-swipe-to-change-page
+                                        .focusable()
                                 }
-                            } else if (workoutControlMode){
-                                WorkoutSessionView()
-                                    .onDisappear{
-                                        workoutControlMode = false
-                                    }
-                                    .gesture(workoutControlMode ? DragGesture() : nil) //Credit to: https://stackoverflow.com/questions/63168014/swiftui-2-0-tabview-disable-swipe-to-change-page
-                                    .focusable()
+                                Spacer()
                             }
-                            Spacer()
+                            //.ignoresSafeArea()
+                            .safeAreaPadding(.bottom, 10)
+                            .tag(1)
                         }
-                        //.ignoresSafeArea()
-                        .safeAreaPadding(.bottom, 10)
-                        .tag(1)
-                    }
                         .tabViewStyle(.carousel)
                         .tabViewStyle(PageTabViewStyle(indexDisplayMode: workoutControlMode ? .never : .automatic)) //Credit to: https://stackoverflow.com/questions/63168014/swiftui-2-0-tabview-disable-swipe-to-change-page
-                    if(loading){ //Layer the progress view on top of the controls so that users can't interact with them while loading
-                        ProgressView(label: {Text(loadingString ?? "Loading")})
-                    }
-                }.background(content: { //Enlighted logo in the background
-                    Image("logo_1024")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
-                })
-                //MARK: Appear, disappear, and custom message listeners
-            }
+                        if(loading){ //Layer the progress view on top of the controls so that users can't interact with them while loading
+                            ProgressView(label: {Text(loadingString ?? "Loading")})
+                        }
+                    }.background(content: { //Enlighted logo in the background
+                        Image("logo_1024")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
+                    })
+                    //MARK: Appear, disappear, and custom message listeners
+                }.navigationBarBackButtonHidden(true)
+                .toolbar { //Custom back button so that we can stop the workout on disconnect
+                    ToolbarItem(placement: .topBarLeading, content: {
+                        Button{
+                            if (workoutManager.running){
+                                workoutManager.endWorkout()
+                                workoutManager.showingSummaryView = false
+                            }
+                            dismiss()
+                        } label: {
+                            Image(systemName: "chevron.backward")
+                        }
+                    })
+                }
         }.onAppear(perform: {
             
             //When this view appears, connect to the selected device if it's a real device
@@ -242,6 +257,13 @@ struct WatchDeviceControl: View {
             if(thisDevice.name != "emptyDevice"){
                 RunLoop.main.add(brightnessTimer, forMode: .common)
                 RunLoop.main.add(brightnessToggleTimer, forMode: .common)
+            }
+            
+            //Start workout session
+            workoutManager.requestAuth()
+            print("checking if we need to start workout: \(!workoutManager.running)")
+            if (!workoutManager.running){
+                workoutManager.startWorkout(workoutType: .cardioDance)
             }
         })
         .onReceive(brightnessChangeListener, perform: {_ in //When we get the signal that the brightness has changed, update it

@@ -585,7 +585,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.0.5;
+				MARKETING_VERSION = 0.0.6;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble.watchkitapp;
@@ -629,7 +629,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.0.5;
+				MARKETING_VERSION = 0.0.6;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -770,7 +770,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.4;
+				MARKETING_VERSION = 1.3.5;
 				OTHER_SWIFT_FLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -795,7 +795,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.4;
+				MARKETING_VERSION = 1.3.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "";

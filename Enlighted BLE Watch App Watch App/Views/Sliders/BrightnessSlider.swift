@@ -14,6 +14,9 @@ struct BrightnessSlider: View {
     //Actual slider value
     @Binding var value: Double
     
+    //Whether or not this slider is currently active on the screen
+    @Binding var active: Bool
+    
     //Whether the slider is vertical or horizontal - true = vertical, false = horizontal
     @State var orientation: Bool
     
@@ -123,7 +126,8 @@ struct BrightnessSlider: View {
         }
         .frame(height: orientation ? 150 : 100)
         .padding()
-        .focusable() //Credit to: https://www.hackingwithswift.com/quick-start/swiftui/how-to-read-the-digital-crown-on-watchos-using-digitalcrownrotation
+        .focusable(active) //Credit to: https://www.hackingwithswift.com/quick-start/swiftui/how-to-read-the-digital-crown-on-watchos-using-digitalcrownrotation
+        .disabled(!active)
         .digitalCrownRotation($value, from: minValue , through: maxValue, by: 1, sensitivity: .high, isContinuous: false, isHapticFeedbackEnabled: true )
         .scrollIndicators(.hidden)
     }
@@ -139,5 +143,5 @@ struct BrightnessSlider: View {
 
 
 #Preview {
-    BrightnessSlider(value: Binding.constant(200), orientation: true)
+    BrightnessSlider(value: Binding.constant(200), active: Binding.constant(true), orientation: true)
 }

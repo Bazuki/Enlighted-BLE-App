@@ -15,6 +15,8 @@ struct WorkoutSessionView: View {
     @State private var selection: Tab = .metrics
     @EnvironmentObject var workoutManager: WorkoutManager
     
+    let workoutPageListener = NotificationCenter.default.publisher(for: Notification.Name(rawValue: Constants.MESSAGES.ENDED_WORKOUT))
+    
     enum Tab {
         case controls, metrics
     }
@@ -30,10 +32,10 @@ struct WorkoutSessionView: View {
             WorkoutControlsView().tag(Tab.controls)
             WorkoutMetricsView().tag(Tab.metrics)
         }.tabViewStyle(.automatic)
-        .onAppear{
-            workoutManager.requestAuth()
-            workoutManager.startWorkout(workoutType: .cardioDance)
-        }
+//        .onAppear{
+//            workoutManager.requestAuth()
+//            workoutManager.startWorkout(workoutType: .cardioDance)
+//        }
         .navigationTitle("Continuous Control")
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(selection == .controls)
@@ -45,10 +47,13 @@ struct WorkoutSessionView: View {
                 WorkoutSummaryView()
             }.toolbar(.hidden, for: .navigationBar)
         }
+        .onReceive(workoutPageListener, perform: {_ in 
+            displayMetricsView()
+        })
     }
 }
 
-#Preview {
-    WorkoutSessionView()
-        .environmentObject(WorkoutManager())
-}
+//#Preview {
+//    WorkoutSessionView()
+//        .environmentObject(WorkoutManager())
+//}

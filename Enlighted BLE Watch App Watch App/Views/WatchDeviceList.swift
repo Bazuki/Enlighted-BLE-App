@@ -10,6 +10,7 @@ import SwiftUI
 
 struct WatchDeviceList: View {
     @EnvironmentObject var BLE: BLEConnectionController
+    @EnvironmentObject var workoutManager: WorkoutManager
     @State var devicesToShow = [WatchDevice]()
     @State var showPopUp: Bool = false
     
@@ -59,6 +60,10 @@ struct WatchDeviceList: View {
             .toolbar(.hidden, for: .navigationBar)
             .onReceive(disconnectListener, perform: {_ in
                 showPopUp = true
+                if (workoutManager.running){
+                    workoutManager.endWorkout()
+                    workoutManager.showingSummaryView = false
+                }
             })
     }
 }
