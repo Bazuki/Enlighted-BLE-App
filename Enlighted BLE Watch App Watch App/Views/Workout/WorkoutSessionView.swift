@@ -36,7 +36,7 @@ struct WorkoutSessionView: View {
 //            workoutManager.requestAuth()
 //            workoutManager.startWorkout(workoutType: .cardioDance)
 //        }
-        .navigationTitle("Continuous Control")
+        .navigationTitle("Workout Details")
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(selection == .controls)
         .onChange(of: workoutManager.running){ _, _ in

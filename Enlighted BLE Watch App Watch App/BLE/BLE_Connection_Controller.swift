@@ -395,6 +395,16 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
         WatchDevice.connectedDevice?.requestedBrightness = true;
     }
     
+    func getPrimaryClaps(){
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_CLAPS);
+        print("Requested Claps")
+    }
+    
+    func getPrimaryRealtime(){
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_REALTIME);
+        print("Requested Realtime Parameter type")
+    }
+    
     //Setting the brightness to a new value
     func changeBrightness(newBrightness: Double)
     {
@@ -545,6 +555,13 @@ class BLEConnectionController: NSObject, CBCentralManagerDelegate, ObservableObj
     func setPrimaryMode(newModeIndex:Int){
         print("Setting mode to: \(newModeIndex)")
         formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_MODE, inputInts: [newModeIndex], sendToMimicDevices: true)
+        WatchDevice.connectedDevice!.checkedClaps = false
+        WatchDevice.connectedDevice!.checkedRealtime = false
+    }
+    
+    func sendPrimaryGesture(gestureType: Int){
+        print("Sending a gesture of type: \(gestureType)")
+        formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_SET_GESTURE, inputInts: [gestureType], digitsPerInput: 1, sendToMimicDevices: true)
     }
     
     // Gets called when our bluetooth timeout timer has fired, usually means we requested something with no response, so we don't want to get hung up at this state, since the user will just see a loading screen
@@ -666,7 +683,13 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
         restartBLERxTimeoutTimer();
     }
     
-    BLEConnectionController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: sendToMimicDevices, settingMode: inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_MODE), toSingleDevice: toSingleDevice);
+        //If the current message is a broadcast packet, we can send it without worrying about responses
+    if(Constants.BROADCAST_PACKETS.contains(inputString)){
+        print("Broadcast packet detected")
+        BLEConnectionController.broadcastBLEPacket(valueData: outputData)
+    } else { //Otherwise, use the standard sending procedure
+        BLEConnectionController.sendBLEPacketToConnectedPeripherals(valueData: outputData, sendToMimicDevices: sendToMimicDevices, settingMode: inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_MODE), toSingleDevice: toSingleDevice);
+    }
     
         // filling up "last few messages"
     if (!WatchDevice.connectedDevice!.readyToShowModes && WatchDevice.connectedDevice!.maxNumModes > 0)
@@ -792,6 +815,15 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                 {
                     //print("Receiving a hardware version")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_VERSION;
+                }
+                    // Get Claps
+                else if (rxString?.prefix(1) == "C"){
+                    print("Recieving a clap response")
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_CLAPS
+                }
+                else if (WatchDevice.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_REALTIME)){
+                    print("Recieving a realtime response")
+                    currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_REALTIME
                 }
                 else if (rxInt == 1)
                 {
@@ -939,7 +971,13 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                 
                 print("Received a complete limits packet, parsing: " + rxString!.prefix(1), Int(rxValue[1]), Int(rxValue[2]), Int(rxValue[3]));
                 //print(Int(rxValue[1]));
-                WatchDevice.connectedDevice?.currentModeIndex = Int(rxValue[1]);
+                if(Int(rxValue[1]) != WatchDevice.connectedDevice?.currentModeIndex && WatchDevice.connectedDevice!.supportsGesturalControl){
+                    WatchDevice.connectedDevice?.checkedClaps = false
+                    WatchDevice.connectedDevice?.checkedRealtime = false
+                }
+                if(!WatchDevice.connectedDevice!.aboutToChangeMode){ //Only update the current mode if we don't have a pending mode change
+                    WatchDevice.connectedDevice?.currentModeIndex = Int(rxValue[1]);
+                }
                 WatchDevice.connectedDevice?.maxNumModes = Int(rxValue[2]);
                 WatchDevice.connectedDevice?.maxBitmaps = Int(rxValue[3]);
                 
@@ -1208,7 +1246,13 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                 //(rxString!.prefix(2).suffix(1);
                 
                 //Checking if we have access to the faster version of the nRF51822 firmware
-                if(rxString!.suffix(1) == "3")
+                if(rxString!.suffix(1) == "4")
+                {
+                    WatchDevice.connectedDevice?.hardwareVersion = .FASTNRF51822;
+                    WatchDevice.connectedDevice?.supportsGesturalControl = true;
+                    print("FIRMWARE VERSION: 4");
+                }
+                else if(rxString!.suffix(1) == "3")
                 {
                     WatchDevice.connectedDevice?.hardwareVersion = .FASTNRF51822;
                     print("FIRMWARE VERSION: 3");
@@ -1219,6 +1263,18 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                     WatchDevice.connectedDevice?.hardwareVersion = .NRF51822;
                     print("FIRMWARE VERSION 2");
                 }
+                    //MARK: Get Claps
+            case EnlightedBLEProtocol.ENL_BLE_GET_CLAPS:
+                print("Got clap response: \(String(describing: rxString))")
+                WatchDevice.connectedDevice?.claps = Int(rxString!.suffix(1))!
+                print("Set current mode clap parameter to: \(WatchDevice.connectedDevice!.claps)")
+                WatchDevice.connectedDevice?.checkedClaps = true
+                
+            case EnlightedBLEProtocol.ENL_BLE_GET_REALTIME:
+                print("Got realtime response: \(String(describing: rxString))")
+                WatchDevice.connectedDevice?.realtimeType = Int(rxString!.suffix(1))!
+                print("Set current mode realtime type to: \(WatchDevice.connectedDevice!.realtimeType)")
+                WatchDevice.connectedDevice?.checkedRealtime = true
                     // MARK: Success Response
             case "Success":
                 
@@ -1229,6 +1285,7 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                 {
                     print("Since the command to set the mode succeeded, we are going to change the mode settings now.")
                     WatchDevice.connectedDevice?.requestedModeChange = false;
+                    WatchDevice.connectedDevice?.aboutToChangeMode = false;
                     let identifier = [0: peripheral.identifier as NSUUID];
                     var waitingForMimics: Bool = false;
                     for mimic in (WatchDevice.connectedDevice?.connectedMimicDevices)!
@@ -1920,6 +1977,66 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
                     //print("The mimic device \(Device.connectedDevice!.connectedMimicDevices[i].name) has not yet discovered the txCharacteristic, not sending packet");
                 }
             }
+        }
+        
+        
+    }
+    
+    //broadcastBLEPacket function: should have similar functionality to sendBLEPacketToConnectedPeripherals, except for commands that don't care about reponses
+    static func broadcastBLEPacket( valueData: [NSData] )
+    {
+        if (WatchDevice.connectedDevice!.isDemoDevice)
+        {
+            print("Not sending BLE packets to a demo device");
+            return;
+        }
+            // NOTE: broadcasted commands don't wait for responses, so we don't care if another response hasn't been fulfilled
+//        if ((toSingleDevice == nil || toSingleDevice == WatchDevice.connectedDevice!) && WatchDevice.connectedDevice!.requestWithoutResponse)
+//        {
+//            print("Still waiting on a response");
+//                // TODO: vibrate if command failed
+//            
+//                // converting data to a string
+//            let failedPacketString = String(data: valueData[1] as Data, encoding: .ascii);
+//            WatchDevice.reportWatchError(Constants.COULD_NOT_TX_BLE_BECAUSE_WAITING_FOR_RESPONSE, additionalInfo: "Unable to send packet \(failedPacketString ?? "(inconvertible)") because the app was already waiting for a response to a different packet.  ");
+//            if (settingMode && !(toSingleDevice != nil))
+//            {
+//                WatchDevice.connectedDevice!.lastUnsentMessage = valueData;
+//            }
+//            return;
+//        }
+        
+        
+            // TODO: useful debug messages, disable for performance (?)
+        print(" ");
+        print("*********************************************************************");
+        print(" ");
+        print("     Sending \(valueData) to primary peripheral");
+        print(" ");
+        
+            // setting stopwatch
+        packetStopwatch = Date();
+        
+        
+        if WatchDevice.connectedDevice!.hasDiscoveredCharacteristics
+        {
+            
+                // send differently-formatted data packets depending on hardware type
+            if (WatchDevice.connectedDevice!.hardwareVersion == .NRF51822 || WatchDevice.connectedDevice!.hardwareVersion == .FASTNRF51822)
+            {
+                print("Sending to NRF51822", valueData[1]);
+                WatchDevice.connectedDevice!.peripheral.writeValue(valueData[1] as Data, for: WatchDevice.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            }
+            else
+            {
+                print("Sending to NRF8001");
+                WatchDevice.connectedDevice!.peripheral.writeValue(valueData[0] as Data, for: WatchDevice.connectedDevice!.txCharacteristic!, type: CBCharacteristicWriteType.withoutResponse)
+            }
+        }
+        else
+        {
+            WatchDevice.reportWatchError(Constants.ATTEMPTED_TO_SEND_PACKET_WITHOUT_DISCOVERING_CHARACTERISTIC, additionalInfo: "The primary has not yet discovered the txCharacteristic, not sending packet");
+            //print("The primary has not yet discovered the txCharacteristic, not sending packet");
         }
         
         

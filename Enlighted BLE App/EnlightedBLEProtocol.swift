@@ -36,6 +36,10 @@ class EnlightedBLEProtocol
     static let ENL_BLE_GET_CROSSFADE = "!GX"
         // getting the palette for a mode
     static let ENL_BLE_GET_PALETTE = "!GP"
+        // getting the clap parameter - DEPRECIATED: We are no longer using the get commands for claps and realtime, see BLE Communication Paradigm for Gestural Control in the spec for notes
+    static let ENL_BLE_GET_CLAPS = "!GC"
+        // getting the real-time parameter - DEPRECIATED: We are no longer using the get commands for claps and realtime, see BLE Communication Paradigm for Gestural Control in the spec for notes
+    static let ENL_BLE_GET_REALTIME = "!GR"
     
     // MARK: Setters
     static let ENL_BLE_SET_MODE = "!SM"
@@ -50,6 +54,8 @@ class EnlightedBLEProtocol
     static let ENL_BLE_SET_PALETTE2 = "!SP2"
     static let ENL_BLE_SET_PALETTE3 = "!SP3"
     static let ENL_BLE_SET_PALETTE4 = "!SP4"
+    static let ENL_BLE_SET_CLAPS = "!SC" //DEPRECIATED: We are no longer using the set command for claps, see BLE Communication Paradigm for Gestural Control in the spec for notes
+    static let ENL_BLE_SET_GESTURE = "!SR" //Set gesture command replaces set claps and expands on the functionality with more possible gesture types: 1 = single clap, 2 = double clap, 3 = hand up, 4 = hand sideways, 5 = hand down, 6 = arm swing
 }
 
 class Constants
@@ -114,6 +120,12 @@ class Constants
     
         // the number of packets that must be received before a bitmap/thumbnail is fully retrieved from hardware (4 per row, 20 rows)
     static let BLE_PACKETS_PER_BITMAP = 80;
+    
+        //The default (in seconds) for how long the watch will look for a second clap after the first one is detected
+    static let DEFAULT_CLAP_RESET_INTERVAL = 1.0;
+    
+        //The packets that are eligible for being broadcast (AKA packets that don't look for responses)
+    static let BROADCAST_PACKETS = [EnlightedBLEProtocol.ENL_BLE_SET_GESTURE]
     
         // states of the CB Central Manager
     // state table: https://docs.google.com/spreadsheets/d/1qkCTjl4jrx4dsB80Km5FRnuynXSmYpfE8jxph5dApZU/edit?usp=sharing
@@ -284,6 +296,14 @@ class Constants
         },
             // Get Version should receive 2 bytes: [‘V’], [ASCII Version]
         EnlightedBLEProtocol.ENL_BLE_GET_VERSION: {(data: [UInt8]) -> Bool in
+            return data.count == 2;
+        },
+            // Get Claps should receive 2 bytes: [‘C’], [ASCII DesiredClap]
+        EnlightedBLEProtocol.ENL_BLE_GET_CLAPS: {(data: [UInt8]) -> Bool in
+            return data.count == 2;
+        },
+            // Get Realtime should receive 2 bytes: ['R'], [ASCII DesiredRealTimeParameter]
+        EnlightedBLEProtocol.ENL_BLE_GET_REALTIME: {(data: [UInt8]) -> Bool in
             return data.count == 2;
         },
             // The Success response is a single byte: [1]

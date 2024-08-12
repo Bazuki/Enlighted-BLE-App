@@ -18,27 +18,23 @@ struct WorkoutControlsView: View {
     
     var body: some View {
         HStack{
+            Spacer()
             VStack{
+                Spacer()
                 Button {
                     NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.ENDED_WORKOUT), object: nil)
                 } label: {
                     Image(systemName: "arrowshape.backward.fill")
                 }
+                .frame(width: 75, height: 75)
                 .tint(Color.purple)
                 .font(.title2)
                 Text("Back")
+                Spacer()
             }
-            VStack{
-                Button {
-                    workoutManager.endWorkout()
-                } label: {
-                    Image(systemName: "xmark")
-                }
-                .tint(Color.red)
-                .font(.title2)
-                Text("End")
-            }
+            Spacer()
         }
+        .ignoresSafeArea()
     }
 }
 

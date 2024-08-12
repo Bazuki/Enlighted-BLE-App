@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import CoreMotion
 
 @main
 struct Enlighted_BLE_Watch_App_Watch_AppApp: App {

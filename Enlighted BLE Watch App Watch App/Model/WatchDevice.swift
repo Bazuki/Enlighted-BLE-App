@@ -75,15 +75,30 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
     @Published var currentModeIndex: Int;
     var mode = Mode(default: true);
     
+        //For the current mode - how many claps the current mode is looking for: 0 = none, 1 = single clap, 2 = double clap
+    var claps: Int = 0
+        //Whether or not we've checked the claps for the current mode
+    var checkedClaps = false
+    
+        //For the current mode - what type of real-time parameter the current mode is looking for: 0 = none, 1 = Accel X, 2 = Accel Y, 3 = Accel Z, 4 = Gyro X, 5 = Gyro Y, 6 = Gyro Z
+    var realtimeType = 0
+        //Whether or not we've checked the real-time parameter type for the current mode
+    var checkedRealtime = false
+    
         // whether or not this is a "demo", non-BLE enabled digital device
     var isDemoDevice = false;
     
         // whether this device uses the nRF8001 ("v1"), nRF51822 ("v2"), or fast nRF51822 ("v3") hardware/firmware
     var hardwareVersion = Constants.HARDWARE_VERSION.UNKNOWN;
+        // whether this device can use claps and realtime control
+    var supportsGesturalControl = false
         // whether this device can use crossfading - set to false by default and then set to true if we get the initial get crossfade response
     var supportsCrossfade = false;
         // whether we have checked for crossfade support yet or not
     var checkedCrossfade = false;
+    
+        // if we're about to change the mode so that we don't override that with a mode check
+    var aboutToChangeMode = false;
     
         // a list of all the palettes that we have not gotten yet
     var emptyPalettes = [Int]();
@@ -511,12 +526,12 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         let outputData8001 = NSData(bytes: outputArray8001, length: outputArray8001.count);
         
         var outputArray51822 = stringArray + uInt8Array51822;
-            // in order to fit both colors in one packet on the nRF51822 protocol, "Set Color" is actually !C, not !SC, and so requires a special string
-        if (inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_COLOR))
-        {
-            let nRF51822StringArray: [UInt8] = Array(EnlightedBLEProtocol.ENL_BLE_SET_COLOR_NRF51822.utf8);
-            outputArray51822 = nRF51822StringArray + uInt8Array51822;
-        }
+            // in order to fit both colors in one packet on the nRF51822 protocol, "Set Color" is actually !C, not !SC, and so requires a special string NOTE: - on the watch version, we don't ever set colors and need "!SC" for set claps, so I'm commenting this out
+//        if (inputString.elementsEqual(EnlightedBLEProtocol.ENL_BLE_SET_COLOR))
+//        {
+//            let nRF51822StringArray: [UInt8] = Array(EnlightedBLEProtocol.ENL_BLE_SET_COLOR_NRF51822.utf8);
+//            outputArray51822 = nRF51822StringArray + uInt8Array51822;
+//        }
         let outputData51822 = NSData(bytes: outputArray51822, length: outputArray51822.count);
         
             // MARK: profiling: sending message
@@ -538,15 +553,17 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         }
         
             // "handshaking" error tracking;
-            // if we did a set command, we expect the "success" response
-        if (inputString.prefix(2).lowercased().elementsEqual("!s"))
-        {
-            WatchDevice.connectedDevice!.expectedPacketType = "Success";
-        }
+            // if we did a set command, we expect the "success" response unless we're broadcasting
+        if (!Constants.BROADCAST_PACKETS.contains(inputString)){
+            if (inputString.prefix(2).lowercased().elementsEqual("!s"))
+            {
+                WatchDevice.connectedDevice!.expectedPacketType = "Success";
+            }
             // while if we did a get command, we expect an appropriate response
-        else
-        {
-            WatchDevice.connectedDevice!.expectedPacketType = inputString;
+            else
+            {
+                WatchDevice.connectedDevice!.expectedPacketType = inputString;
+            }
         }
         
             // returning formatted data

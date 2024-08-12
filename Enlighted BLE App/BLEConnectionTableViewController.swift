@@ -1060,7 +1060,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 //(rxString!.prefix(2).suffix(1);
                 
                 //Checking if we have access to the faster version of the nRF51822 firmware
-                if(rxString!.suffix(1) == "3")
+                if(rxString!.suffix(1) >= "3")
                 {
                     Device.connectedDevice?.hardwareVersion = .FASTNRF51822;
                     print("FIRMWARE VERSION: 3");

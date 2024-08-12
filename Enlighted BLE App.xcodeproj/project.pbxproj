@@ -32,6 +32,7 @@
 		6083B0C02C1BE4030038B12F /* WorkoutControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6083B0BF2C1BE4030038B12F /* WorkoutControlsView.swift */; };
 		60AF89672C13035900D1D263 /* enl_logo.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 60AF89662C13035900D1D263 /* enl_logo.mp4 */; };
 		60AF89692C130A5700D1D263 /* VideoPlayerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60AF89682C130A5700D1D263 /* VideoPlayerModel.swift */; };
+		60CE00D42C6460710088D742 /* WorkoutAccelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CE00D32C6460710088D742 /* WorkoutAccelView.swift */; };
 		9E604EF621535D1200734E4E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E604EF521535D1200734E4E /* AppDelegate.swift */; };
 		9E604EF821535D1200734E4E /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E604EF721535D1200734E4E /* ViewController.swift */; };
 		9E604EFB21535D1200734E4E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9E604EF921535D1200734E4E /* Main.storyboard */; };
@@ -114,6 +115,7 @@
 		6083B0BF2C1BE4030038B12F /* WorkoutControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutControlsView.swift; sourceTree = "<group>"; };
 		60AF89662C13035900D1D263 /* enl_logo.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = enl_logo.mp4; sourceTree = "<group>"; };
 		60AF89682C130A5700D1D263 /* VideoPlayerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerModel.swift; sourceTree = "<group>"; };
+		60CE00D32C6460710088D742 /* WorkoutAccelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutAccelView.swift; sourceTree = "<group>"; };
 		9E604EF221535D1200734E4E /* Enlighted BLE App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Enlighted BLE App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E604EF521535D1200734E4E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9E604EF721535D1200734E4E /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -250,6 +252,7 @@
 				6083B0BD2C1BDC010038B12F /* ElapsedTimeView.swift */,
 				6083B0BF2C1BE4030038B12F /* WorkoutControlsView.swift */,
 				602BA45D2C20CCCB005724AA /* WorkoutSummaryView.swift */,
+				60CE00D32C6460710088D742 /* WorkoutAccelView.swift */,
 			);
 			path = Workout;
 			sourceTree = "<group>";
@@ -469,6 +472,7 @@
 				6083B0B62C1BBE100038B12F /* WorkoutManager.swift in Sources */,
 				6082F1792BF80535008A2824 /* Enlighted_BLE_Watch_App.swift in Sources */,
 				60AF89692C130A5700D1D263 /* VideoPlayerModel.swift in Sources */,
+				60CE00D42C6460710088D742 /* WorkoutAccelView.swift in Sources */,
 				6082F18C2BF8191E008A2824 /* UUIDKey.swift in Sources */,
 				60185E162BFD51350050D068 /* WatchDeviceList.swift in Sources */,
 				60185E182BFD81240050D068 /* WatchDeviceListRow.swift in Sources */,
@@ -576,7 +580,7 @@
 				INFOPLIST_FILE = "Enlighted-BLE-Watch-App-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Enlighted BLE Watch App";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Your workout related data will be used to modify the behavior of the Enlighted hardware and react to your heartrate";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Workouts tracked by the Enlighted Watch App will be saved to HealthKit";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Workouts tracked by the Enlighted Watch App will not be saved to HealthKit";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.rightbrainelectronics.enlightedble;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
@@ -585,7 +589,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.0.6;
+				MARKETING_VERSION = 1.0.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble.watchkitapp;
@@ -620,7 +624,7 @@
 				INFOPLIST_FILE = "Enlighted-BLE-Watch-App-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Enlighted BLE Watch App";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Your workout related data will be used to modify the behavior of the Enlighted hardware and react to your heartrate";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Workouts tracked by the Enlighted Watch App will be saved to HealthKit";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Workouts tracked by the Enlighted Watch App will not be saved to HealthKit";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.rightbrainelectronics.enlightedble;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
@@ -629,7 +633,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.0.6;
+				MARKETING_VERSION = 1.0.1;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -770,7 +774,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.5;
+				MARKETING_VERSION = 1.4.2;
 				OTHER_SWIFT_FLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -795,7 +799,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.5;
+				MARKETING_VERSION = 1.4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rightbrainelectronics.enlightedble;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "";
