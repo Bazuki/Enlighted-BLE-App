@@ -9,6 +9,7 @@
 import SwiftUI
 import AVFoundation
 import AVKit
+import WatchKit
 import CoreMotion
 
 struct WatchDeviceControl: View {
@@ -230,14 +231,14 @@ struct WatchDeviceControl: View {
                                     } label: {
                                         DynamicSliderValueButtonLabelView(value: $crossfadeSliderValue, title: "Crossfade", minValue: 0, maxValue: 100)
                                     }
-                                    Button(){
-                                        print("Switching to workout control")
-                                        withAnimation{
-                                            workoutControlMode = true
-                                        }
-                                    } label: {
-                                        DynamicSliderValueButtonLabelView(value: Binding.constant(0), title: "Workout Status", minValue: 0, maxValue: 1)
-                                    }
+//                                    Button(){
+//                                        print("Switching to workout control")
+//                                        withAnimation{
+//                                            workoutControlMode = true
+//                                        }
+//                                    } label: {
+//                                        DynamicSliderValueButtonLabelView(value: Binding.constant(0), title: "Workout Status", minValue: 0, maxValue: 1)
+//                                    }
                                 } else if (brightnessControlMode){
                                     HStack{
                                         Button("Back"){
@@ -399,23 +400,42 @@ struct WatchDeviceControl: View {
                         rollingAverage = averageBuffer.reduce(0.0, {x, y in
                                 x + y
                         }) / Double(bufferCount)
+                        
+                        
                             //Sensing position
                         if(rollingAverage < 1.0 && rollingAverage > 0.75 && maxMinusMin < 0.5){
-                            if(lastPosition != .up){
-                                BLE.sendPrimaryGesture(gestureType: 3)
+                            if(WKInterfaceDevice.current().wristLocation == .left){
+                                if(lastPosition != .down){
+                                    print("Detected left wrist down gesture")
+                                    BLE.sendPrimaryGesture(gestureType: 5)
+                                }
+                                lastPosition = .down
+                            } else {
+                                if(lastPosition != .up){
+                                    print("Detected right wrist up gesture")
+                                    BLE.sendPrimaryGesture(gestureType: 3)
+                                }
+                                lastPosition = .up
                             }
-                            lastPosition = .up
                         } else if(rollingAverage < 0.4 && rollingAverage > -0.4 && maxMinusMin < 0.5){
                             if(lastPosition != .sideways){
                                 BLE.sendPrimaryGesture(gestureType: 4)
                             }
                             lastPosition = .sideways
                         } else if(rollingAverage < -0.75 && rollingAverage > -1.0 && maxMinusMin < 0.5){
-                            if(lastPosition != .down){
-                                print("Detected down gesture - mmm: \(maxMinusMin)")
-                                BLE.sendPrimaryGesture(gestureType: 5)
+                            if(WKInterfaceDevice.current().wristLocation == .left){
+                                if(lastPosition != .up){
+                                    print("Detected left wrist up gesture")
+                                    BLE.sendPrimaryGesture(gestureType: 3)
+                                }
+                                lastPosition = .up
+                            } else {
+                                if(lastPosition != .down){
+                                    print("Detected right wrist down gesture")
+                                    BLE.sendPrimaryGesture(gestureType: 5)
+                                }
+                                lastPosition = .down
                             }
-                            lastPosition = .down
                         }
                         
                         //MARK: Arm Swing Detection - removed on 8/12/24 so that we can release a version with 5/6 gestures supported to janet
