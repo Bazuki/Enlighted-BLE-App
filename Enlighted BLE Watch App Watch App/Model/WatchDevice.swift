@@ -481,6 +481,7 @@ class WatchDevice: NSObject, NSCoding, ObservableObject
         let stringArray: [UInt8] = Array(inputString.utf8);
         var uInt8Array8001 = [UInt8]();
         var uInt8Array51822 = [UInt8]();
+        
             // formatting ints, if any
         if (intsToParse.count > 0)
         {

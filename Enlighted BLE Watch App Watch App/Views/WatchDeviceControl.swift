@@ -36,6 +36,15 @@ struct WatchDeviceControl: View {
     //CoreMotion variables
         //Boolean to know when we need to start the accel updates
     @State var accelActive: Bool = false
+        //Boolean to know when we've already detected a gesture in the current loop of the accelerometer
+    @State var gestureEvent: Bool = false
+        //Accelerometer loop tick counter to help with BLE timing
+    @State var accelResetCounter: Int = 0
+    
+    //Update Interval variables
+    @State var updateIntervalBuffer: [Double] = [Double]()
+    @State var intervalAverage: Double = 0.0
+        //We're just going to use the same size, index, and count because they'll be updating at the same time
     
     //Clap Detection variables
     @State var clapped: Bool = false
@@ -57,10 +66,12 @@ struct WatchDeviceControl: View {
     @State var bufferCount: Int = 0
     @State var lastPosition: armPositionType = .unknown
     @State var maxMinusMin: Double = 0.0
+    @State var hapticEnabled: Bool = false
     
         //Accel info page variables
     @State var currentXAccel: Double = 0.0
     @State var peakXAccel: Double = 0.0
+    @State var accelRefresh: Double = 0.0
     
     //Arm Swinging variables
     @State var swingThreshhold: Bool = false
@@ -127,6 +138,13 @@ struct WatchDeviceControl: View {
         }
         //Send the mode request - moved to BLETick() - moved back to this function since we decided to stop constantly polling the hardware for its current mode
         BLE.setPrimaryMode(newModeIndex: thisDevice.currentModeIndex)
+    }
+    
+    //Sends a gesture message to the BLE device, and sets the timing flags for the accelerometer
+    func sendGestureEvent(gestureType: Int){
+        gestureEvent = true
+        accelResetCounter = 5 //Change this to detemine how long it takes for the gestures to be sensed again
+        BLE.sendPrimaryGesture(gestureType: gestureType)
     }
     
     //Centralized BLE Tick function which deals with transmitting slider values as they're being slid, checking that the mode is correct, and making sure we have clap and realtime data
@@ -231,6 +249,11 @@ struct WatchDeviceControl: View {
                                     } label: {
                                         DynamicSliderValueButtonLabelView(value: $crossfadeSliderValue, title: "Crossfade", minValue: 0, maxValue: 100)
                                     }
+                                    Button{
+                                        hapticEnabled = !hapticEnabled
+                                    } label: {
+                                        DynamicSliderValueButtonLabelView(value: hapticEnabled ? Binding.constant(1) : Binding.constant(0), title: "Haptic Feedback", minValue: 0, maxValue: 1)
+                                    }
 //                                    Button(){
 //                                        print("Switching to workout control")
 //                                        withAnimation{
@@ -276,19 +299,26 @@ struct WatchDeviceControl: View {
                             VStack{
                                 Spacer()
                                 Text("X: \(String(format: "%.2f", currentXAccel))")
-                                    .font(.title2)
+                                    .font(.title3)
                                 Text("Avg: \(String(format: "%.2f", rollingAverage))")
-                                    .font(.title2)
+                                    .font(.title3)
+                                Text("Hz: \(String(format: "%.2f", accelRefresh))")
+                                    .font(.title3)
+                                    .fixedSize(horizontal: false, vertical: true) //Credit to: https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
                                 Button{peakXAccel = 0.0} label: {Text("Peak: \(String(format: "%.2f", peakXAccel))")
-                                    .font(.title2)}
+                                    .font(.title3)}
+                                    .frame(width: geometry.size.width/1.3, height: geometry.size.height/10)
+                                    .buttonStyle(PlainButtonStyle())
                                 Text("Pos: \(lastPosition)")
-                                    .font(.title2)
+                                    .font(.title3)
+//                                Button{hapticEnabled = !hapticEnabled} label: {Text(hapticEnabled ? "Haptic Enabled" : "Haptic Disabled").font(.title3)}
+//                                    .frame(width: geometry.size.width/1.3, height: geometry.size.height/10)
+//                                    .buttonStyle(PlainButtonStyle())
                                 Spacer()
                             }
                             .onChange(of: lastPosition) { oldValue, newValue in
                                     print("New Arm Position: \(newValue)")
                             }
-                            .sensoryFeedback(.increase, trigger: lastPosition)
                         }
                         .tabViewStyle(.carousel)
                         .tabViewStyle(PageTabViewStyle(indexDisplayMode: workoutControlMode ? .never : .automatic)) //Credit to: https://stackoverflow.com/questions/63168014/swiftui-2-0-tabview-disable-swipe-to-change-page
@@ -301,8 +331,16 @@ struct WatchDeviceControl: View {
                             .scaledToFill()
                             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
                     })
-                    //MARK: Appear, disappear, and custom message listeners
+                    
                 }.navigationBarBackButtonHidden(true)
+                    //Give haptic feedback on arm position changes if the user wants it
+                .sensoryFeedback(trigger: lastPosition){ oldValue, newValue in
+                    if(hapticEnabled){
+                        return SensoryFeedback.increase
+                    } else {
+                        return nil
+                    }
+                }
                 .toolbar { //Custom back button so that we can stop the workout on disconnect
                     ToolbarItem(placement: .topBarLeading, content: {
                         Button{
@@ -316,6 +354,7 @@ struct WatchDeviceControl: View {
                         }
                     })
                 }
+            //MARK: Appear, disappear, and custom message listeners
         }.onAppear(perform: {
             
             //When this view appears, connect to the selected device if it's a real device
@@ -370,6 +409,7 @@ struct WatchDeviceControl: View {
             //Initialize averageBuffer if we need to
             if (averageBuffer.count == 0){
                 averageBuffer = [Double](repeating: 0.0, count: bufferSize)
+                updateIntervalBuffer = [Double](repeating: 0.0, count: bufferSize)
             }
             
             //Setup coreMotion
@@ -378,95 +418,117 @@ struct WatchDeviceControl: View {
             if(!motionManager.isAccelerometerActive && !accelActive && WatchDevice.connectedDevice!.supportsGesturalControl){
                 if(motionManager.isAccelerometerAvailable
                 ){
+                    //motionManager.accelerometerUpdateInterval = 1.0/60.0 // 60 Hz
                     print("Starting accelerometer for clap detection with interval: \(motionManager.accelerometerUpdateInterval)")
                     accelActive = true
                     motionManager.startAccelerometerUpdates(to: .main) { (data, error) in
                         guard error == nil else { print("CoreMotion Error: \(String(describing: error))"); return }
                         guard let accelData = data else { print("Could not get accelData"); return }
                         
+                       
+                        
+                        
+                        
+                        //Update our info page variables
                         currentXAccel = accelData.acceleration.x
                         peakXAccel = max(abs(currentXAccel), abs(peakXAccel))
+                        
+                        
+                        //TODO: Add rolling average for updateInterval and take it's reciprocal to show Hz instead of interval
+                        
                         
                         //MARK: Arm Position Code
                             //Updating the rolling average
                         averageBuffer[bufferIndex] = accelData.acceleration.x
+                            //Averaging updateInterval so that we have a less erratic number
+                        updateIntervalBuffer[bufferIndex] = motionManager.accelerometerUpdateInterval
                         bufferIndex = (bufferIndex + 1) % bufferSize
                         if (bufferCount < bufferSize){
                             bufferCount += 1
                         }
                             //Updating the max minus min so that we can determine if this was a sudden increase in X from a potential arm swing
                         maxMinusMin = abs(averageBuffer.max()! - averageBuffer.min()!)
-                            //Averaging the array
+                            //Averaging the AccelX array
                         rollingAverage = averageBuffer.reduce(0.0, {x, y in
                                 x + y
                         }) / Double(bufferCount)
+                            //Averaging the interval array
+                        accelRefresh = 1 / (updateIntervalBuffer.reduce(0.0, {x, y in
+                                x + y
+                        }) / Double(bufferCount))
                         
                         
-                            //Sensing position
-                        if(rollingAverage < 1.0 && rollingAverage > 0.75 && maxMinusMin < 0.5){
+                        //MARK: Arm Position Detection Code
+                        if(rollingAverage < 1.0 && rollingAverage > 0.75 && maxMinusMin < 0.25){
                             if(WKInterfaceDevice.current().wristLocation == .left){
                                 if(lastPosition != .down){
                                     print("Detected left wrist down gesture")
-                                    BLE.sendPrimaryGesture(gestureType: 5)
+                                    sendGestureEvent(gestureType: 5)
                                 }
                                 lastPosition = .down
                             } else {
                                 if(lastPosition != .up){
                                     print("Detected right wrist up gesture")
-                                    BLE.sendPrimaryGesture(gestureType: 3)
+                                    sendGestureEvent(gestureType: 3)
                                 }
                                 lastPosition = .up
                             }
-                        } else if(rollingAverage < 0.4 && rollingAverage > -0.4 && maxMinusMin < 0.5){
+                        } else if(rollingAverage < 0.4 && rollingAverage > -0.4 && maxMinusMin < 0.25){
                             if(lastPosition != .sideways){
-                                BLE.sendPrimaryGesture(gestureType: 4)
+                                sendGestureEvent(gestureType: 4)
                             }
                             lastPosition = .sideways
-                        } else if(rollingAverage < -0.75 && rollingAverage > -1.0 && maxMinusMin < 0.5){
+                        } else if(rollingAverage < -0.75 && rollingAverage > -1.0 && maxMinusMin < 0.25){
                             if(WKInterfaceDevice.current().wristLocation == .left){
                                 if(lastPosition != .up){
                                     print("Detected left wrist up gesture")
-                                    BLE.sendPrimaryGesture(gestureType: 3)
+                                    sendGestureEvent(gestureType: 3)
                                 }
                                 lastPosition = .up
                             } else {
                                 if(lastPosition != .down){
                                     print("Detected right wrist down gesture")
-                                    BLE.sendPrimaryGesture(gestureType: 5)
+                                    sendGestureEvent(gestureType: 5)
                                 }
                                 lastPosition = .down
                             }
                         }
                         
-                        //MARK: Arm Swing Detection - removed on 8/12/24 so that we can release a version with 5/6 gestures supported to janet
-//                        if(abs(accelData.acceleration.x) > 3.0 && (abs(accelData.acceleration.y) > 1.0 || abs(accelData.acceleration.z) > 1.0) && !swingThreshhold){ //In order for the swing to count as a swing, we want the x to be high due to centrifugal force, and one of the other axes to be relatively high as well
-//                            print("Arm Swing Gesture detected - mmm: \(maxMinusMin)")
-//                            BLE.sendPrimaryGesture(gestureType: 6)
-//                            swingThreshhold = true
-//                        } else if (abs(accelData.acceleration.x) < 0.5 && swingThreshhold){
-//                            print("Arm Swing Gesture reset")
-//                            swingThreshhold = false
-//                        }
+                        
                         
                         //MARK: Clap Detection Code
-                        if (accelData.acceleration.z < -5.0){
-                            if (!clapped && !ignoreNext){
-                                print("Detected single clap")
-                                BLE.sendPrimaryGesture(gestureType: 1)
-                                clapped = true
-                                ignoreNext = true
-                            } else if (!ignoreNext){
-                                print("Detected double clap")
-                                BLE.sendPrimaryGesture(gestureType: 2)
-                                clapped = false
-                                clapReset = Constants.DEFAULT_CLAP_RESET_INTERVAL
-                                ignoreNext = true
-                            } else {
-                                print("ignoring false positive clap")
-                                //ignoreNext = false
+                        if(!gestureEvent){
+                            if (accelData.acceleration.z < -5.0){
+                                if (!clapped && !ignoreNext){
+                                    print("Detected single clap")
+                                    sendGestureEvent(gestureType: 1)
+                                    clapped = true
+                                    ignoreNext = true
+                                } else if (!ignoreNext){
+                                    print("Detected double clap")
+                                    sendGestureEvent(gestureType: 2)
+                                    clapped = false
+                                    clapReset = Constants.DEFAULT_CLAP_RESET_INTERVAL
+                                    ignoreNext = true
+                                } else {
+                                    print("ignoring false positive clap")
+                                    //ignoreNext = false
+                                }
+                            } else{
+                                if(accelData.acceleration.z > -1.0){
+                                    ignoreNext = false //Once the accel value has gone below the threshhold again (with hysteresis), the next clap will be valid
+                                }
+                                
+                                    //Trying with arm swign detection here so that clap will override the arm swing
+                                if(abs(accelData.acceleration.x) > 2.25 && (abs(accelData.acceleration.y) > 1.0) && (maxMinusMin > 1.0) && !swingThreshhold){ //In order for the swing to count as a swing, we want the x to be high due to centrifugal force, and one of the other axes to be relatively high as well
+                                    print("Arm Swing Gesture detected - mmm: \(maxMinusMin)")
+                                    sendGestureEvent(gestureType: 6)
+                                    swingThreshhold = true
+                                } else if (abs(accelData.acceleration.x) < 1.0 && swingThreshhold){
+                                    print("Arm Swing Gesture reset")
+                                    swingThreshhold = false
+                                }
                             }
-                        } else{
-                            ignoreNext = false //Once the accel value has gone below the threshhold again, the next clap will be valid
                         }
                         
                         if (clapped && (clapReset >= 0.0)){
@@ -475,6 +537,27 @@ struct WatchDeviceControl: View {
                             clapped = false
                             clapReset = Constants.DEFAULT_CLAP_RESET_INTERVAL
                             print("reset clap")
+                        }
+                        
+                        //MARK: Arm Swing Detection - removed on 8/12/24 so that we can release a version with 5/6 gestures supported to janet
+//                        if(!gestureEvent){
+//                            if(abs(accelData.acceleration.x) > 3.0 && (abs(accelData.acceleration.y) > 1.0 || abs(accelData.acceleration.z) > 1.0) && !swingThreshhold){ //In order for the swing to count as a swing, we want the x to be high due to centrifugal force, and one of the other axes to be relatively high as well
+//                                print("Arm Swing Gesture detected - mmm: \(maxMinusMin)")
+//                                BLE.sendPrimaryGesture(gestureType: 6)
+//                                gestureEvent = true
+//                                swingThreshhold = true
+//                            } else if (abs(accelData.acceleration.x) < 1.0 && swingThreshhold){
+//                                print("Arm Swing Gesture reset")
+//                                swingThreshhold = false
+//                            }
+//                        }
+                        
+                            //Reset the gestureEvent flag so that next iteration of the loop can send an event if we have waited long enough
+                        if(accelResetCounter == 0 && gestureEvent){
+                            print("Gesture timer reset")
+                            gestureEvent = false
+                        } else if (gestureEvent){
+                            accelResetCounter -= 1
                         }
                     }
                 }
