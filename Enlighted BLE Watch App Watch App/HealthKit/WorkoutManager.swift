@@ -59,8 +59,8 @@ class WorkoutManager: NSObject, ObservableObject {
         ]
         
         let typesToRead: Set = [
-            HKQuantityType.quantityType(forIdentifier: .heartRate)!,
-            HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
+//            HKQuantityType.quantityType(forIdentifier: .heartRate)!,
+//            HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
 //            HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
 //            HKQuantityType.quantityType(forIdentifier: .distanceCycling)!,
             HKObjectType.activitySummaryType(),

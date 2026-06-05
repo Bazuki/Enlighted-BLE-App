@@ -12,7 +12,7 @@ struct WatchDeviceListRow: View {
     var thisDevice: WatchDevice
     var body: some View {
         HStack{
-            Text(thisDevice.name)
+            Text(thisDevice.name == "emptyDevice" ? "Demo Device" : thisDevice.name)
             Spacer()
             Image(systemName: "arrowshape.right")
         }.padding(.all)
