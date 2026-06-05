@@ -788,7 +788,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 
                 //print("Received a complete battery level packet, parsing: " + rxString!.prefix(1), Int(ADCValue));
                 //print("Value Recieved: " + ;
-                let voltage = (Float(ADCValue) / 1024) * 16.5;
+                
+                //We multiply the 16-bit value by 16.5/1024 if it's a Rev 3.1 and 36.3/1024 if it's a Rev 4.x
+                var batteryMultiplier: Float = 16.5;
+                if Device.connectedDevice?.hardwareVersion == .FASTNRF51822 { //Assuming all type 3 or 4 hardware uses Rev 4.x
+                    batteryMultiplier = 36.3;
+                }
+                
+                let voltage = (Float(ADCValue) / 1024) * batteryMultiplier;
                 // calculates the battery percentage given the voltage
                 Device.connectedDevice?.batteryPercentage = calculateBatteryPercentage(voltage);
                 NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.RECEIVED_BATTERY_VALUE), object: nil);
@@ -1062,6 +1069,7 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 //Checking if we have access to the faster version of the nRF51822 firmware
                 if(rxString!.suffix(1) >= "3")
                 {
+                    //We are assuming hardware of type 3 or 4 is using the Rev 4.x Enlighted master PCB for battery purposes
                     Device.connectedDevice?.hardwareVersion = .FASTNRF51822;
                     print("FIRMWARE VERSION: 3");
                 }
