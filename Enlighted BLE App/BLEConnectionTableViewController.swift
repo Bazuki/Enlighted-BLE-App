@@ -542,6 +542,17 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
         // called automatically after characteristics we've subscribed to are updated
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?)
     {
+        
+        //SDK 26 diagnostic message
+        print("=== didUpdateValueFor ===")
+        print("Error: \(String(describing: error))")
+        if let data = characteristic.value {
+            print("Value: \(String(describing: data as NSData)) ")
+        } else {
+            print("Value: \(String(describing: characteristic.value)) ")
+        }
+        print("Value bytes: \(characteristic.value?.count ?? -1)")
+        print("Thread: \(Thread.current)")
             // parsing/dealing with the info read from the firmware of the primary
         if characteristic == Device.connectedDevice?.rxCharacteristic
         {
@@ -576,12 +587,17 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                 // converting data to a string
             var rxString = String(bytes: receivedArray, encoding: .ascii);
             
+                // Just grab first byte so that we can get the message type (updated for SDK 26)
+            let rxStringPrefix = String(UnicodeScalar(rxValue[0]));
+            
+            print("--- We think rxString says: \(rxString ?? "nothing"), rxValue says: \(rxValue), and receivedArray says: \(receivedArray).  rxStringPrefix is: \(rxStringPrefix) ---")
+            
                 //converting first byte into an int, for the 1 or 0 success responses
             let rxInt = Int(receivedArray[0]);
             
             // TODO: enable this for debugging; removing for performance
             //print("Received \(receivedArray) from \(String(describing: peripheral.name))");
-            
+            //print("Received \(String(describing: rxString))")
             
             
             
@@ -612,42 +628,42 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     //print(Device.connectedDevice!.expectedPacketType);
                 }
                     // Get Battery
-                else if (rxString?.prefix(1) == "B")
+                else if (rxStringPrefix == "B")
                 {
                     //print("Receiving battery level")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_BATTERY_LEVEL;
                 }
                     // Get Limits
-                else if (rxString?.prefix(1) == "L")
+                else if (rxStringPrefix == "L")
                 {
                     //print("Receiving limits")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_LIMITS;
                 }
                     // Get Mode
-                else if (rxString?.prefix(1) == "M")
+                else if (rxStringPrefix == "M")
                 {
                     //print("Receiving a mode's data")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_MODE;
                 }
                     // Get Name
-                else if (rxString?.prefix(1) == "\"")
+                else if (rxStringPrefix == "\"")
                 {
                     //print("Receiving a mode's name")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_NAME;
                 }
                     // Get Brightness
-                else if (rxString?.prefix(1) == "G")
+                else if (rxStringPrefix == "G")
                 {
                     //print("Receiving a brightness value")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_BRIGHTNESS;
                 }
                    // Get Crossfade
-                else if (rxString?.prefix(1) == "X")
+                else if (rxStringPrefix == "X")
                 {
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE;
                 }
                     // Get Version
-                else if (rxString?.prefix(1) == "V")
+                else if (rxStringPrefix == "V")
                 {
                     //print("Receiving a hardware version")
                     currentPacketType = EnlightedBLEProtocol.ENL_BLE_GET_VERSION;

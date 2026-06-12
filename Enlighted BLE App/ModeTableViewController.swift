@@ -337,6 +337,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     @objc func requestNextData()
     {
+        print("Starting requestNextData")
             // update progress
         loadingProgressView.setProgress(progress, animated: true);
         
@@ -512,7 +513,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             else if (((Device.connectedDevice?.crossfade)! < 0) && !(Device.connectedDevice!.checkedCrossfade))
             {
                 // if the response isn't expected already, send the get crossfade command
-                if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)) && !(Device.connectedDevice!.checkedCrossfade))
+                if (!(Device.connectedDevice!.expectedPacketType.elementsEqual(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE)) && !(Device.connectedDevice!.checkedCrossfade)
+                )
                 {
                     formatAndSendPacket(EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE);
                     progress += 1 / Float(totalPacketsForSetup);
@@ -520,6 +522,7 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
                     BLECrossfadeTimer.invalidate();
                     BLECrossfadeTimer = Timer.scheduledTimer(timeInterval: Constants.CROSSFADE_TIMEOUT_TIME, target: self, selector: #selector(crossfadeTimeout), userInfo: nil, repeats: false);
                 }
+                
                     //if we've already requested this info, we need to wait so we return
                 return;
             }
@@ -839,6 +842,31 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             Device.connectedDevice!.supportsCrossfade = false;
             Device.connectedDevice!.checkedCrossfade = true;
             NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
+            
+            // error popup to let old hardware users know about 1.5.1 problems
+            print("Showing error popup")
+            let dialogMessage = UIAlertController(title:"Crossfade Not Supported", message: "The app is detecting hardware that does not support crossfading.  For devices commissioned before 2024, please use the \"Enlighted\" app instead.", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "Ok", style: UIAlertActionStyle.default, handler:
+            {(action) -> Void in
+                
+                if (!Device.connectedDevice!.isConnected)
+                {
+                    print("We disconnected from the peripheral, so we should go to the Connect Screen at this point");
+                    _ = self.navigationController?.popToRootViewController(animated: true);
+                }
+                    // otherwise, resume loading load data
+                else
+                {
+                    self.requestNextDataWithDelay();
+                }
+
+                
+            })
+            
+            dialogMessage.addAction(ok);
+            
+                // presenting this view controller over the current screen, whatever that may be
+            self.navigationController?.topViewController?.present(dialogMessage, animated: true, completion: nil);
         }
     }
     
@@ -1562,29 +1590,32 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
     
     func alertUserToMoveCloserToHardware()
     {
-        // error popup
-        let dialogMessage = UIAlertController(title:"Low connection strength", message: "The app is having trouble receiving data from the BLE device.  Please move closer to your device, and then press \"OK\"", preferredStyle: .alert);
-        let ok = UIAlertAction(title: "Ok", style: UIAlertActionStyle.default, handler:
-        {(action) -> Void in
-            
-            if (!Device.connectedDevice!.isConnected)
-            {
-                print("We disconnected from the peripheral, so we should go to the Connect Screen at this point");
-                _ = self.navigationController?.popToRootViewController(animated: true);
-            }
+        if !(Device.connectedDevice?.expectedPacketType == EnlightedBLEProtocol.ENL_BLE_GET_CROSSFADE) //Only show the low connection strength popup if we aren't waiting for crossfade
+        {
+            // error popup
+            let dialogMessage = UIAlertController(title:"Low connection strength", message: "The app is having trouble receiving data from the BLE device.  Please move closer to your device, and then press \"OK\"", preferredStyle: .alert);
+            let ok = UIAlertAction(title: "Ok", style: UIAlertActionStyle.default, handler:
+                                    {(action) -> Void in
+                
+                if (!Device.connectedDevice!.isConnected)
+                {
+                    print("We disconnected from the peripheral, so we should go to the Connect Screen at this point");
+                    _ = self.navigationController?.popToRootViewController(animated: true);
+                }
                 // otherwise, resume loading load data
-            else
-            {
-                self.requestNextDataWithDelay();
-            }
-
+                else
+                {
+                    self.requestNextDataWithDelay();
+                }
+                
+                
+            })
             
-        })
-        
-        dialogMessage.addAction(ok);
-        
+            dialogMessage.addAction(ok);
+            
             // presenting this view controller over the current screen, whatever that may be
-        self.navigationController?.topViewController?.present(dialogMessage, animated: true, completion: nil);
+            self.navigationController?.topViewController?.present(dialogMessage, animated: true, completion: nil);
+        }
         
     }
     
@@ -1608,6 +1639,8 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
         }
         else
         {
+            //TODO: Remove for release
+            print("Setting timer to NRF8001 value")
             timeoutTime = Constants.BLE_MESSAGE_TIMEOUT_TIME_NRF8001;
         }
         

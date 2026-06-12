@@ -76,10 +76,10 @@ class Constants
     //static let BATTERY_SCAN_INTERVAL = 0.33;
     
         // the time (in seconds) the app waits before requesting new data from the nRF8001 after receiving it.
-    static let NRF8001_DELAY_TIME = 0.021;
+    static let NRF8001_DELAY_TIME = 0.021; //Changed from 0.021 to 0.1 for testing
     
         // the time (in seconds) before the app decides to scrap and re-send a row of thumbnail pixels, per-device
-    static let BLE_MESSAGE_TIMEOUT_TIME_NRF8001 = 0.25;
+    static let BLE_MESSAGE_TIMEOUT_TIME_NRF8001 = 0.25; //Doubled to .5 to try and get newer devices to work with NRF8001
     
     static let BLE_MESSAGE_TIMEOUT_TIME_NRF51822 = 0.50;
     
