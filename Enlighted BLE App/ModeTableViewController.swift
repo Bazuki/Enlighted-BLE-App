@@ -842,31 +842,6 @@ class ModeTableViewController: UITableViewController, CBPeripheralManagerDelegat
             Device.connectedDevice!.supportsCrossfade = false;
             Device.connectedDevice!.checkedCrossfade = true;
             NotificationCenter.default.post(name: Notification.Name(rawValue: Constants.MESSAGES.PARSED_COMPLETE_PACKET), object: nil);
-            
-            // error popup to let old hardware users know about 1.5.1 problems
-            print("Showing error popup")
-            let dialogMessage = UIAlertController(title:"Crossfade Not Supported", message: "The app is detecting hardware that does not support crossfading.  For devices commissioned before 2024, please use the \"Enlighted\" app instead.", preferredStyle: .alert);
-            let ok = UIAlertAction(title: "Ok", style: UIAlertActionStyle.default, handler:
-            {(action) -> Void in
-                
-                if (!Device.connectedDevice!.isConnected)
-                {
-                    print("We disconnected from the peripheral, so we should go to the Connect Screen at this point");
-                    _ = self.navigationController?.popToRootViewController(animated: true);
-                }
-                    // otherwise, resume loading load data
-                else
-                {
-                    self.requestNextDataWithDelay();
-                }
-
-                
-            })
-            
-            dialogMessage.addAction(ok);
-            
-                // presenting this view controller over the current screen, whatever that may be
-            self.navigationController?.topViewController?.present(dialogMessage, animated: true, completion: nil);
         }
     }
     

@@ -751,6 +751,7 @@ private func formatAndSendPacket(_ inputString: String, inputInts: [Int] = [Int]
             
             // TODO: enable this for debugging; removing for performance
             //print("Received \(receivedArray) from \(String(describing: peripheral.name))");
+            print("Received \(String(describing: rxString))")
             
             
             

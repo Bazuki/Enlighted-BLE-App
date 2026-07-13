@@ -793,6 +793,8 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
             rxValue = currentPacketContents;
             rxString = String(bytes: currentPacketContents, encoding: .ascii);
             
+            print("After packet type check we think rxString says: \(rxString ?? "nothing")")
+            
                 // MARK: Parsing Complete Packets:
             switch currentPacketType
             {
@@ -881,14 +883,14 @@ class BLEConnectionTableViewController: UITableViewController, CBCentralManagerD
                     if (usesBitmap)
                     {
                         //print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2]);
-                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                        print("Value Received: " + rxStringPrefix, rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
                         // clamping to min/max
                         let bitmapIndex = min(max(Int(rxValue[2]), 1), (Device.connectedDevice?.maxBitmaps)!);
                         Device.connectedDevice?.mode?.bitmapIndex = bitmapIndex;
                     }
                     else
                     {
-                        print("Value Received: " + rxString!.prefix(1), rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
+                        print("Value Received: " + rxStringPrefix, rxValue[1], rxValue[2], rxValue[3], rxValue[4], rxValue[5], rxValue[6], rxValue[7]);
                         
                         let color1 = UIColor(displayP3Red: CGFloat(Float(rxValue[2]) / 255), green: CGFloat(Float(rxValue[3]) / 255), blue: CGFloat(Float(rxValue[4]) / 255), alpha: 1)
                         let color2 = UIColor(displayP3Red: CGFloat(Float(rxValue[5]) / 255), green: CGFloat(Float(rxValue[6]) / 255), blue: CGFloat(Float(rxValue[7]) / 255), alpha: 1)
